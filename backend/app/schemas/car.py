@@ -1,0 +1,24 @@
+from pydantic import BaseModel, ConfigDict
+
+class CarCreate(BaseModel):
+    plate_number: str
+    car_type: str | None = None
+    owner_name: str | None = None
+    phone: str | None = None
+    notes: str | None = None
+
+class CarUpdate(BaseModel):
+    car_type: str | None = None
+    owner_name: str | None = None
+    phone: str | None = None
+    notes: str | None = None
+
+class CarOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    tenant_id: int
+    plate_number: str
+    car_type: str | None
+    owner_name: str | None
+    phone: str | None
+    notes: str | None

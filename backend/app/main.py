@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth
+from app.api import auth, tenants, cars, services, invoices, inventory, debts, reports
 
 app = FastAPI(title="Oil Center SaaS")
 
@@ -12,4 +12,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth.router)
+for router in [auth.router, tenants.router, cars.router, services.router,
+               invoices.router, inventory.router, debts.router, reports.router]:
+    app.include_router(router)
