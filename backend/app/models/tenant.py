@@ -10,7 +10,7 @@ class Plan(str, enum.Enum):
 class Tenant(Base, TimestampMixin):
     __tablename__ = "tenants"
     id = Column(Integer, primary_key=True)
-    name = Column(String(100), nullable=False)
+    name = Column(String(100), nullable=False, unique=True)
     plan = Column(Enum(Plan), default=Plan.basic, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     contact_phone = Column(String(20))

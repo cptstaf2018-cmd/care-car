@@ -11,8 +11,8 @@ class Invoice(Base, TimestampMixin):
     __tablename__ = "invoices"
     id = Column(Integer, primary_key=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
-    service_id = Column(Integer, ForeignKey("services.id"), nullable=False)
+    service_id = Column(Integer, ForeignKey("services.id"), nullable=False, index=True)
     amount = Column(Numeric(12, 2), nullable=False)
-    discount = Column(Numeric(12, 2), default=0)
+    discount = Column(Numeric(12, 2), server_default="0")
     status = Column(Enum(InvoiceStatus), default=InvoiceStatus.unpaid, nullable=False)
     invoice_date = Column(Date, nullable=False)

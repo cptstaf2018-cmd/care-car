@@ -1,8 +1,9 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, ForeignKey, Text, UniqueConstraint
 from app.models.base import Base, TimestampMixin
 
 class Car(Base, TimestampMixin):
     __tablename__ = "cars"
+    __table_args__ = (UniqueConstraint("tenant_id", "plate_number", name="uq_car_tenant_plate"),)
     id = Column(Integer, primary_key=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     plate_number = Column(String(30), nullable=False)
