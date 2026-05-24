@@ -1,5 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from datetime import date
+from app.models.invoice import InvoiceStatus
 
 class InvoiceOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -12,5 +13,5 @@ class InvoiceOut(BaseModel):
     invoice_date: date
 
 class InvoiceUpdate(BaseModel):
-    status: str | None = None
+    status: InvoiceStatus | None = None
     discount: float | None = None

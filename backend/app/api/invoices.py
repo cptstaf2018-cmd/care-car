@@ -10,7 +10,9 @@ router = APIRouter(prefix="/invoices", tags=["invoices"])
 
 @router.get("/", response_model=list[InvoiceOut])
 def list_invoices(status: str | None = None, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
-    q = db.query(Invoice).filter(Invoice.tenant_id == user.tenant_id)
+    q = db.query(Invoice)
+    if user.role != Role.superadmin:
+        q = q.filter(Invoice.tenant_id == user.tenant_id)
     if status:
         q = q.filter(Invoice.status == status)
     return q.order_by(Invoice.invoice_date.desc()).all()
