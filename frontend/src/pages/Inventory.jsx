@@ -9,6 +9,7 @@ export default function Inventory() {
     queryKey: ['inventory'],
     queryFn: () => getInventory().then(r => r.data),
   })
+  const [qtyInputs, setQtyInputs] = useState({})
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ oil_type: '', quantity: '', min_threshold: '10', unit_cost: '' })
 
@@ -60,7 +61,15 @@ export default function Inventory() {
             <p className="text-slate-400 text-sm">الحد الأدنى: {parseFloat(item.min_threshold)} لتر</p>
             {item.unit_cost && <p className="text-slate-400 text-sm">السعر: {parseFloat(item.unit_cost).toLocaleString()} IQD/لتر</p>}
             <input type="number" placeholder="تحديث الكمية..."
-              onBlur={e => { if (e.target.value) { update.mutate({ id: item.id, data: { quantity: parseFloat(e.target.value) } }); e.target.value = '' } }}
+              value={qtyInputs[item.id] ?? ''}
+              onChange={e => setQtyInputs({...qtyInputs, [item.id]: e.target.value})}
+              onBlur={() => {
+                const val = qtyInputs[item.id]
+                if (val) update.mutate({ id: item.id, data: { quantity: parseFloat(val) } }, {
+                  onSuccess: () => setQtyInputs(prev => { const n = {...prev}; delete n[item.id]; return n }),
+                  onError: () => alert('فشل تحديث الكمية')
+                })
+              }}
               className="w-full mt-3 bg-slate-700 text-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-blue-500" />
           </div>
         ))}

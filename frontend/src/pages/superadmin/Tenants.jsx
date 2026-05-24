@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Layout from '../../components/Layout'
-import client from '../../api/client'
+import { getTenants, createTenant, toggleTenant } from '../../api/tenants'
 
 const emptyForm = { name: '', plan: 'basic', contact_phone: '', manager_email: '', manager_password: '', manager_name: '' }
 
@@ -9,13 +9,13 @@ export default function AdminTenants() {
   const qc = useQueryClient()
   const { data: tenants = [] } = useQuery({
     queryKey: ['tenants'],
-    queryFn: () => client.get('/tenants/').then(r => r.data),
+    queryFn: () => getTenants().then(r => r.data),
   })
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(emptyForm)
 
   const create = useMutation({
-    mutationFn: () => client.post('/tenants/', {
+    mutationFn: () => createTenant({
       tenant: { name: form.name, plan: form.plan, contact_phone: form.contact_phone || null },
       manager_email: form.manager_email,
       manager_password: form.manager_password,
@@ -25,7 +25,7 @@ export default function AdminTenants() {
   })
 
   const toggle = useMutation({
-    mutationFn: (t) => client.patch(`/tenants/${t.id}`, { is_active: !t.is_active }),
+    mutationFn: (t) => toggleTenant(t.id, { is_active: !t.is_active }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tenants'] }),
   })
 

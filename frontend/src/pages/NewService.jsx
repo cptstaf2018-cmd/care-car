@@ -88,7 +88,7 @@ export default function NewService() {
                 <span className="text-slate-400 text-sm">الصافي: </span>
                 <span className="text-white font-bold text-xl">{netAmount.toLocaleString()} IQD</span>
               </div>
-              <button onClick={() => mutation.mutate({ car_id: selectedCar.id, ...form, amount: parseFloat(form.amount), discount: parseFloat(form.discount) || 0 })}
+              <button onClick={() => mutation.mutate({ car_id: selectedCar.id, ...form, amount: parseFloat(form.amount), discount: parseFloat(form.discount) || 0, mileage: form.mileage ? parseFloat(form.mileage) : null })}
                 disabled={!form.amount || mutation.isPending}
                 className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-8 py-3 rounded-xl font-bold text-lg transition">
                 {mutation.isPending ? 'جاري...' : 'حفظ الخدمة'}

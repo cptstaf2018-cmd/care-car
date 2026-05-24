@@ -31,9 +31,9 @@ export default function Dashboard() {
           <h2 className="text-white font-bold mb-4">ملخص الشهر</h2>
           <div className="grid grid-cols-3 gap-4">
             {[
-              ['إجمالي المبيعات', `${monthly.total_sales?.toLocaleString()} IQD`],
-              ['المحصّل', `${monthly.paid?.toLocaleString()} IQD`],
-              ['غير محصّل', `${monthly.unpaid?.toLocaleString()} IQD`],
+              ['إجمالي المبيعات', monthly.total_sales != null ? `${monthly.total_sales.toLocaleString()} IQD` : '—'],
+              ['المحصّل', monthly.paid != null ? `${monthly.paid.toLocaleString()} IQD` : '—'],
+              ['غير محصّل', monthly.unpaid != null ? `${monthly.unpaid.toLocaleString()} IQD` : '—'],
             ].map(([k, v]) => (
               <div key={k} className="bg-slate-700 rounded-xl p-4">
                 <div className="text-slate-400 text-sm">{k}</div>

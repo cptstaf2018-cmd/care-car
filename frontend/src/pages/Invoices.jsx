@@ -36,8 +36,10 @@ export default function Invoices() {
                 <td className={`px-4 py-3 font-bold ${statusColor[inv.status]}`}>{statusLabel[inv.status]}</td>
                 <td className="px-4 py-3">
                   {inv.status !== 'paid' && (
-                    <button onClick={() => markPaid.mutate(inv.id)}
-                      className="bg-green-700 hover:bg-green-600 text-white text-xs px-3 py-1.5 rounded-lg transition">
+                    <button
+                      onClick={() => markPaid.mutate(inv.id)}
+                      disabled={markPaid.isPending}
+                      className="bg-green-700 hover:bg-green-600 disabled:opacity-50 text-white text-xs px-3 py-1 rounded-lg">
                       تأكيد الدفع
                     </button>
                   )}

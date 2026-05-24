@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { useAuthStore } from '../store/auth'
 
-const client = axios.create({ baseURL: 'http://localhost:8000' })
+const client = axios.create({ baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8000' })
 
 client.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token

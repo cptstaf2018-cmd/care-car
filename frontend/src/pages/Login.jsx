@@ -16,8 +16,12 @@ export default function Login() {
       const res = await login(email, password)
       setAuth(res.data.access_token, { email, role: res.data.role, tenant_id: res.data.tenant_id })
       navigate(res.data.role === 'superadmin' ? '/admin' : '/')
-    } catch {
-      setError('بيانات الدخول غير صحيحة')
+    } catch (err) {
+      if (err.response?.status === 401) {
+        setError('بيانات الدخول غير صحيحة')
+      } else {
+        setError('خطأ في الاتصال، حاول مجددًا')
+      }
     }
   }
 

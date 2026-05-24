@@ -1,11 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import Layout from '../../components/Layout'
-import client from '../../api/client'
+import { getTenants } from '../../api/tenants'
 
 export default function AdminOverview() {
   const { data: tenants = [] } = useQuery({
     queryKey: ['tenants'],
-    queryFn: () => client.get('/tenants/').then(r => r.data),
+    queryFn: () => getTenants().then(r => r.data),
   })
   const active = tenants.filter(t => t.is_active).length
 
