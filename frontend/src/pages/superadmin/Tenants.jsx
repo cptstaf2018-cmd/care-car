@@ -1,9 +1,28 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Layout from '../../components/Layout'
-import { getTenants, createTenant, toggleTenant } from '../../api/tenants'
+import { getTenants, createTenant, updateTenant } from '../../api/tenants'
 
-const emptyForm = { name: '', plan: 'basic', contact_phone: '', manager_email: '', manager_password: '', manager_name: '' }
+const defaultTemplate = `مرحباً أستاذ {customer_name}،
+اقترب موعد تبديل الدهن لسيارتك رقم {plate_number}. يسعدنا رجوعك إلى {center_name} للحفاظ على أداء المحرك وخدمتك بأفضل شكل.`
+
+const emptyForm = {
+  name: '',
+  plan: 'basic',
+  contact_phone: '',
+  logo_url: '',
+  subscription_ends_at: '',
+  manager_email: '',
+  manager_password: '',
+  manager_name: '',
+  ip_camera_url: '',
+  ip_camera_username: '',
+  ip_camera_password: '',
+  whatsapp_number: '',
+  wasnder_api_key: '',
+  reminder_days: '30',
+  reminder_message_template: defaultTemplate,
+}
 
 export default function AdminTenants() {
   const qc = useQueryClient()
@@ -16,7 +35,20 @@ export default function AdminTenants() {
 
   const create = useMutation({
     mutationFn: () => createTenant({
-      tenant: { name: form.name, plan: form.plan, contact_phone: form.contact_phone || null },
+      tenant: {
+        name: form.name,
+        plan: form.plan,
+        contact_phone: form.contact_phone || null,
+        logo_url: form.logo_url || null,
+        subscription_ends_at: form.subscription_ends_at || null,
+        ip_camera_url: form.ip_camera_url || null,
+        ip_camera_username: form.ip_camera_username || null,
+        ip_camera_password: form.ip_camera_password || null,
+        whatsapp_number: form.whatsapp_number || null,
+        wasnder_api_key: form.wasnder_api_key || null,
+        reminder_days: Number(form.reminder_days) || 30,
+        reminder_message_template: form.reminder_message_template || null,
+      },
       manager_email: form.manager_email,
       manager_password: form.manager_password,
       manager_name: form.manager_name || null,
@@ -25,70 +57,98 @@ export default function AdminTenants() {
   })
 
   const toggle = useMutation({
-    mutationFn: (t) => toggleTenant(t.id, { is_active: !t.is_active }),
+    mutationFn: (t) => updateTenant(t.id, { is_active: !t.is_active }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tenants'] }),
   })
 
   return (
     <Layout>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-white">إدارة المراكز</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-cyan-700">لوحة السوبر أدمن فقط</p>
+          <h2 className="mt-1 text-2xl font-bold text-slate-950">إدارة الشركات والمراكز المشتركة</h2>
+          <p className="mt-2 text-sm text-slate-500">السوبر أدمن يجهز حساب المركز والاشتراك. تشغيل الكاميرا ورسائل الزبائن يتم من لوحة المركز.</p>
+        </div>
         <button onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl font-semibold">
-          + مركز جديد
+          className="rounded-lg bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800">
+          مركز جديد
         </button>
       </div>
 
       {showForm && (
-        <div className="bg-slate-800 rounded-2xl p-6 mb-6">
-          <h2 className="text-lg font-bold text-white mb-4">إضافة مركز + مدير</h2>
-          <div className="grid grid-cols-2 gap-4">
+        <div className="surface mb-6 rounded-lg p-6">
+          <div className="mb-5 flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-lg font-bold text-slate-950">إضافة مركز + مدير</h3>
+              <p className="mt-1 text-sm text-slate-500">هذه بيانات تأسيسية للمركز، ويمكن للمركز لاحقاً إدارة تشغيله ورسائله من لوحته الخاصة.</p>
+            </div>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-3">
             {[
               ['name', 'اسم المركز *'],
               ['contact_phone', 'هاتف المركز'],
+              ['logo_url', 'رابط شعار المركز'],
+              ['subscription_ends_at', 'تاريخ انتهاء الاشتراك'],
               ['manager_email', 'إيميل المدير *'],
               ['manager_password', 'كلمة مرور المدير *'],
               ['manager_name', 'اسم المدير'],
+              ['whatsapp_number', 'رقم واتساب المركز'],
+              ['wasnder_api_key', 'WasnderAPI Key'],
+              ['ip_camera_url', 'رابط كاميرا IP / RTSP'],
+              ['ip_camera_username', 'اسم مستخدم الكاميرا'],
+              ['ip_camera_password', 'كلمة مرور الكاميرا'],
+              ['reminder_days', 'التذكير بعد كم يوم'],
             ].map(([k, p]) => (
-              <input key={k} placeholder={p} value={form[k]} type={k === 'manager_password' ? 'password' : 'text'}
+              <input key={k} placeholder={p} value={form[k]} type={k === 'subscription_ends_at' ? 'date' : k.includes('password') || k === 'wasnder_api_key' ? 'password' : k === 'reminder_days' ? 'number' : 'text'}
                 onChange={e => setForm({ ...form, [k]: e.target.value })}
-                className="bg-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500" />
+                className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
             ))}
             <select value={form.plan} onChange={e => setForm({ ...form, plan: e.target.value })}
-              className="bg-slate-700 text-white rounded-xl px-4 py-3 outline-none">
+              className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100">
               {['basic', 'pro', 'enterprise'].map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
-          {create.isError && <p className="text-red-400 text-sm mt-2">حدث خطأ — تحقق من البيانات</p>}
-          <div className="flex gap-3 mt-4">
+          <textarea value={form.reminder_message_template}
+            onChange={e => setForm({ ...form, reminder_message_template: e.target.value })}
+            rows={4}
+            className="mt-4 w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm leading-7 text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
+          {create.isError && <p className="text-red-600 text-sm mt-3">حدث خطأ، تحقق من البيانات أو من تكرار اسم المركز.</p>}
+          <div className="flex gap-3 mt-5">
             <button onClick={() => create.mutate()}
               disabled={!form.name || !form.manager_email || !form.manager_password}
-              className="bg-green-600 disabled:opacity-50 text-white px-6 py-2 rounded-xl font-semibold">
+              className="rounded-lg bg-emerald-600 px-6 py-3 text-sm font-bold text-white disabled:opacity-50">
               {create.isPending ? 'جاري...' : 'إنشاء'}
             </button>
-            <button onClick={() => setShowForm(false)} className="bg-slate-700 text-white px-6 py-2 rounded-xl">إلغاء</button>
+            <button onClick={() => setShowForm(false)} className="rounded-lg border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700">إلغاء</button>
           </div>
         </div>
       )}
 
-      <div className="bg-slate-800 rounded-2xl overflow-hidden">
+      <div className="surface rounded-lg overflow-hidden">
         <table className="w-full text-right">
-          <thead className="bg-slate-700 text-slate-300 text-sm">
-            <tr>{['المركز', 'الخطة', 'الحالة', 'إجراء'].map(h => <th key={h} className="px-4 py-3">{h}</th>)}</tr>
+          <thead className="bg-slate-50 text-sm text-slate-500">
+            <tr>{['المركز', 'الخطة', 'الاشتراك', 'الكاميرا', 'واتساب', 'التذكير', 'الحالة', 'إجراء'].map(h => <th key={h} className="px-5 py-3">{h}</th>)}</tr>
           </thead>
           <tbody>
             {tenants.map(t => (
-              <tr key={t.id} className="border-t border-slate-700 text-white hover:bg-slate-700/50">
-                <td className="px-4 py-3 font-semibold">{t.name}</td>
-                <td className="px-4 py-3"><span className="bg-blue-900/50 text-blue-400 px-2 py-1 rounded text-xs">{t.plan}</span></td>
-                <td className="px-4 py-3">
-                  <span className={`px-2 py-1 rounded text-xs font-bold ${t.is_active ? 'bg-green-900/50 text-green-400' : 'bg-red-900/50 text-red-400'}`}>
+              <tr key={t.id} className="border-t border-slate-100 text-slate-700 hover:bg-slate-50">
+                <td className="px-5 py-4">
+                  <p className="font-bold text-slate-950">{t.name}</p>
+                  <p className="mt-1 text-xs text-slate-500">{t.contact_phone || 'لا يوجد هاتف'}</p>
+                </td>
+                <td className="px-5 py-4"><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold">{t.plan}</span></td>
+                <td className="px-5 py-4 text-sm">{t.subscription_ends_at || 'غير محدد'}</td>
+                <td className="px-5 py-4 text-sm">{t.ip_camera_url ? 'مربوطة' : 'غير مربوطة'}</td>
+                <td className="px-5 py-4 text-sm">{t.whatsapp_number || 'غير مفعل'}</td>
+                <td className="px-5 py-4 text-sm">{t.reminder_days || 30} يوم</td>
+                <td className="px-5 py-4">
+                  <span className={`rounded-full px-3 py-1 text-xs font-bold ${t.is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
                     {t.is_active ? 'نشط' : 'موقوف'}
                   </span>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-5 py-4">
                   <button onClick={() => toggle.mutate(t)}
-                    className={`text-xs px-3 py-1.5 rounded-lg transition ${t.is_active ? 'bg-red-900/50 text-red-400 hover:bg-red-800' : 'bg-green-900/50 text-green-400 hover:bg-green-800'}`}>
+                    className={`rounded-lg px-3 py-2 text-xs font-bold transition ${t.is_active ? 'bg-rose-50 text-rose-700 hover:bg-rose-100' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'}`}>
                     {t.is_active ? 'إيقاف' : 'تفعيل'}
                   </button>
                 </td>
@@ -96,7 +156,7 @@ export default function AdminTenants() {
             ))}
           </tbody>
         </table>
-        {tenants.length === 0 && <p className="text-slate-400 text-center py-8">لا توجد مراكز</p>}
+        {tenants.length === 0 && <p className="text-slate-500 text-center py-8">لا توجد مراكز</p>}
       </div>
     </Layout>
   )

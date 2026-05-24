@@ -37,12 +37,18 @@ def create_tenant(body: TenantWithManagerCreate, db: Session = Depends(get_db), 
     db.refresh(tenant)
     return tenant
 
+SUPERADMIN_ALLOWED_FIELDS = {
+    'name', 'plan', 'is_active', 'contact_phone',
+    'subscription_starts_at', 'subscription_ends_at', 'subscription_notes',
+}
+
 @router.patch("/{tenant_id}", response_model=TenantOut)
 def update_tenant(tenant_id: int, body: TenantUpdate, db: Session = Depends(get_db), _=Depends(require_superadmin)):
     tenant = db.get(Tenant, tenant_id)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
-    for k, v in body.model_dump(exclude_none=True).items():
+    updates = {k: v for k, v in body.model_dump(exclude_none=True).items() if k in SUPERADMIN_ALLOWED_FIELDS}
+    for k, v in updates.items():
         setattr(tenant, k, v)
     db.commit()
     db.refresh(tenant)
