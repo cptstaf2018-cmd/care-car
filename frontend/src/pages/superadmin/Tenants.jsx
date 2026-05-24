@@ -3,25 +3,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import Layout from '../../components/Layout'
 import { getTenants, createTenant, updateTenant } from '../../api/tenants'
 
-const defaultTemplate = `مرحباً أستاذ {customer_name}،
-اقترب موعد تبديل الدهن لسيارتك رقم {plate_number}. يسعدنا رجوعك إلى {center_name} للحفاظ على أداء المحرك وخدمتك بأفضل شكل.`
-
 const emptyForm = {
   name: '',
   plan: 'basic',
   contact_phone: '',
-  logo_url: '',
   subscription_ends_at: '',
   manager_email: '',
   manager_password: '',
   manager_name: '',
-  ip_camera_url: '',
-  ip_camera_username: '',
-  ip_camera_password: '',
-  whatsapp_number: '',
-  wasnder_api_key: '',
-  reminder_days: '30',
-  reminder_message_template: defaultTemplate,
 }
 
 export default function AdminTenants() {
@@ -39,15 +28,7 @@ export default function AdminTenants() {
         name: form.name,
         plan: form.plan,
         contact_phone: form.contact_phone || null,
-        logo_url: form.logo_url || null,
         subscription_ends_at: form.subscription_ends_at || null,
-        ip_camera_url: form.ip_camera_url || null,
-        ip_camera_username: form.ip_camera_username || null,
-        ip_camera_password: form.ip_camera_password || null,
-        whatsapp_number: form.whatsapp_number || null,
-        wasnder_api_key: form.wasnder_api_key || null,
-        reminder_days: Number(form.reminder_days) || 30,
-        reminder_message_template: form.reminder_message_template || null,
       },
       manager_email: form.manager_email,
       manager_password: form.manager_password,
@@ -85,21 +66,14 @@ export default function AdminTenants() {
           </div>
           <div className="grid gap-4 lg:grid-cols-3">
             {[
-              ['name', 'اسم المركز *'],
-              ['contact_phone', 'هاتف المركز'],
-              ['logo_url', 'رابط شعار المركز'],
-              ['subscription_ends_at', 'تاريخ انتهاء الاشتراك'],
-              ['manager_email', 'إيميل المدير *'],
-              ['manager_password', 'كلمة مرور المدير *'],
-              ['manager_name', 'اسم المدير'],
-              ['whatsapp_number', 'رقم واتساب المركز'],
-              ['wasnder_api_key', 'WasnderAPI Key'],
-              ['ip_camera_url', 'رابط كاميرا IP / RTSP'],
-              ['ip_camera_username', 'اسم مستخدم الكاميرا'],
-              ['ip_camera_password', 'كلمة مرور الكاميرا'],
-              ['reminder_days', 'التذكير بعد كم يوم'],
-            ].map(([k, p]) => (
-              <input key={k} placeholder={p} value={form[k]} type={k === 'subscription_ends_at' ? 'date' : k.includes('password') || k === 'wasnder_api_key' ? 'password' : k === 'reminder_days' ? 'number' : 'text'}
+              ['name', 'اسم المركز *', 'text'],
+              ['contact_phone', 'هاتف المركز', 'text'],
+              ['subscription_ends_at', 'تاريخ انتهاء الاشتراك', 'date'],
+              ['manager_email', 'إيميل المدير *', 'text'],
+              ['manager_password', 'كلمة مرور المدير *', 'password'],
+              ['manager_name', 'اسم المدير', 'text'],
+            ].map(([k, p, t]) => (
+              <input key={k} placeholder={p} value={form[k]} type={t}
                 onChange={e => setForm({ ...form, [k]: e.target.value })}
                 className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
             ))}
@@ -108,10 +82,6 @@ export default function AdminTenants() {
               {['basic', 'pro', 'enterprise'].map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
-          <textarea value={form.reminder_message_template}
-            onChange={e => setForm({ ...form, reminder_message_template: e.target.value })}
-            rows={4}
-            className="mt-4 w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm leading-7 text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
           {create.isError && <p className="text-red-600 text-sm mt-3">حدث خطأ، تحقق من البيانات أو من تكرار اسم المركز.</p>}
           <div className="flex gap-3 mt-5">
             <button onClick={() => create.mutate()}
