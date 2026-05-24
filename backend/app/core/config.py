@@ -7,7 +7,6 @@ class Settings(BaseSettings):
     FIRST_SUPERADMIN_EMAIL: str = "admin@oil.com"
     FIRST_SUPERADMIN_PASSWORD: str = "Admin1234!"
 
-    class Config:
-        env_file = ".env"
+    model_config = {"env_file": ".env"}
 
 settings = Settings()
