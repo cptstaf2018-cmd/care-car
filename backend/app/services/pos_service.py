@@ -16,7 +16,7 @@ def create_service_with_invoice(db: Session, tenant_id: int, data: dict) -> tupl
     db.add(service)
     db.flush()
     net_owed = data["amount"] - data.get("discount", 0)
-    # Created unpaid — cashier confirms payment via PATCH /invoices/{id}
+    # Created unpaid; service desk confirms payment via PATCH /invoices/{id}
     # Exception: fully-discounted services are immediately paid
     status = InvoiceStatus.paid if net_owed <= 0 else InvoiceStatus.unpaid
     invoice = Invoice(

@@ -6,3 +6,4 @@ from app.models.service import Service
 from app.models.invoice import Invoice, InvoiceStatus
 from app.models.debt import Debt
 from app.models.inventory import InventoryItem
+from app.models.message_log import MessageLog

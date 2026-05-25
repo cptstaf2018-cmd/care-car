@@ -3,7 +3,7 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 from app.models.base import Base
-from app.models import Tenant, Plan, User, Role, Car, Service, Invoice, InvoiceStatus, Debt, InventoryItem  # noqa
+from app.models import Tenant, Plan, User, Role, Car, Service, Invoice, InvoiceStatus, Debt, InventoryItem, MessageLog  # noqa
 
 config = context.config
 config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])

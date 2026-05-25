@@ -11,3 +11,6 @@ frontend/dist/
 *.log
 .superpowers/
 pgdata/
+.playwright-mcp/
+check_db.py
+backend/test.db

@@ -1,11 +1,20 @@
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
-import { Building2, Camera, CreditCard, MessageCircle, ShieldAlert, Sparkles } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Building2, CalendarClock, CreditCard, MessageCircle, ShieldAlert, Sparkles } from 'lucide-react'
 import Layout from '../../components/Layout'
 import StatCard from '../../components/StatCard'
 import { getTenants } from '../../api/tenants'
 
 const planPrice = { basic: 50, pro: 100, enterprise: 200 }
+const planLabel = { basic: 'Basic', pro: 'Pro', enterprise: 'Enterprise' }
+
+function remainingDays(date) {
+  if (!date) return null
+  const end = new Date(date)
+  const today = new Date()
+  return Math.ceil((end - today) / (1000 * 60 * 60 * 24))
+}
 
 export default function AdminOverview() {
   const { data: tenants = [], isLoading } = useQuery({
@@ -17,16 +26,22 @@ export default function AdminOverview() {
   const connectedCameras = tenants.filter(t => t.ip_camera_url).length
   const connectedWhatsapp = tenants.filter(t => t.whatsapp_number).length
   const mrr = tenants.filter(t => t.is_active).reduce((sum, t) => sum + (planPrice[t.plan] || 0), 0)
+  const visibleTenants = [...tenants].sort((a, b) => Number(a.is_active) - Number(b.is_active) || a.name.localeCompare(b.name, 'ar'))
+  const expiringSoon = tenants.filter(t => {
+    const days = remainingDays(t.subscription_ends_at)
+    return days !== null && days <= 7
+  })
+  const withoutSubscriptionDate = tenants.filter(t => !t.subscription_ends_at)
 
   return (
     <Layout>
       <section className="mb-5 overflow-hidden rounded-lg border border-slate-900 bg-slate-950 text-white shadow-2xl">
         <div className="grid gap-5 p-6 lg:grid-cols-[1.25fr_0.75fr]">
           <div>
-            <p className="text-xs font-black uppercase text-cyan-300">Super Admin SaaS Command</p>
-            <h2 className="mt-2 text-3xl font-black">منصة إدارة اشتراكات مراكز الزيت</h2>
+            <p className="text-xs font-black uppercase text-cyan-300">care-car-saas</p>
+            <h2 className="mt-2 text-3xl font-black">لوحة السوبر أدمن</h2>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-              لوحة منفصلة تماماً عن تشغيل المركز، لمراقبة الإيراد الشهري، صحة الاشتراكات، والمراكز الموقوفة.
+              هذه اللوحة لإدارة المشتركين والاشتراكات وحالة حسابات المراكز فقط. تفاصيل السيارات والفواتير والمخزون تبقى داخل لوحة كل مركز.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -43,30 +58,100 @@ export default function AdminOverview() {
       </section>
 
       <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <StatCard icon={Building2} label="مراكز نشطة" value={active} color="blue" trend={`${tenants.length} إجمالي`} loading={isLoading} />
+        <StatCard icon={Building2} label="المراكز المشتركة" value={tenants.length} color="blue" trend={`${active} نشط`} loading={isLoading} />
         <StatCard icon={CreditCard} label="الاشتراكات" value={`$${mrr}`} color="green" trend="MRR" loading={isLoading} />
         <StatCard icon={MessageCircle} label="واتساب مفعل" value={connectedWhatsapp} color="purple" trend={`من ${tenants.length}`} loading={isLoading} />
-        <StatCard icon={Camera} label="كاميرا مفعلة" value={connectedCameras} color="orange" trend={`من ${tenants.length}`} loading={isLoading} />
+        <StatCard icon={ShieldAlert} label="مراكز موقوفة" value={suspended} color="orange" trend={suspended ? 'تحتاج متابعة' : 'كلها فعالة'} loading={isLoading} />
       </div>
+
+      <section className="mb-5 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+        <div className="premium-card rounded-lg p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-950 text-white">
+                <CreditCard size={17} />
+              </div>
+              <div>
+                <h3 className="font-black text-slate-950">ملخص الاشتراكات</h3>
+                <p className="text-xs text-slate-500">تظهر هنا داخل لوحة السوبر أدمن مباشرة</p>
+              </div>
+            </div>
+            <Link to="/admin/subscriptions" className="rounded-lg bg-slate-950 px-4 py-2 text-sm font-black text-white">
+              إدارة الاشتراكات
+            </Link>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            {['basic', 'pro', 'enterprise'].map(plan => {
+              const count = tenants.filter(t => t.plan === plan).length
+              const activeCount = tenants.filter(t => t.plan === plan && t.is_active).length
+              return (
+                <div key={plan} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <p className="text-xs font-bold text-slate-500">{planLabel[plan]}</p>
+                  <p className="mt-2 text-2xl font-black text-slate-950">{count}</p>
+                  <p className="mt-1 text-xs text-slate-500">{activeCount} نشط · ${planPrice[plan]}/شهر</p>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        <div className="premium-card rounded-lg p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-white">
+              <CalendarClock size={17} />
+            </div>
+            <div>
+              <h3 className="font-black text-slate-950">اشتراكات تحتاج متابعة</h3>
+              <p className="text-xs text-slate-500">منتهية، قريبة الانتهاء، أو بدون تاريخ</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {[...tenants.filter(t => !t.is_active), ...expiringSoon, ...withoutSubscriptionDate].filter((t, i, arr) => arr.findIndex(x => x.id === t.id) === i).slice(0, 5).map(t => {
+              const days = remainingDays(t.subscription_ends_at)
+              return (
+                <div key={t.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                  <div>
+                    <p className="text-sm font-black text-slate-900">{t.name}</p>
+                    <p className="text-xs text-slate-500">{planLabel[t.plan] || t.plan} · {t.subscription_ends_at || 'بدون تاريخ انتهاء'}</p>
+                  </div>
+                  <Badge
+                    text={!t.is_active ? 'موقوف' : days === null ? 'أضف تاريخ' : days < 0 ? 'منتهي' : `باقي ${days} يوم`}
+                    tone={!t.is_active || days === null || days < 0 ? 'red' : 'slate'}
+                  />
+                </div>
+              )
+            })}
+            {!tenants.filter(t => !t.is_active).length && !expiringSoon.length && !withoutSubscriptionDate.length && (
+              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-4 text-center text-sm font-bold text-emerald-700">
+                كل الاشتراكات واضحة ولا تحتاج متابعة عاجلة
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
         <div className="premium-card overflow-hidden rounded-lg">
           <div className="border-b border-slate-200 px-5 py-4">
-            <h3 className="font-black text-slate-950">حالة الشركات المشتركة</h3>
-            <p className="mt-1 text-xs text-slate-500">مراقبة إدارية منفصلة عن لوحة تشغيل المركز</p>
+            <h3 className="font-black text-slate-950">المراكز المشتركة</h3>
+            <p className="mt-1 text-xs text-slate-500">المراكز الموقوفة تظهر أولا حتى لا تختفي عن السوبر أدمن</p>
           </div>
           <table className="w-full text-right">
             <thead className="bg-slate-50 text-xs font-black text-slate-500">
-              <tr>{['المركز', 'الخطة', 'الاشتراك', 'WhatsApp', 'الكاميرا', 'الحالة'].map(h => <th key={h} className="px-5 py-3">{h}</th>)}</tr>
+              <tr>{['المركز', 'الخطة', 'انتهاء الاشتراك', 'حالة الإعداد', 'الحالة'].map(h => <th key={h} className="px-5 py-3">{h}</th>)}</tr>
             </thead>
             <tbody>
-              {tenants.map(t => (
-                <tr key={t.id} className="border-t border-slate-100 text-sm hover:bg-slate-50">
+              {visibleTenants.map(t => (
+                <tr key={t.id} className={`border-t border-slate-100 text-sm hover:bg-slate-50 ${!t.is_active ? 'bg-rose-50/45' : ''}`}>
                   <td className="px-5 py-4"><p className="font-black text-slate-950">{t.name}</p><p className="text-xs text-slate-500">{t.contact_phone || 'لا يوجد هاتف'}</p></td>
-                  <td className="px-5 py-4"><Badge text={t.plan} tone="slate" /></td>
+                  <td className="px-5 py-4"><Badge text={`${planLabel[t.plan] || t.plan} · $${planPrice[t.plan] || 0}`} tone="slate" /></td>
                   <td className="px-5 py-4">{t.subscription_ends_at || 'غير محدد'}</td>
-                  <td className="px-5 py-4"><Badge text={t.whatsapp_number ? 'مفعل' : 'غير مفعل'} tone={t.whatsapp_number ? 'green' : 'slate'} /></td>
-                  <td className="px-5 py-4"><Badge text={t.ip_camera_url ? 'مفعلة' : 'غير مفعلة'} tone={t.ip_camera_url ? 'green' : 'slate'} /></td>
+                  <td className="px-5 py-4">
+                    <Badge
+                      text={t.whatsapp_number || t.ip_camera_url ? 'جزئي/جاهز' : 'غير مكتمل'}
+                      tone={t.whatsapp_number || t.ip_camera_url ? 'green' : 'slate'}
+                    />
+                  </td>
                   <td className="px-5 py-4"><Badge text={t.is_active ? 'نشط' : 'موقوف'} tone={t.is_active ? 'green' : 'red'} /></td>
                 </tr>
               ))}
@@ -77,8 +162,8 @@ export default function AdminOverview() {
 
         <div className="grid gap-4">
           <AdminPanel title="ملخص المنصة" icon={Sparkles}>
-            <Alert text={`${connectedWhatsapp}/${tenants.length} مراكز مربوطة بواتساب`} />
-            <Alert text={`${connectedCameras}/${tenants.length} مراكز جهزت الكاميرا`} />
+            <Alert text={`${connectedWhatsapp}/${tenants.length} مراكز أكملت إعداد واتساب`} />
+            <Alert text={`${connectedCameras}/${tenants.length} مراكز لديها رابط كاميرا محفوظ`} />
             <Alert text={suspended ? `${suspended} مراكز موقوفة بسبب الاشتراك` : 'لا توجد مراكز موقوفة'} />
           </AdminPanel>
           <div className="premium-card rounded-lg p-5">

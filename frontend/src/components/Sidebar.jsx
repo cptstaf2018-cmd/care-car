@@ -1,47 +1,151 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import {
+  BarChart3, Building2, Car, ChevronLeft, ChevronRight, CreditCard,
+  Gauge, LogOut, Package, PlusCircle, Receipt, Settings, ShieldCheck
+} from 'lucide-react'
 import { useAuthStore } from '../store/auth'
 
-const centerLinks = [
-  { to: '/', label: 'الرئيسية', icon: '🏠' },
-  { to: '/cars', label: 'السيارات', icon: '🚗' },
-  { to: '/services/new', label: 'خدمة جديدة', icon: '🔧' },
-  { to: '/invoices', label: 'الفواتير', icon: '🧾' },
-  { to: '/inventory', label: 'المخزون', icon: '📦' },
-  { to: '/reports', label: 'التقارير', icon: '📊' },
+const centerGroups = [
+  {
+    title: 'التشغيل',
+    links: [
+      { to: '/center', label: 'الرئيسية', icon: Gauge },
+      { to: '/center/services/new', label: 'خدمة سريعة', icon: PlusCircle },
+      { to: '/center/cars', label: 'سيارات الزبائن', icon: Car },
+    ],
+  },
+  {
+    title: 'الإدارة',
+    links: [
+      { to: '/center/invoices', label: 'الفواتير', icon: Receipt },
+      { to: '/center/inventory', label: 'المخزون', icon: Package },
+      { to: '/center/reports', label: 'التقارير', icon: BarChart3 },
+      { to: '/center/settings', label: 'إعدادات المركز', icon: Settings },
+    ],
+  },
 ]
 
-const adminLinks = [
-  { to: '/admin', label: 'لوحة الإدارة', icon: '👑' },
-  { to: '/admin/tenants', label: 'المراكز', icon: '🏢' },
+const adminGroups = [
+  {
+    title: 'المنصة',
+    links: [
+      { to: '/admin', label: 'الرئيسية', icon: ShieldCheck },
+      { to: '/admin/tenants', label: 'الشركات والمراكز', icon: Building2 },
+      { to: '/admin/subscriptions', label: 'الاشتراكات', icon: CreditCard },
+    ],
+  },
 ]
 
-export default function Sidebar() {
+function SidebarContent({ collapsed, setCollapsed, onClose }) {
   const { user, logout } = useAuthStore()
-  const links = user?.role === 'superadmin' ? adminLinks : centerLinks
+  const groups = user?.role === 'superadmin' ? adminGroups : centerGroups
 
   return (
-    <aside className="w-60 min-h-screen bg-slate-800 flex flex-col border-l border-slate-700">
-      <div className="p-6 border-b border-slate-700">
-        <div className="text-2xl mb-1">🛢️</div>
-        <h2 className="font-bold text-white text-base">نظام الزيت</h2>
-        <p className="text-slate-400 text-xs mt-1 truncate">{user?.email}</p>
-        <span className="inline-block mt-2 text-xs bg-slate-700 text-slate-300 px-2 py-0.5 rounded">{user?.role}</span>
+    <div className="flex h-full flex-col border-l border-slate-900 bg-[#08111f] text-white">
+      <div className="border-b border-white/10 p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-cyan-400 text-lg font-black text-slate-950 shadow-lg shadow-cyan-500/20">CC</div>
+            {!collapsed && (
+              <div>
+                <h2 className="font-black text-white">{user?.role === 'superadmin' ? 'care-car-saas' : 'تشغيل المركز'}</h2>
+                <p className="mt-1 text-xs text-slate-400">{user?.role === 'superadmin' ? 'لوحة السوبر أدمن' : 'ERP مركز الزيت'}</p>
+              </div>
+            )}
+          </div>
+          {setCollapsed ? (
+            <button onClick={() => setCollapsed(v => !v)} className="rounded-md border border-white/10 p-1.5 text-slate-300 hover:bg-white/10">
+              {collapsed ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+            </button>
+          ) : (
+            <button onClick={onClose} className="rounded-md border border-white/10 p-1.5 text-slate-300 hover:bg-white/10">
+              <ChevronRight size={16} />
+            </button>
+          )}
+        </div>
       </div>
-      <nav className="flex-1 p-4 space-y-1">
-        {links.map(l => (
-          <NavLink key={l.to} to={l.to} end
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-colors ${
-                isActive ? 'bg-blue-600 text-white font-semibold' : 'text-slate-300 hover:bg-slate-700'
-              }`
-            }>
-            <span>{l.icon}</span>{l.label}
-          </NavLink>
+
+      <nav className="flex-1 space-y-5 overflow-y-auto p-4">
+        {groups.map(group => (
+          <div key={group.title}>
+            {!collapsed && <p className="mb-2 px-3 text-xs font-bold text-slate-500">{group.title}</p>}
+            <div className="space-y-1">
+              {group.links.map(link => (
+                <NavLink key={link.to} to={link.to} end
+                  onClick={onClose}
+                  className={({ isActive }) =>
+                    `group relative flex items-center gap-3 rounded-lg px-3 py-3 text-sm transition-all ${
+                      isActive
+                        ? 'bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/20'
+                        : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                    }`
+                  }>
+                  <link.icon size={19} strokeWidth={2.3} />
+                  {!collapsed && <span className="font-bold">{link.label}</span>}
+                </NavLink>
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
-      <button onClick={logout} className="m-4 py-2 text-slate-500 hover:text-red-400 text-sm transition-colors text-center">
-        تسجيل الخروج
-      </button>
-    </aside>
+
+      <div className="border-t border-white/10 p-4">
+        {!collapsed && (
+          <div className="mb-3 rounded-lg border border-white/10 bg-white/[0.04] p-3">
+            <p className="truncate text-sm font-bold">{user?.email}</p>
+            <p className="mt-1 text-xs text-slate-400">{user?.role === 'superadmin' ? 'مدير المنصة' : 'حساب مركز'}</p>
+          </div>
+        )}
+        <button onClick={logout} className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 py-3 text-sm font-bold text-slate-300 transition hover:border-rose-300/50 hover:bg-rose-500/10 hover:text-rose-100">
+          <LogOut size={17} />
+          {!collapsed && 'تسجيل الخروج'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export default function Sidebar({ mobileOpen, onClose }) {
+  const [collapsed, setCollapsed] = useState(false)
+
+  return (
+    <>
+      {/* Desktop: always visible, collapsible */}
+      <motion.aside
+        animate={{ width: collapsed ? 88 : 276 }}
+        transition={{ duration: 0.22 }}
+        className="sticky top-0 hidden h-screen shrink-0 lg:block"
+      >
+        <SidebarContent collapsed={collapsed} setCollapsed={setCollapsed} />
+      </motion.aside>
+
+      {/* Mobile: slide-in overlay */}
+      <AnimatePresence>
+        {mobileOpen && (
+          <>
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={onClose}
+              className="fixed inset-0 z-40 bg-black/60 lg:hidden"
+            />
+            <motion.aside
+              key="drawer"
+              initial={{ x: 300 }}
+              animate={{ x: 0 }}
+              exit={{ x: 300 }}
+              transition={{ type: 'tween', duration: 0.22 }}
+              className="fixed right-0 top-0 z-50 h-full w-72 lg:hidden"
+            >
+              <SidebarContent onClose={onClose} />
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+    </>
   )
 }

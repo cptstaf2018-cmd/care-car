@@ -21,6 +21,8 @@ services:
     ports:
       - "8000:8000"
     env_file: ./backend/.env
+    environment:
+      - DATABASE_URL=postgresql://oiluser:oilpass@db:5432/oildb
     depends_on:
       db:
         condition: service_healthy

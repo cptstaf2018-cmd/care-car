@@ -8,12 +8,13 @@ const fields = [
   ['owner_name', 'اسم المالك'],
   ['phone', 'الهاتف'],
   ['car_type', 'نوع السيارة'],
+  ['photo_url', 'رابط صورة السيارة من الكاميرا'],
 ]
 
 export default function Cars() {
   const [search, setSearch] = useState('')
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ plate_number: '', owner_name: '', phone: '', car_type: '' })
+  const [form, setForm] = useState({ plate_number: '', owner_name: '', phone: '', car_type: '', photo_url: '' })
   const qc = useQueryClient()
 
   const { data: cars = [], isLoading } = useQuery({
@@ -26,64 +27,75 @@ export default function Cars() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['cars'] })
       setShowForm(false)
-      setForm({ plate_number: '', owner_name: '', phone: '', car_type: '' })
+      setForm({ plate_number: '', owner_name: '', phone: '', car_type: '', photo_url: '' })
     },
   })
 
   return (
     <Layout>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-white">إدارة السيارات</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-cyan-700">Customer Vehicles</p>
+          <h2 className="mt-1 text-2xl font-bold text-slate-950">السيارات وصور الكاميرا</h2>
+          <p className="mt-2 text-sm text-slate-500">كل سجل سيارة يمكن ربطه بصورة ملتقطة من كاميرا IP الخاصة بالمركز.</p>
+        </div>
         <button onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl font-semibold transition">
-          + سيارة جديدة
+          className="rounded-lg bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800">
+          سيارة جديدة
         </button>
       </div>
 
       <input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث برقم اللوحة..."
-        className="w-full bg-slate-800 text-white rounded-xl px-4 py-3 mb-6 outline-none focus:ring-2 focus:ring-blue-500" />
+        className="mb-6 w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
 
       {showForm && (
-        <div className="bg-slate-800 rounded-2xl p-6 mb-6">
-          <h2 className="text-lg font-bold text-white mb-4">إضافة سيارة</h2>
-          <div className="grid grid-cols-2 gap-4">
+        <div className="surface mb-6 rounded-lg p-6">
+          <h3 className="mb-4 text-lg font-bold text-slate-950">إضافة سيارة</h3>
+          <div className="grid gap-4 md:grid-cols-2">
             {fields.map(([k, label]) => (
               <input key={k} placeholder={label} value={form[k]}
                 onChange={e => setForm({ ...form, [k]: e.target.value })}
-                className="bg-slate-700 text-white rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-blue-500" />
+                className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
             ))}
           </div>
-          {mutation.isError && <p className="text-red-400 text-sm mt-2">رقم اللوحة مسجل مسبقاً</p>}
+          {mutation.isError && <p className="text-red-600 text-sm mt-3">رقم اللوحة مسجل مسبقاً</p>}
           <div className="flex gap-3 mt-4">
             <button onClick={() => mutation.mutate(form)} disabled={!form.plate_number}
-              className="bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white px-6 py-2 rounded-xl font-semibold">
+              className="rounded-lg bg-emerald-600 px-6 py-3 text-sm font-bold text-white disabled:opacity-50">
               حفظ
             </button>
-            <button onClick={() => setShowForm(false)} className="bg-slate-700 text-white px-6 py-2 rounded-xl">إلغاء</button>
+            <button onClick={() => setShowForm(false)} className="rounded-lg border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700">إلغاء</button>
           </div>
         </div>
       )}
 
-      <div className="bg-slate-800 rounded-2xl overflow-hidden">
-        <table className="w-full text-right">
-          <thead className="bg-slate-700 text-slate-300 text-sm">
-            <tr>{['رقم اللوحة', 'المالك', 'الهاتف', 'النوع'].map(h => (
-              <th key={h} className="px-4 py-3">{h}</th>
-            ))}</tr>
-          </thead>
-          <tbody>
-            {cars.map(c => (
-              <tr key={c.id} className="border-t border-slate-700 text-white hover:bg-slate-700 transition">
-                <td className="px-4 py-3 font-mono font-bold text-blue-400">{c.plate_number}</td>
-                <td className="px-4 py-3">{c.owner_name || '—'}</td>
-                <td className="px-4 py-3">{c.phone || '—'}</td>
-                <td className="px-4 py-3">{c.car_type || '—'}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {cars.map(c => (
+          <article key={c.id} className="surface overflow-hidden rounded-lg">
+            <div className="aspect-[16/9] bg-slate-100">
+              {c.photo_url ? (
+                <img src={c.photo_url} alt={c.plate_number} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">صورة كاميرا المركز</div>
+              )}
+            </div>
+            <div className="p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="font-mono text-xl font-black text-slate-950">{c.plate_number}</p>
+                  <p className="mt-1 text-sm text-slate-500">{c.car_type || 'نوع غير محدد'}</p>
+                </div>
+                <span className="rounded-full bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700">متابعة</span>
+              </div>
+              <div className="mt-4 space-y-2 text-sm">
+                <div className="flex justify-between gap-3"><span className="text-slate-500">المالك</span><span className="font-semibold text-slate-900">{c.owner_name || '—'}</span></div>
+                <div className="flex justify-between gap-3"><span className="text-slate-500">واتساب</span><span className="font-semibold text-slate-900">{c.phone || '—'}</span></div>
+              </div>
+            </div>
+          </article>
+        ))}
         {!isLoading && cars.length === 0 && (
-          <p className="text-slate-400 text-center py-8">لا توجد سيارات</p>
+          <p className="col-span-full text-slate-500 text-center py-8">لا توجد سيارات</p>
         )}
       </div>
     </Layout>

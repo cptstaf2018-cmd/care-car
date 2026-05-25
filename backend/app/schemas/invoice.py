@@ -11,6 +11,12 @@ class InvoiceOut(BaseModel):
     discount: float
     status: str
     invoice_date: date
+    customer_name: str | None = None
+    plate_number: str | None = None
+    car_type: str | None = None
+    service_name: str | None = None
+    paid_amount: float = 0
+    remaining_amount: float = 0
 
 class InvoiceUpdate(BaseModel):
     status: InvoiceStatus | None = None

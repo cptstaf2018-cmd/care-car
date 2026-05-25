@@ -5,6 +5,7 @@ from jose import JWTError
 from app.core.database import get_db
 from app.core.security import decode_token
 from app.models.user import User, Role
+from app.models.tenant import Tenant
 
 bearer = HTTPBearer()
 
@@ -20,6 +21,10 @@ def get_current_user(
     user = db.get(User, user_id)
     if not user or not user.is_active:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    if user.tenant_id:
+        tenant = db.get(Tenant, user.tenant_id)
+        if not tenant or not tenant.is_active:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account suspended")
     return user
 
 def require_superadmin(user: User = Depends(get_current_user)) -> User:

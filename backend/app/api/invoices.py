@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.invoice import Invoice
+from app.models.service import Service
+from app.models.car import Car
 from app.models.user import User, Role
 from app.schemas.invoice import InvoiceOut, InvoiceUpdate
 
@@ -15,7 +17,29 @@ def list_invoices(status: str | None = None, db: Session = Depends(get_db), user
         q = q.filter(Invoice.tenant_id == user.tenant_id)
     if status:
         q = q.filter(Invoice.status == status)
-    return q.order_by(Invoice.invoice_date.desc()).all()
+    invoices = q.order_by(Invoice.invoice_date.desc()).all()
+    result = []
+    for inv in invoices:
+      service = db.get(Service, inv.service_id)
+      car = db.get(Car, service.car_id) if service else None
+      total = float(inv.amount or 0) - float(inv.discount or 0)
+      paid = total if inv.status == "paid" else 0
+      result.append({
+          "id": inv.id,
+          "tenant_id": inv.tenant_id,
+          "service_id": inv.service_id,
+          "amount": float(inv.amount or 0),
+          "discount": float(inv.discount or 0),
+          "status": inv.status,
+          "invoice_date": inv.invoice_date,
+          "customer_name": car.owner_name if car else None,
+          "plate_number": car.plate_number if car else None,
+          "car_type": car.car_type if car else None,
+          "service_name": service.oil_type if service else None,
+          "paid_amount": paid,
+          "remaining_amount": max(total - paid, 0),
+      })
+    return result
 
 @router.patch("/{invoice_id}", response_model=InvoiceOut)
 def update_invoice(invoice_id: int, body: InvoiceUpdate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):

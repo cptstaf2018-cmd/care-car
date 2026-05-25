@@ -46,8 +46,8 @@ export default function AdminTenants() {
     <Layout>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-cyan-700">لوحة السوبر أدمن فقط</p>
-          <h2 className="mt-1 text-2xl font-bold text-slate-950">إدارة الشركات والمراكز المشتركة</h2>
+          <p className="text-sm font-semibold text-cyan-700">care-car-saas</p>
+          <h2 className="mt-1 text-2xl font-bold text-slate-950">المراكز المشتركة</h2>
           <p className="mt-2 text-sm text-slate-500">السوبر أدمن يجهز حساب المركز والاشتراك. تشغيل الكاميرا ورسائل الزبائن يتم من لوحة المركز.</p>
         </div>
         <button onClick={() => setShowForm(true)}
@@ -100,8 +100,8 @@ export default function AdminTenants() {
             <tr>{['المركز', 'الخطة', 'الاشتراك', 'الكاميرا', 'واتساب', 'التذكير', 'الحالة', 'إجراء'].map(h => <th key={h} className="px-5 py-3">{h}</th>)}</tr>
           </thead>
           <tbody>
-            {tenants.map(t => (
-              <tr key={t.id} className="border-t border-slate-100 text-slate-700 hover:bg-slate-50">
+            {[...tenants].sort((a, b) => Number(a.is_active) - Number(b.is_active) || a.name.localeCompare(b.name, 'ar')).map(t => (
+              <tr key={t.id} className={`border-t border-slate-100 text-slate-700 hover:bg-slate-50 ${!t.is_active ? 'bg-rose-50/45' : ''}`}>
                 <td className="px-5 py-4">
                   <p className="font-bold text-slate-950">{t.name}</p>
                   <p className="mt-1 text-xs text-slate-500">{t.contact_phone || 'لا يوجد هاتف'}</p>
