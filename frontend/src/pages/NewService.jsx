@@ -169,9 +169,9 @@ export default function NewService() {
     <Layout>
       <div className="mb-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
         <div>
-          <p className="text-sm font-semibold text-cyan-700">Service Desk</p>
+          <p className="text-sm font-semibold text-cyan-700">استقبال الخدمة</p>
           <h2 className="mt-1 text-2xl font-black text-slate-950">خدمة سريعة للسيارة</h2>
-          <p className="mt-2 text-sm text-slate-500">ابحث، اختر السيارة، احفظ الفاتورة. اختصار الحفظ: Ctrl + Enter.</p>
+          <p className="mt-2 text-sm text-slate-500">ابحث عن السيارة، اختر الخدمة، واحفظ الفاتورة. Ctrl+Enter للحفظ.</p>
         </div>
         <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-600">
           <Keyboard size={17} /> Ctrl + Enter للحفظ · Esc للتغيير
@@ -243,6 +243,12 @@ export default function NewService() {
         <div className="space-y-4">
           {!selectedCar ? (
             <>
+              <ServiceTypePicker
+                serviceType={serviceType}
+                setServiceType={setServiceType}
+                oilGrade={oilGrade}
+                setOilGrade={setOilGrade}
+              />
               <div className="relative">
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={19} />
                 <input value={search} onChange={e => setSearch(e.target.value)}
@@ -273,34 +279,13 @@ export default function NewService() {
                   <button onClick={() => setSelectedCar(null)} className="text-slate-500 hover:text-rose-600 text-sm">تغيير</button>
                 </div>
                 <div>
-                  <div className="mb-3 flex items-center gap-2">
-                    <Car size={18} className="text-cyan-700" />
-                    <h3 className="font-black text-slate-950">نوع الخدمة</h3>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
-                    {SERVICE_TYPES.map(({ label, icon: Icon }) => (
-                      <button key={label} onClick={() => setServiceType(label)}
-                        className={`flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-lg border px-3 py-3 text-sm font-black transition ${serviceType === label ? 'border-cyan-400 bg-cyan-50 text-cyan-800 shadow-sm' : 'border-slate-200 bg-white text-slate-700 hover:border-cyan-200 hover:bg-cyan-50/50'}`}>
-                        <Icon size={18} />
-                        {label}
-                      </button>
-                    ))}
-                  </div>
+                  <ServiceTypePicker
+                    serviceType={serviceType}
+                    setServiceType={setServiceType}
+                    oilGrade={oilGrade}
+                    setOilGrade={setOilGrade}
+                  />
                 </div>
-
-                {serviceType === 'تبديل زيت' && (
-                  <div>
-                    <p className="mb-2 text-sm font-black text-slate-700">نوع الزيت</p>
-                    <div className="grid grid-cols-5 gap-2">
-                      {OIL_GRADES.map(t => (
-                        <button key={t} onClick={() => setOilGrade(t)}
-                          className={`rounded-lg border px-3 py-4 text-sm font-black ${oilGrade === t ? 'border-cyan-400 bg-cyan-50 text-cyan-700' : 'border-slate-200 bg-white text-slate-700'}`}>
-                          {t}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
                 {[['amount', 'المبلغ (IQD) *', 'number'], ['discount', 'الخصم (IQD)', 'number'], ['mileage', 'عداد المسافة (كم)', 'number'], ['notes', 'ملاحظات', 'text']].map(([k, p, t]) => (
                   <input key={k} type={t} placeholder={p} value={form[k]}
                     onChange={e => setForm({ ...form, [k]: e.target.value })}
@@ -330,5 +315,38 @@ export default function NewService() {
         </div>
       </div>
     </Layout>
+  )
+}
+
+function ServiceTypePicker({ serviceType, setServiceType, oilGrade, setOilGrade }) {
+  return (
+    <div className="surface rounded-lg p-5">
+      <div className="mb-3 flex items-center gap-2">
+        <Car size={18} className="text-cyan-700" />
+        <h3 className="font-black text-slate-950">نوع الخدمة</h3>
+      </div>
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
+        {SERVICE_TYPES.map(({ label, icon: Icon }) => (
+          <button key={label} onClick={() => setServiceType(label)}
+            className={`flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-lg border px-3 py-3 text-sm font-black transition ${serviceType === label ? 'border-cyan-400 bg-cyan-50 text-cyan-800 shadow-sm' : 'border-slate-200 bg-white text-slate-700 hover:border-cyan-200 hover:bg-cyan-50/50'}`}>
+            <Icon size={18} />
+            {label}
+          </button>
+        ))}
+      </div>
+      {serviceType === 'تبديل زيت' && (
+        <div className="mt-4">
+          <p className="mb-2 text-sm font-black text-slate-700">نوع الزيت</p>
+          <div className="grid grid-cols-5 gap-2">
+            {OIL_GRADES.map(t => (
+              <button key={t} onClick={() => setOilGrade(t)}
+                className={`rounded-lg border px-3 py-4 text-sm font-black ${oilGrade === t ? 'border-cyan-400 bg-cyan-50 text-cyan-700' : 'border-slate-200 bg-white text-slate-700'}`}>
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

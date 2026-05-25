@@ -119,9 +119,9 @@ export default function Inventory() {
     <Layout>
       <div className="mb-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
         <div>
-          <p className="text-sm font-black text-cyan-700">Inventory Control</p>
+          <p className="text-sm font-black text-cyan-700">إدارة المخزون</p>
           <h2 className="mt-1 text-2xl font-black text-slate-950">المخزون</h2>
-          <p className="mt-2 text-sm text-slate-500">إدارة الزيوت والفلاتر والمواد: شراء، بيع، ربح، مورد وتنبيه الكمية.</p>
+          <p className="mt-2 text-sm text-slate-500">زيوت، فلاتر، وقطع الغيار — تحكم بالكميات والأسعار وتنبيهات النقص.</p>
         </div>
         <div className="flex rounded-lg border border-slate-200 bg-white p-1">
           <button onClick={() => setMode('manual')}
@@ -130,7 +130,7 @@ export default function Inventory() {
           </button>
           <button onClick={() => setMode('receipt')}
             className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-black ${mode === 'receipt' ? 'bg-slate-950 text-white' : 'text-slate-600'}`}>
-            <ReceiptText size={16} /> إضافة وصل
+            <ReceiptText size={16} /> وصل شراء
           </button>
         </div>
       </div>

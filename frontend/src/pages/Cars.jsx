@@ -35,9 +35,9 @@ export default function Cars() {
     <Layout>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <p className="text-sm font-semibold text-cyan-700">Customer Vehicles</p>
-          <h2 className="mt-1 text-2xl font-bold text-slate-950">السيارات وصور الكاميرا</h2>
-          <p className="mt-2 text-sm text-slate-500">كل سجل سيارة يمكن ربطه بصورة ملتقطة من كاميرا IP الخاصة بالمركز.</p>
+          <p className="text-sm font-semibold text-cyan-700">سجل العملاء</p>
+          <h2 className="mt-1 text-2xl font-bold text-slate-950">سيارات العملاء</h2>
+          <p className="mt-2 text-sm text-slate-500">سجل كل سيارة خدمتها، تاريخها، وبيانات صاحبها للمتابعة والتذكير.</p>
         </div>
         <button onClick={() => setShowForm(true)}
           className="rounded-lg bg-slate-950 px-5 py-3 text-sm font-bold text-white transition hover:bg-slate-800">

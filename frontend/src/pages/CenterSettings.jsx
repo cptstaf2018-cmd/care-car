@@ -96,13 +96,13 @@ export default function CenterSettings() {
         </section>
 
         <section className="surface rounded-lg p-6 xl:col-span-2">
-          <h3 className="font-bold text-slate-950">واتساب WasnderAPI والتذكيرات</h3>
+          <h3 className="font-bold text-slate-950">واتساب والتذكيرات التلقائية</h3>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             <input value={form.whatsapp_number} onChange={e => update('whatsapp_number', e.target.value)}
               placeholder="رقم واتساب المركز"
               className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
             <input value={form.wasnder_api_key} onChange={e => update('wasnder_api_key', e.target.value)}
-              placeholder="WasnderAPI Key"
+              placeholder="مفتاح واتساب API"
               type="password"
               className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
             <input value={form.reminder_days} onChange={e => update('reminder_days', e.target.value)}

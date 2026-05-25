@@ -77,13 +77,13 @@ export default function Invoices() {
     <Layout>
       <div className="mb-5 flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
         <div>
-          <p className="text-sm font-black text-cyan-700">Invoices Control</p>
-          <h2 className="mt-1 text-2xl font-black text-slate-950">الفواتير</h2>
-          <p className="mt-2 text-sm text-slate-500">متابعة فواتير العملاء: الخدمة، السيارة، الإجمالي، المدفوع، المتبقي والحالة.</p>
+          <p className="text-sm font-black text-cyan-700">إدارة الفواتير</p>
+          <h2 className="mt-1 text-2xl font-black text-slate-950">فواتير الخدمة</h2>
+          <p className="mt-2 text-sm text-slate-500">كل فاتورة خدمة مع السيارة، المبلغ، المدفوع، المتبقي والحالة.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <QuickAction to="/center/services/new" icon={PlusCircle} label="فاتورة جديدة" primary />
-          <QuickAction to="/center/services/new" icon={Zap} label="POS سريع" />
+          <QuickAction to="/center/services/new" icon={Zap} label="خدمة جديدة" />
           <QuickButton onClick={() => window.print()} icon={Printer} label="طباعة" />
           <QuickButton onClick={exportCsv} icon={Download} label="تصدير Excel" />
         </div>

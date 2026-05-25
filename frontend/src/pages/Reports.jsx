@@ -24,13 +24,13 @@ export default function Reports() {
     debt: Math.round((monthly?.pending_debts || 120000) / 3 + i * 2100),
     profit: Math.round((monthly?.paid || 620000) / (period === 'yearly' ? 14 : 28) + i * 4300),
   }))
-  const inventoryMovement = ['15W40', '5W30', '10W30', '0W20'].map((name, i) => ({ name, inbound: 20 + i * 8, outbound: 12 + i * 6 }))
+  const inventoryMovement = ['15W40', '5W30', '10W30', '0W20'].map((name, i) => ({ name, وارد: 20 + i * 8, صادر: 12 + i * 6 }))
 
   return (
     <Layout>
       <div className="mb-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
         <div>
-          <p className="text-sm font-black text-cyan-700">Analytics Center</p>
+          <p className="text-sm font-black text-cyan-700">تقارير المركز</p>
           <h2 className="mt-1 text-2xl font-black text-slate-950">تقارير تشغيل وربحية المركز</h2>
           <p className="mt-2 text-sm text-slate-500">تحليل أسبوعي، شهري، وسنوي للمبيعات، الأرباح، الديون، وحركة المخزون.</p>
         </div>
@@ -53,13 +53,13 @@ export default function Reports() {
       <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-5">
         <StatCard icon={Wrench} label="الخدمات" value={monthly?.service_count} color="blue" trend="+9%" loading={isLoading} />
         <StatCard icon={TrendingUp} label="المبيعات" value={monthly?.total_sales != null ? `${monthly.total_sales.toLocaleString()} IQD` : null} color="green" trend="+14%" loading={isLoading} />
-        <StatCard icon={CreditCard} label="المحصّل" value={monthly?.paid != null ? `${monthly.paid.toLocaleString()} IQD` : null} color="purple" trend="Cashflow" loading={isLoading} />
+        <StatCard icon={CreditCard} label="المحصّل" value={monthly?.paid != null ? `${monthly.paid.toLocaleString()} IQD` : null} color="purple" trend="محصّل" loading={isLoading} />
         <StatCard icon={TrendingDown} label="الديون" value={monthly?.pending_debts != null ? `${monthly.pending_debts.toLocaleString()} IQD` : null} color="red" trend="-3%" loading={isLoading} />
         <StatCard icon={CalendarDays} label="الفترة" value={period === 'weekly' ? 'أسبوع' : period === 'monthly' ? 'شهر' : 'سنة'} color="slate" trend={`${month}/${year}`} />
       </div>
 
       <section className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">
-        <ChartCard title="Profit Trends" subtitle="المبيعات والأرباح خلال الفترة">
+        <ChartCard title="منحنى الأرباح" subtitle="المبيعات والأرباح خلال الفترة">
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={trendData}>
               <defs>
@@ -78,7 +78,7 @@ export default function Reports() {
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Debt Trends" subtitle="مراقبة الديون غير المحصلة">
+        <ChartCard title="منحنى الديون" subtitle="مراقبة الديون غير المحصلة">
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={trendData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
@@ -92,15 +92,15 @@ export default function Reports() {
       </section>
 
       <section className="mt-4 grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
-        <ChartCard title="Inventory Movement" subtitle="دخول وخروج المواد">
+        <ChartCard title="حركة المخزون" subtitle="دخول وخروج المواد">
           <ResponsiveContainer width="100%" height={260}>
             <BarChart data={inventoryMovement}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #e2e8f0' }} />
-              <Bar dataKey="inbound" fill="#06b6d4" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="outbound" fill="#f59e0b" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="وارد" fill="#06b6d4" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="صادر" fill="#f59e0b" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
