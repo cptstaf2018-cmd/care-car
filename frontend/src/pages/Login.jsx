@@ -2,11 +2,10 @@ import { useState, useEffect } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, BarChart3, Camera, Car, CheckCircle2, Clock3, MessageCircle, ShieldCheck, Sparkles, Zap, Phone, Mail } from 'lucide-react'
-import { login } from '../api/auth'
+import { activate, login, register } from '../api/auth'
 import { useAuthStore } from '../store/auth'
 import centerHero from '../assets/center-template-red.png'
 import loginCar from '../assets/login-car-real.png'
-import client from '../api/client'
 
 const features = [
   { icon: Car, label: 'سيارات العملاء' },
@@ -52,6 +51,10 @@ export default function Login({ initialMode = 'login' }) {
   const [regEmail, setRegEmail] = useState('')
   const [regLoading, setRegLoading] = useState(false)
   const [regError, setRegError] = useState('')
+  const [regResult, setRegResult] = useState(null)
+  const [codeForm, setCodeForm] = useState({ code: '', new_password: '', confirm_password: '' })
+  const [codeError, setCodeError] = useState('')
+  const [codeLoading, setCodeLoading] = useState(false)
 
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.login)
@@ -69,6 +72,7 @@ export default function Login({ initialMode = 'login' }) {
     setMode(newMode)
     setError('')
     setRegError('')
+    setCodeError('')
     navigate(newMode === 'register' ? '/register' : '/login')
   }
 
@@ -96,24 +100,40 @@ export default function Login({ initialMode = 'login' }) {
     setRegLoading(true)
     setRegError('')
     try {
-      const res = await client.post('/auth/register', {
+      const res = await register({
         center_name: centerName,
-        full_name: fullName,
-        contact_method: contactMethod,
-        whatsapp: contactMethod === 'whatsapp' ? whatsapp : undefined,
-        email: contactMethod === 'email' ? regEmail : undefined,
+        manager_name: fullName || null,
+        phone: contactMethod === 'whatsapp' ? whatsapp : null,
+        email: contactMethod === 'email' ? regEmail : null,
       })
-
-      // تسجيل الدخول التلقائي بعد إنشاء الحساب
-      const { access_token, role, tenant_id } = res.data
-      const userEmail = contactMethod === 'email' ? regEmail : `${centerName}@carecar`
-      setAuth(access_token, { email: userEmail, role, tenant_id })
-      navigate('/')
+      setRegResult(res.data)
     } catch (err) {
       const detail = err.response?.data?.detail
-      setRegError(detail || 'خطأ في إنشاء الحساب، حاول مجددًا')
+      setRegError(detail || 'تعذر إرسال كود التفعيل، حاول مجددًا')
     } finally {
       setRegLoading(false)
+    }
+  }
+
+  const handleActivateSubmit = async (e) => {
+    e.preventDefault()
+    setCodeError('')
+    if (codeForm.new_password !== codeForm.confirm_password) {
+      setCodeError('كلمتا المرور غير متطابقتين')
+      return
+    }
+    setCodeLoading(true)
+    try {
+      const res = await activate(regResult.manager_email, codeForm.code, codeForm.new_password)
+      setAuth(res.data.access_token, {
+        email: regResult.manager_email,
+        role: res.data.role,
+        tenant_id: res.data.tenant_id,
+      })
+      navigate('/center')
+    } catch (err) {
+      setCodeError(err.response?.data?.detail || 'كود التفعيل غير صحيح أو منتهي')
+      setCodeLoading(false)
     }
   }
 
@@ -262,60 +282,80 @@ export default function Login({ initialMode = 'login' }) {
                     <motion.div key="register" custom={dir} variants={formVariants} initial="enter" animate="center" exit="exit">
                       <h2 className="mb-1 text-2xl font-extrabold leading-tight">إنشاء حساب جديد</h2>
                       <p className="mb-5 text-sm leading-6 text-slate-300">
-                        سجّل مركزك وابدأ التجربة المجانية، لا حاجة لبطاقة.
+                        سجّل مركزك وسنرسل لك كود التفعيل لإكمال الحساب.
                       </p>
-                      <form onSubmit={handleRegisterSubmit} className="space-y-4">
-                        <label className="block">
-                          <span className="mb-2 block text-sm font-bold text-slate-200">اسم المركز</span>
-                          <input type="text" placeholder="مركز الخليج لتبديل الزيت" value={centerName}
-                            onChange={(e) => setCenterName(e.target.value)} required
-                            className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
-                        </label>
-                        <label className="block">
-                          <span className="mb-2 block text-sm font-bold text-slate-200">اسمك الكامل</span>
-                          <input type="text" placeholder="أحمد محمد" value={fullName}
-                            onChange={(e) => setFullName(e.target.value)} required
-                            className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
-                        </label>
-                        <div>
-                          <span className="mb-2 block text-sm font-bold text-slate-200">طريقة التواصل</span>
-                          <div className="flex rounded-xl border border-white/10 bg-slate-900/60 p-1">
-                            <button type="button" onClick={() => setContactMethod('whatsapp')}
-                              className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-bold transition-all ${contactMethod === 'whatsapp' ? 'bg-cyan-400 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white'}`}>
-                              <Phone size={15} /> واتساب
-                            </button>
-                            <button type="button" onClick={() => setContactMethod('email')}
-                              className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-bold transition-all ${contactMethod === 'email' ? 'bg-cyan-400 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white'}`}>
-                              <Mail size={15} /> إيميل
-                            </button>
+                      {regResult ? (
+                        <form onSubmit={handleActivateSubmit} className="space-y-4">
+                          <div className="rounded-lg border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm font-bold leading-6 text-emerald-100">
+                            تم إرسال كود التفعيل. أدخل الكود وكلمة المرور الجديدة للمتابعة.
                           </div>
-                        </div>
-                        {contactMethod === 'whatsapp' ? (
                           <label className="block">
-                            <span className="mb-2 block text-sm font-bold text-slate-200">رقم الواتساب</span>
-                            <input type="text" placeholder="07xxxxxxxxx" value={whatsapp}
-                              onChange={(e) => setWhatsapp(e.target.value)} required
+                            <span className="mb-2 block text-sm font-bold text-slate-200">كود التفعيل</span>
+                            <input type="text" inputMode="numeric" maxLength={6} placeholder="000000" value={codeForm.code}
+                              onChange={(e) => setCodeForm({ ...codeForm, code: e.target.value.replace(/\D/g, '') })} required
+                              className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-center font-mono text-2xl tracking-[0.45em] text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                          </label>
+                          <label className="block">
+                            <span className="mb-2 block text-sm font-bold text-slate-200">كلمة المرور الجديدة</span>
+                            <input type="password" placeholder="أدخل كلمة مرور قوية" value={codeForm.new_password}
+                              onChange={(e) => setCodeForm({ ...codeForm, new_password: e.target.value })} required
                               className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
                           </label>
-                        ) : (
                           <label className="block">
-                            <span className="mb-2 block text-sm font-bold text-slate-200">البريد الإلكتروني</span>
-                            <input type="email" placeholder="example@mail.com" value={regEmail}
-                              onChange={(e) => setRegEmail(e.target.value)} required
+                            <span className="mb-2 block text-sm font-bold text-slate-200">تأكيد كلمة المرور</span>
+                            <input type="password" placeholder="أعد إدخال كلمة المرور" value={codeForm.confirm_password}
+                              onChange={(e) => setCodeForm({ ...codeForm, confirm_password: e.target.value })} required
                               className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
                           </label>
-                        )}
-                        {regError && <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-200">{regError}</p>}
-                        <button type="submit" disabled={regLoading}
-                          className="group relative mt-1 h-[52px] w-full overflow-hidden rounded-lg bg-[linear-gradient(180deg,#48e8e8,#22c4c4)] font-extrabold text-slate-950 shadow-lg shadow-cyan-500/25 transition hover:shadow-cyan-500/40 disabled:opacity-60">
-                          {regLoading ? (
-                            <span className="flex items-center justify-center gap-2">
-                              <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950/30 border-t-slate-950" />
-                              جاري إنشاء مركزك...
-                            </span>
-                          ) : 'إنشاء الحساب مجاناً ←'}
-                        </button>
-                      </form>
+                          {codeError && <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-200">{codeError}</p>}
+                          <LaunchButton launching={codeLoading} label={codeLoading ? 'جاري التفعيل...' : 'تفعيل الحساب'} />
+                        </form>
+                      ) : (
+                        <form onSubmit={handleRegisterSubmit} className="space-y-4">
+                          <label className="block">
+                            <span className="mb-2 block text-sm font-bold text-slate-200">اسم المركز</span>
+                            <input type="text" placeholder="مركز الخليج لتبديل الزيت" value={centerName}
+                              onChange={(e) => setCenterName(e.target.value)} required
+                              className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                          </label>
+                          <label className="block">
+                            <span className="mb-2 block text-sm font-bold text-slate-200">اسمك الكامل</span>
+                            <input type="text" placeholder="أحمد محمد" value={fullName}
+                              onChange={(e) => setFullName(e.target.value)} required
+                              className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                          </label>
+                          <div>
+                            <span className="mb-2 block text-sm font-bold text-slate-200">طريقة استلام كود التفعيل</span>
+                            <div className="flex rounded-xl border border-white/10 bg-slate-900/60 p-1">
+                              <button type="button" onClick={() => setContactMethod('whatsapp')}
+                                className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-bold transition-all ${contactMethod === 'whatsapp' ? 'bg-cyan-400 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white'}`}>
+                                <Phone size={15} /> واتساب
+                              </button>
+                              <button type="button" onClick={() => setContactMethod('email')}
+                                className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-bold transition-all ${contactMethod === 'email' ? 'bg-cyan-400 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white'}`}>
+                                <Mail size={15} /> إيميل
+                              </button>
+                            </div>
+                          </div>
+                          {contactMethod === 'whatsapp' ? (
+                            <label className="block">
+                              <span className="mb-2 block text-sm font-bold text-slate-200">رقم الواتساب</span>
+                              <input type="text" placeholder="07xxxxxxxxx" value={whatsapp}
+                                onChange={(e) => setWhatsapp(e.target.value)} required
+                                className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                            </label>
+                          ) : (
+                            <label className="block">
+                              <span className="mb-2 block text-sm font-bold text-slate-200">البريد الإلكتروني</span>
+                              <input type="email" placeholder="example@mail.com" value={regEmail}
+                                onChange={(e) => setRegEmail(e.target.value)} required
+                                className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                            </label>
+                          )}
+                          {regError && <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-200">{regError}</p>}
+                          <LaunchButton launching={regLoading} label={regLoading ? 'جاري إرسال الكود...' : 'إرسال كود التفعيل'} />
+                        </form>
+                      )}
                       <p className="mt-4 text-center text-sm text-slate-400">
                         لديك حساب؟{' '}
                         <button onClick={() => switchMode('login')} className="font-bold text-cyan-300 hover:text-cyan-200 transition-colors">
