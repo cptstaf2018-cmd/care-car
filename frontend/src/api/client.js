@@ -1,10 +1,7 @@
 import axios from 'axios'
 import { useAuthStore } from '../store/auth'
 
-const apiBaseUrl = import.meta.env.VITE_API_URL
-  ?? `${window.location.protocol}//${window.location.hostname}:8000`
-
-const client = axios.create({ baseURL: apiBaseUrl })
+const client = axios.create({ baseURL: '' })
 
 client.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token
@@ -15,7 +12,8 @@ client.interceptors.request.use((config) => {
 client.interceptors.response.use(
   (r) => r,
   (err) => {
-    if (err.response?.status === 401) useAuthStore.getState().logout()
+    const suspended = err.response?.status === 403 && err.response?.data?.detail === 'Account suspended'
+    if (err.response?.status === 401 || suspended) useAuthStore.getState().logout()
     return Promise.reject(err)
   }
 )

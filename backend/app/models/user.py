@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Column, Integer, String, Enum, ForeignKey, Boolean, CheckConstraint
+from sqlalchemy import Column, Integer, String, Enum, ForeignKey, Boolean, CheckConstraint, DateTime, SmallInteger
 from app.models.base import Base, TimestampMixin
 
 class Role(str, enum.Enum):
@@ -19,3 +19,7 @@ class User(Base, TimestampMixin):
     full_name = Column(String(100))
     role = Column(Enum(Role), default=Role.employee, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
+    is_verified = Column(Boolean, default=False, nullable=False)
+    activation_code = Column(String(6), nullable=True)
+    activation_expires_at = Column(DateTime, nullable=True)
+    activation_attempts = Column(SmallInteger, default=0, nullable=False, server_default='0')

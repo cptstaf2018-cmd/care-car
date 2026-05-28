@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Column, Integer, String, Enum, Boolean, Date
+from sqlalchemy import Column, Integer, String, Enum, Boolean, Date, DateTime
 from app.models.base import Base, TimestampMixin
 
 class Plan(str, enum.Enum):
@@ -25,3 +25,6 @@ class Tenant(Base, TimestampMixin):
     whatsapp_number = Column(String(30))
     reminder_days = Column(Integer, default=30, nullable=False)
     reminder_message_template = Column(String(1000))
+    trial_ends_at = Column(DateTime, nullable=True)
+    subscription_request_plan = Column(String(20), nullable=True)
+    subscription_request_ref = Column(String(100), nullable=True)

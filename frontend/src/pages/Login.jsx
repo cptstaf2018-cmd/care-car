@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { ArrowLeft, BarChart3, Camera, Car, CheckCircle2, Clock3, MessageCircle, ShieldCheck, Sparkles, Zap } from 'lucide-react'
+import { ArrowLeft, BarChart3, Camera, Car, CheckCircle2, Clock3, MessageCircle, Sparkles } from 'lucide-react'
 import { login } from '../api/auth'
 import { useAuthStore } from '../store/auth'
 import centerHero from '../assets/center-template-red.png'
@@ -46,6 +46,10 @@ export default function Login() {
       setLaunching(false)
       if (err.response?.status === 401) {
         setError('بيانات الدخول غير صحيحة')
+      } else if (err.response?.status === 402) {
+        setError('trial_expired')
+      } else if (err.response?.status === 403) {
+        setError('هذا الحساب موقوف، تواصل مع الإدارة')
       } else {
         setError('خطأ في الاتصال، حاول مجددًا')
       }
@@ -162,16 +166,27 @@ export default function Login() {
                     onChange={e => setPassword(e.target.value)} required
                     className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 outline-none transition duration-200 placeholder:text-slate-500 hover:border-white/20 hover:bg-slate-950/20 focus:border-cyan-300 focus:bg-slate-950/20 focus:ring-4 focus:ring-cyan-400/10" />
                 </label>
-                {error && <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-200">{error}</p>}
+                {error && error !== 'trial_expired' && (
+                  <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-200">{error}</p>
+                )}
+                {error === 'trial_expired' && (
+                  <div className="rounded-lg border border-amber-400/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
+                    <p className="font-bold">انتهت فترة التجربة المجانية</p>
+                    <p className="mt-1 text-xs">اشترك الآن للمتابعة — اذهب إلى إعدادات المركز بعد الدخول.</p>
+                  </div>
+                )}
                 <LaunchButton launching={launching} />
               </form>
 
-              <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                <MiniStat icon={ShieldCheck} label="سوبر أدمن" value="اشتراكات ومراكز" />
-                <MiniStat icon={Zap} label="تشغيل سريع" value="خدمات سيارات" />
+              <div className="mt-5 rounded-lg border border-cyan-200/15 bg-cyan-300/8 px-4 py-3 text-center text-sm font-bold leading-6 text-cyan-100">
+                دخول موحد: النظام يفتح لوحة السوبر أدمن أو لوحة المركز تلقائياً حسب صلاحية الحساب.
               </div>
+              <p className="mt-4 text-center text-sm text-slate-400">
+                ليس لديك حساب؟{' '}
+                <a href="/register" className="font-bold text-cyan-300 hover:text-cyan-200">سجل مجاناً — 3 أيام تجريبية</a>
+              </p>
 
-              <div className="mt-5 grid grid-cols-3 gap-2 text-xs text-slate-300">
+              <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-slate-300">
                 <TrustItem icon={CheckCircle2} label="بيانات معزولة" />
                 <TrustItem icon={Clock3} label="تنبيهات مباشرة" />
                 <TrustItem icon={MessageCircle} label="واتساب جاهز" />
@@ -258,18 +273,6 @@ function Feature({ icon: Icon, label, delay = 0 }) {
       </span>
       {label}
     </motion.div>
-  )
-}
-
-function MiniStat({ icon: Icon, label, value }) {
-  return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.06] p-3 transition hover:border-cyan-200/25 hover:bg-white/[0.09]">
-      <div className="mb-2 flex items-center gap-2 text-cyan-200">
-        <Icon size={16} />
-        <span className="text-xs font-extrabold">{label}</span>
-      </div>
-      <p className="text-sm font-bold text-slate-200">{value}</p>
-    </div>
   )
 }
 

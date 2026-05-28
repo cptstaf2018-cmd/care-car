@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.deps import get_current_user
@@ -54,3 +55,15 @@ def update_car(car_id: int, body: CarUpdate, db: Session = Depends(get_db), user
     db.commit()
     db.refresh(car)
     return car
+
+@router.delete("/{car_id}", status_code=204)
+def delete_car(car_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    car = db.get(Car, car_id)
+    if not car or (user.role != Role.superadmin and car.tenant_id != user.tenant_id):
+        raise HTTPException(status_code=404, detail="Car not found")
+    try:
+        db.delete(car)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="لا يمكن حذف السيارة لوجود خدمات مرتبطة بها")

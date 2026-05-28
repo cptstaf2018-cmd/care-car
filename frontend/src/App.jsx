@@ -9,9 +9,12 @@ import Invoices from './pages/Invoices'
 import Inventory from './pages/Inventory'
 import Reports from './pages/Reports'
 import CenterSettings from './pages/CenterSettings'
+import InvoicePrint from './pages/InvoicePrint'
 import AdminOverview from './pages/superadmin/Overview'
 import AdminTenants from './pages/superadmin/Tenants'
 import Subscriptions from './pages/superadmin/Subscriptions'
+import Activate from './pages/Activate'
+import Register from './pages/Register'
 import { useAuthStore } from './store/auth'
 
 const qc = new QueryClient()
@@ -29,6 +32,8 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/activate" element={<Activate />} />
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/center" element={<ProtectedRoute allowedRoles={centerRoles}><Dashboard /></ProtectedRoute>} />
           <Route path="/center/cars" element={<ProtectedRoute allowedRoles={centerRoles}><Cars /></ProtectedRoute>} />
@@ -37,6 +42,7 @@ export default function App() {
           <Route path="/center/inventory" element={<ProtectedRoute allowedRoles={centerRoles}><Inventory /></ProtectedRoute>} />
           <Route path="/center/reports" element={<ProtectedRoute allowedRoles={centerRoles}><Reports /></ProtectedRoute>} />
           <Route path="/center/settings" element={<ProtectedRoute allowedRoles={centerRoles}><CenterSettings /></ProtectedRoute>} />
+          <Route path="/center/invoices/:id/print" element={<ProtectedRoute allowedRoles={centerRoles}><InvoicePrint /></ProtectedRoute>} />
           <Route path="/cars" element={<Navigate to="/center/cars" replace />} />
           <Route path="/services/new" element={<Navigate to="/center/services/new" replace />} />
           <Route path="/invoices" element={<Navigate to="/center/invoices" replace />} />

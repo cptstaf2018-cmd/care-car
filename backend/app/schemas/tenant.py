@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict
-from datetime import date
+from datetime import date, datetime
 from app.models.tenant import Plan
 
 class TenantCreate(BaseModel):
@@ -51,3 +51,6 @@ class TenantOut(BaseModel):
     whatsapp_number: str | None
     reminder_days: int
     reminder_message_template: str | None
+    trial_ends_at: datetime | None
+    subscription_request_plan: str | None
+    subscription_request_ref: str | None

@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { BatteryCharging, Car, CircleDot, Droplets, Fan, Gauge, GaugeCircle, GaugeIcon, ShowerHead, Sparkles, SprayCan, Wrench, Camera, CameraOff, CheckCircle2, Keyboard, ScanLine, Search, Smartphone, Zap } from 'lucide-react'
+import { BatteryCharging, Car, CircleDot, Droplets, Fan, Gauge, GaugeCircle, Package, Printer, PlusCircle, ShowerHead, Sparkles, SprayCan, Trash2, Wrench, Camera, CameraOff, CheckCircle2, Keyboard, ScanLine, Search, Smartphone, Zap } from 'lucide-react'
 import Layout from '../components/Layout'
 import { getCars } from '../api/cars'
 import { createService } from '../api/services'
+import { getInventory } from '../api/inventory'
 import { readPlate } from '../api/vision'
 
 const OIL_GRADES = ['15W40', '10W30', '5W30', '5W20', '0W20']
@@ -23,12 +25,60 @@ const SERVICE_TYPES = [
 ]
 
 export default function NewService() {
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [selectedCar, setSelectedCar] = useState(null)
   const [serviceType, setServiceType] = useState('تبديل زيت')
   const [oilGrade, setOilGrade] = useState('15W40')
   const [form, setForm] = useState({ amount: '', discount: '0', mileage: '', notes: '' })
+  const [lineInventoryId, setLineInventoryId] = useState('')
+  const [lineInventoryQty, setLineInventoryQty] = useState('1')
+  const [invoiceLines, setInvoiceLines] = useState([])
   const [result, setResult] = useState(null)
+
+  const { data: inventoryItems = [] } = useQuery({
+    queryKey: ['inventory'],
+    queryFn: () => getInventory().then(r => r.data),
+    enabled: !!selectedCar,
+  })
+
+  // Auto-match inventory item when service type or oil grade changes
+  useEffect(() => {
+    if (!selectedCar || inventoryItems.length === 0) return
+    const kwMap = {
+      'تبديل زيت': [oilGrade, oilGrade.replace('W', 'W-'), 'زيت محرك', 'زيت'],
+      'فلتر زيت': ['فلتر زيت'],
+      'فلتر هواء': ['فلتر هواء'],
+      'فلتر مكيف': ['فلتر مكيف'],
+      'تبديل ماء رديتر': ['ماء رديتر', 'رديتر'],
+      'تبديل بواجي': ['شمعات', 'بواجي'],
+      'ترصيص': ['أوزان', 'ترصيص'],
+    }
+    const kws = kwMap[serviceType]
+    let found = null
+    if (kws) {
+      for (const kw of kws) {
+        found = inventoryItems.find(item => item.oil_type?.includes(kw))
+        if (found) break
+      }
+    }
+    if (found) {
+      setLineInventoryId(String(found.id))
+    } else {
+      setLineInventoryId('')
+      setForm(prev => ({ ...prev, amount: '' }))
+    }
+  }, [serviceType, oilGrade, inventoryItems, selectedCar])
+
+  // Auto-fill price from selected inventory item
+  useEffect(() => {
+    if (!lineInventoryId) return
+    const item = inventoryItems.find(i => i.id === Number(lineInventoryId))
+    if (item?.unit_cost) {
+      const qty = parseFloat(lineInventoryQty) || 1
+      setForm(prev => ({ ...prev, amount: String(Math.round(item.unit_cost * qty)) }))
+    }
+  }, [lineInventoryId, lineInventoryQty, inventoryItems])
 
   const videoRef = useRef(null)
   const fileInputRef = useRef(null)
@@ -48,17 +98,40 @@ export default function NewService() {
     onSuccess: (res) => setResult(res.data),
   })
 
-  const netAmount = (parseFloat(form.amount) || 0) - (parseFloat(form.discount) || 0)
-  const canSubmit = selectedCar && form.amount && !mutation.isPending
+  const invoiceTotal = invoiceLines.reduce((sum, line) => sum + Number(line.amount || 0), 0)
+  const netAmount = invoiceTotal - (parseFloat(form.discount) || 0)
+  const canSubmit = selectedCar && invoiceLines.length > 0 && !mutation.isPending
   const serviceName = serviceType === 'تبديل زيت' ? `${serviceType} ${oilGrade}` : serviceType
-  const submitService = () => mutation.mutate({
-    car_id: selectedCar.id,
-    ...form,
-    oil_type: serviceName,
-    amount: parseFloat(form.amount),
-    discount: parseFloat(form.discount) || 0,
-    mileage: form.mileage ? parseFloat(form.mileage) : null,
-  })
+  const addLineToInvoice = () => {
+    if (!form.amount) return
+    const invItem = lineInventoryId ? inventoryItems.find(i => i.id === Number(lineInventoryId)) : null
+    setInvoiceLines(prev => [...prev, {
+      id: Date.now() + Math.random().toString(36).slice(2),
+      name: serviceName,
+      amount: parseFloat(form.amount) || 0,
+      notes: form.notes,
+      inventoryItemId: invItem ? invItem.id : null,
+      inventoryItemName: invItem ? invItem.oil_type : null,
+      inventoryQty: invItem ? parseFloat(lineInventoryQty) || 1 : null,
+    }])
+    setForm(prev => ({ ...prev, amount: '', notes: '' }))
+    setLineInventoryId('')
+    setLineInventoryQty('1')
+  }
+  const submitService = () => {
+    const deductions = invoiceLines
+      .filter(l => l.inventoryItemId)
+      .map(l => ({ item_id: l.inventoryItemId, quantity: l.inventoryQty }))
+    mutation.mutate({
+      car_id: selectedCar.id,
+      oil_type: invoiceLines.map(line => line.name).join(' + '),
+      amount: invoiceTotal,
+      discount: parseFloat(form.discount) || 0,
+      mileage: form.mileage ? parseFloat(form.mileage) : null,
+      notes: invoiceLines.map(line => line.notes ? `${line.name}: ${line.notes}` : line.name).join(' | '),
+      inventory_deductions: deductions,
+    })
+  }
 
   useEffect(() => {
     const onKeyDown = (e) => {
@@ -149,18 +222,25 @@ export default function NewService() {
 
   if (result) return (
     <Layout>
-      <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="surface mx-auto max-w-md rounded-lg p-8 text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 font-black text-emerald-700"><CheckCircle2 /></div>
-        <h2 className="text-2xl font-bold text-slate-950 mb-4">تم تسجيل الخدمة</h2>
-        <div className="mb-6 space-y-2 rounded-lg bg-slate-50 p-4 text-right">
-          <p className="text-slate-600">رقم الفاتورة: <span className="text-slate-950 font-bold">#{result.invoice_id}</span></p>
-          <p className="text-slate-600">المبلغ: <span className="text-emerald-700 font-bold">{result.amount?.toLocaleString()} IQD</span></p>
-          <p className="text-slate-600">الحالة: <span className={result.status === 'paid' ? 'text-emerald-700' : 'text-amber-700'}>{result.status === 'paid' ? 'مدفوع' : 'غير مدفوع'}</span></p>
+      <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="surface mx-auto max-w-lg rounded-lg p-8 text-center">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 font-black text-emerald-700"><CheckCircle2 size={28} /></div>
+        <h2 className="text-2xl font-black text-slate-950 mb-1">تم تسجيل الخدمة</h2>
+        <p className="text-slate-500 text-sm mb-5">الفاتورة جاهزة للطباعة والإرسال</p>
+        <div className="mb-6 space-y-2 rounded-lg bg-slate-50 p-4 text-right border border-slate-200">
+          <div className="flex justify-between"><span className="text-slate-500">رقم الفاتورة</span><span className="font-black text-slate-950">#{result.invoice_id}</span></div>
+          <div className="flex justify-between"><span className="text-slate-500">المبلغ</span><span className="font-black text-emerald-700">{result.amount?.toLocaleString()} IQD</span></div>
+          <div className="flex justify-between"><span className="text-slate-500">الحالة</span><span className={`font-black ${result.status === 'paid' ? 'text-emerald-700' : 'text-amber-700'}`}>{result.status === 'paid' ? 'مدفوعة' : 'غير مدفوعة'}</span></div>
         </div>
-        <button onClick={() => { setResult(null); setSelectedCar(null); setSearch(''); setServiceType('تبديل زيت'); setOilGrade('15W40'); setForm({ amount: '', discount: '0', mileage: '', notes: '' }) }}
-          className="rounded-lg bg-slate-950 px-8 py-3 font-bold text-white hover:bg-slate-800">
-          خدمة جديدة
-        </button>
+        <div className="flex flex-col gap-3">
+          <button onClick={() => navigate(`/center/invoices/${result.invoice_id}/print`)}
+            className="flex items-center justify-center gap-2 rounded-lg bg-slate-950 px-8 py-3 font-black text-white hover:bg-slate-800">
+            <Printer size={18} /> طباعة الفاتورة وإرسالها
+          </button>
+          <button onClick={() => { setResult(null); setSelectedCar(null); setSearch(''); setServiceType('تبديل زيت'); setOilGrade('15W40'); setInvoiceLines([]); setForm({ amount: '', discount: '0', mileage: '', notes: '' }) }}
+            className="rounded-lg border border-slate-200 px-8 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
+            خدمة جديدة
+          </button>
+        </div>
       </motion.div>
     </Layout>
   )
@@ -171,7 +251,7 @@ export default function NewService() {
         <div>
           <p className="text-sm font-semibold text-cyan-700">استقبال الخدمة</p>
           <h2 className="mt-1 text-2xl font-black text-slate-950">خدمة سريعة للسيارة</h2>
-          <p className="mt-2 text-sm text-slate-500">ابحث عن السيارة، اختر الخدمة، واحفظ الفاتورة. Ctrl+Enter للحفظ.</p>
+          <p className="mt-2 text-sm text-slate-500">ابحث عن السيارة، أضف الخدمات إلى الفاتورة، ثم اعتمد الفاتورة النهائية. Ctrl+Enter للحفظ.</p>
         </div>
         <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-600">
           <Keyboard size={17} /> Ctrl + Enter للحفظ · Esc للتغيير
@@ -286,18 +366,69 @@ export default function NewService() {
                     setOilGrade={setOilGrade}
                   />
                 </div>
-                {[['amount', 'المبلغ (IQD) *', 'number'], ['discount', 'الخصم (IQD)', 'number'], ['mileage', 'عداد المسافة (كم)', 'number'], ['notes', 'ملاحظات', 'text']].map(([k, p, t]) => (
+                {[['amount', 'سعر هذه الخدمة (IQD) *', 'number'], ['notes', 'ملاحظات هذه الخدمة', 'text']].map(([k, p, t]) => (
                   <input key={k} type={t} placeholder={p} value={form[k]}
                     onChange={e => setForm({ ...form, [k]: e.target.value })}
                     className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
                 ))}
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-black text-slate-500">
+                    <Package size={14} /> خصم من المخزون (اختياري)
+                  </div>
+                  <div className="grid grid-cols-[1fr_90px] gap-2">
+                    <select value={lineInventoryId} onChange={e => setLineInventoryId(e.target.value)}
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-cyan-400">
+                      <option value="">— اختر المادة —</option>
+                      {inventoryItems.map(item => (
+                        <option key={item.id} value={item.id}>
+                          {item.oil_type} ({Number(item.quantity).toLocaleString()} {item.category || 'وحدة'})
+                        </option>
+                      ))}
+                    </select>
+                    <input type="number" min="0.1" step="0.1" value={lineInventoryQty}
+                      onChange={e => setLineInventoryQty(e.target.value)}
+                      placeholder="الكمية"
+                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-cyan-400"
+                      disabled={!lineInventoryId} />
+                  </div>
+                </div>
+                <button onClick={addLineToInvoice} disabled={!form.amount}
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-400 px-6 py-4 text-base font-black text-slate-950 transition hover:bg-cyan-300 disabled:opacity-50">
+                  <PlusCircle size={18} />
+                  إضافة الخدمة إلى الفاتورة
+                </button>
               </div>
               <div className="sticky top-24 h-fit rounded-lg border border-slate-200 bg-slate-950 p-5 text-white shadow-2xl">
-                <div className="mb-4 flex items-center gap-2 text-cyan-300"><Zap size={18} /><span className="font-black">ملخص الفاتورة</span></div>
+                <div className="mb-4 flex items-center gap-2 text-cyan-300"><Zap size={18} /><span className="font-black">الفاتورة النهائية</span></div>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between"><span className="text-slate-400">السيارة</span><span className="font-mono font-black">{selectedCar.plate_number}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">الخدمة</span><span className="font-black">{serviceName}</span></div>
-                  <div className="flex justify-between"><span className="text-slate-400">المبلغ</span><span>{(Number(form.amount) || 0).toLocaleString()}</span></div>
+                  <div className="rounded-lg border border-white/10 bg-white/5">
+                    {invoiceLines.length ? invoiceLines.map(line => (
+                      <div key={line.id} className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2 last:border-0">
+                        <button onClick={() => setInvoiceLines(prev => prev.filter(item => item.id !== line.id))}
+                          className="text-rose-300 transition hover:text-rose-200">
+                          <Trash2 size={15} />
+                        </button>
+                        <div className="flex-1 text-right">
+                          <p className="font-black text-white">{line.name}</p>
+                          {line.notes && <p className="text-xs text-slate-400">{line.notes}</p>}
+                          {line.inventoryItemName && (
+                            <p className="text-xs text-amber-300">📦 {line.inventoryQty} × {line.inventoryItemName}</p>
+                          )}
+                        </div>
+                        <span className="font-black">{Number(line.amount).toLocaleString()}</span>
+                      </div>
+                    )) : (
+                      <p className="px-3 py-6 text-center text-sm font-bold text-slate-400">أضف خدمة واحدة على الأقل</p>
+                    )}
+                  </div>
+                  <input type="number" placeholder="عداد المسافة (كم)" value={form.mileage}
+                    onChange={e => setForm({ ...form, mileage: e.target.value })}
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-white outline-none focus:border-cyan-300" />
+                  <input type="number" placeholder="خصم الفاتورة (IQD)" value={form.discount}
+                    onChange={e => setForm({ ...form, discount: e.target.value })}
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-white outline-none focus:border-cyan-300" />
+                  <div className="flex justify-between"><span className="text-slate-400">الإجمالي</span><span>{invoiceTotal.toLocaleString()}</span></div>
                   <div className="flex justify-between"><span className="text-slate-400">الخصم</span><span>{(Number(form.discount) || 0).toLocaleString()}</span></div>
                   <div className="border-t border-white/10 pt-3">
                     <p className="text-xs text-slate-400">الصافي</p>
@@ -305,9 +436,9 @@ export default function NewService() {
                   </div>
                 </div>
                 <button onClick={submitService}
-                  disabled={!form.amount || mutation.isPending}
+                  disabled={!invoiceLines.length || mutation.isPending}
                   className="mt-5 w-full rounded-lg bg-emerald-500 px-6 py-4 text-lg font-black text-white transition hover:bg-emerald-600 disabled:opacity-50">
-                  {mutation.isPending ? 'جاري...' : 'حفظ وطباعة'}
+                  {mutation.isPending ? 'جاري...' : 'اعتماد الفاتورة النهائية'}
                 </button>
               </div>
             </div>
