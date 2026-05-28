@@ -20,6 +20,7 @@ from app.schemas.tenant import TenantCreate, TenantUpdate, TenantOut
 import httpx
 
 router = APIRouter(prefix="/tenants", tags=["tenants"])
+ACTIVATION_CODE_EXPIRE_MINUTES = 30
 
 
 def _send_activation_whatsapp(phone: str, code: str, center_name: str) -> str:
@@ -31,7 +32,7 @@ def _send_activation_whatsapp(phone: str, code: str, center_name: str) -> str:
         f"كود التفعيل الخاص بك: *{code}*\n"
         f"افتح الرابط لتفعيل حسابك وضع كلمة مرورك:\n"
         f"https://carecar.online/activate\n"
-        f"الكود صالح لمدة 48 ساعة."
+        f"الكود صالح لمدة {ACTIVATION_CODE_EXPIRE_MINUTES} دقيقة فقط."
     )
     try:
         resp = httpx.post(
@@ -64,7 +65,7 @@ def create_tenant(body: TenantWithManagerCreate, db: Session = Depends(get_db), 
     db.flush()
 
     code = ''.join(secrets.choice(string.digits) for _ in range(6))
-    expires = datetime.now(timezone.utc) + timedelta(hours=48)
+    expires = datetime.now(timezone.utc) + timedelta(minutes=ACTIVATION_CODE_EXPIRE_MINUTES)
 
     manager = User(
         tenant_id=tenant.id,

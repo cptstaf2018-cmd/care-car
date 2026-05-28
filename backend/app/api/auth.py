@@ -20,6 +20,7 @@ from app.schemas.auth import LoginRequest, TokenResponse, UserOut
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
+ACTIVATION_CODE_EXPIRE_MINUTES = 30
 
 
 class RegisterRequest(BaseModel):
@@ -49,7 +50,7 @@ def _send_activation_whatsapp(phone: str, code: str, center_name: str) -> str:
         f"تم إنشاء حساب مركز «{center_name}» بنجاح.",
         f"كود التفعيل الخاص بك: *{code}*",
         "أدخل الكود في صفحة التسجيل لإكمال التفعيل.",
-        "الكود صالح لمدة 48 ساعة.",
+        f"الكود صالح لمدة {ACTIVATION_CODE_EXPIRE_MINUTES} دقيقة فقط.",
     ])
     try:
         resp = httpx.post(
@@ -68,16 +69,58 @@ def _send_activation_email(email: str, code: str, center_name: str) -> str:
         return "not_configured"
 
     message = EmailMessage()
-    message["Subject"] = "كود تفعيل حساب Care Car"
+    message["Subject"] = "كود تفعيل حساب مركزك في Care Car"
     message["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM_EMAIL or settings.SMTP_USER}>"
     message["To"] = email
     message.set_content("\n".join([
-        "مرحباً بك في منصة Care Car",
-        f"تم إنشاء حساب مركز «{center_name}» بنجاح.",
-        f"كود التفعيل الخاص بك: {code}",
-        "أدخل الكود في صفحة التسجيل لإكمال التفعيل.",
-        "الكود صالح لمدة 48 ساعة.",
+        f"مرحباً {center_name}",
+        "تم استلام طلب إنشاء حساب مركزك في منصة Care Car.",
+        f"كود التفعيل: {code}",
+        f"الكود صالح لمدة {ACTIVATION_CODE_EXPIRE_MINUTES} دقيقة فقط.",
+        "إذا لم تطلب إنشاء الحساب، يمكنك تجاهل هذه الرسالة.",
     ]))
+    message.add_alternative(f"""
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <body style="margin:0;background:#f4f7fb;font-family:Arial,Tahoma,sans-serif;color:#0f172a;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f7fb;padding:28px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border:1px solid #e2e8f0;border-radius:18px;overflow:hidden;box-shadow:0 18px 50px rgba(15,23,42,.08);">
+            <tr>
+              <td style="background:#07111f;padding:24px 28px;text-align:right;">
+                <div style="display:inline-block;background:#22d3ee;color:#07111f;border-radius:12px;padding:10px 13px;font-weight:900;font-size:18px;">CC</div>
+                <h1 style="margin:16px 0 4px;color:#ffffff;font-size:24px;line-height:1.5;">تفعيل حساب مركزك</h1>
+                <p style="margin:0;color:#a5f3fc;font-size:13px;font-weight:700;">Care Car SaaS</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:28px;">
+                <p style="margin:0 0 10px;font-size:16px;line-height:1.9;">مرحباً،</p>
+                <p style="margin:0 0 18px;font-size:15px;line-height:1.9;color:#334155;">
+                  تم استلام طلب إنشاء حساب لمركز <strong>{center_name}</strong>. استخدم كود التفعيل التالي لإكمال إعداد الحساب.
+                </p>
+                <div style="margin:22px 0;padding:20px;border-radius:16px;background:#ecfeff;border:1px solid #a5f3fc;text-align:center;">
+                  <div style="font-size:13px;color:#0f766e;font-weight:800;margin-bottom:8px;">كود التفعيل</div>
+                  <div style="direction:ltr;letter-spacing:10px;font-size:34px;font-weight:900;color:#07111f;font-family:'Courier New',monospace;">{code}</div>
+                </div>
+                <p style="margin:0 0 18px;font-size:14px;line-height:1.8;color:#475569;">
+                  هذا الكود صالح لمدة <strong>{ACTIVATION_CODE_EXPIRE_MINUTES} دقيقة فقط</strong>. حفاظاً على أمان حسابك، لا تشارك الكود مع أي شخص.
+                </p>
+                <div style="border-top:1px solid #e2e8f0;padding-top:18px;">
+                  <p style="margin:0;font-size:13px;line-height:1.8;color:#64748b;">
+                    إذا لم تطلب إنشاء هذا الحساب، تجاهل الرسالة ولن يتم تفعيل أي حساب بدون إدخال الكود.
+                  </p>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+""", subtype="html")
 
     try:
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as smtp:
@@ -215,7 +258,7 @@ def _register_with_activation_code(body: RegisterRequest, db: Session, center_na
         is_active=True,
         is_verified=False,
         activation_code=code,
-        activation_expires_at=datetime.now(timezone.utc) + timedelta(hours=48),
+        activation_expires_at=datetime.now(timezone.utc) + timedelta(minutes=ACTIVATION_CODE_EXPIRE_MINUTES),
     )
     db.add(manager)
 
