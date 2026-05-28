@@ -14,7 +14,6 @@ import AdminOverview from './pages/superadmin/Overview'
 import AdminTenants from './pages/superadmin/Tenants'
 import Subscriptions from './pages/superadmin/Subscriptions'
 import Activate from './pages/Activate'
-import Register from './pages/Register'
 import { useAuthStore } from './store/auth'
 
 const qc = new QueryClient()
@@ -32,7 +31,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+          <Route path="/register" element={<Login initialMode="register" />} />
           <Route path="/activate" element={<Activate />} />
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/center" element={<ProtectedRoute allowedRoles={centerRoles}><Dashboard /></ProtectedRoute>} />

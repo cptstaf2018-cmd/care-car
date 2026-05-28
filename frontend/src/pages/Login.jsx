@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, BarChart3, Camera, Car, CheckCircle2, Clock3, MessageCircle, ShieldCheck, Sparkles, Zap, Phone, Mail } from 'lucide-react'
 import { login } from '../api/auth'
@@ -32,9 +32,10 @@ const formVariants = {
   exit: (dir) => ({ opacity: 0, x: dir > 0 ? -40 : 40, transition: { duration: 0.25 } }),
 }
 
-export default function Login() {
+export default function Login({ initialMode = 'login' }) {
+  const location = useLocation()
   const [searchParams] = useSearchParams()
-  const [mode, setMode] = useState('login')
+  const [mode, setMode] = useState(initialMode)
   const [dir, setDir] = useState(1)
 
   // Login state
@@ -56,17 +57,19 @@ export default function Login() {
   const setAuth = useAuthStore((s) => s.login)
 
   useEffect(() => {
-    if (searchParams.get('mode') === 'register') {
-      setMode('register')
-      setDir(1)
-    }
-  }, [searchParams])
+    const nextMode = initialMode === 'register' || location.pathname === '/register' || searchParams.get('mode') === 'register'
+      ? 'register'
+      : 'login'
+    setMode(nextMode)
+    setDir(nextMode === 'register' ? 1 : -1)
+  }, [initialMode, location.pathname, searchParams])
 
   const switchMode = (newMode) => {
     setDir(newMode === 'register' ? 1 : -1)
     setMode(newMode)
     setError('')
     setRegError('')
+    navigate(newMode === 'register' ? '/register' : '/login')
   }
 
   const handleLoginSubmit = async (e) => {
@@ -115,13 +118,13 @@ export default function Login() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#07111f] text-white">
+    <main className="relative min-h-screen overflow-hidden bg-[#07111f] text-right text-white">
       <div className="pointer-events-none absolute -right-32 top-20 h-80 w-80 rounded-full bg-cyan-400/20 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 left-1/3 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
 
       <div className="grid min-h-screen lg:grid-cols-[0.98fr_1.02fr]">
-        {/* Left hero section */}
-        <section className="relative hidden min-h-screen overflow-hidden lg:block">
+        {/* Hero section */}
+        <section className="relative hidden min-h-screen overflow-hidden lg:order-2 lg:block">
           <motion.img
             src={centerHero}
             alt="care-car-saas automotive service platform"
@@ -175,8 +178,8 @@ export default function Login() {
           </div>
         </section>
 
-        {/* Right form section */}
-        <section className="relative flex min-h-screen items-center justify-center px-5 py-8 lg:px-10 xl:px-14">
+        {/* Form section */}
+        <section className="relative flex min-h-screen items-center justify-center px-5 py-8 lg:order-1 lg:px-10 xl:px-14">
           <div className="w-full max-w-[540px]">
 
             {/* Mobile hero */}
