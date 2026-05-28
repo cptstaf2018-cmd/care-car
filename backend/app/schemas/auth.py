@@ -34,3 +34,7 @@ class RegisterRequest(BaseModel):
 
 class RegisterResponse(BaseModel):
     message: str
+    access_token: str
+    token_type: str = "bearer"
+    role: str
+    tenant_id: int
