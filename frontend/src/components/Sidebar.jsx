@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { NavLink } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
@@ -6,6 +7,7 @@ import {
   Gauge, LogOut, Package, PlusCircle, Receipt, Settings, ShieldCheck
 } from 'lucide-react'
 import { useAuthStore } from '../store/auth'
+import { getCenterSettings } from '../api/settings'
 
 const centerGroups = [
   {
@@ -41,6 +43,12 @@ const adminGroups = [
 function SidebarContent({ collapsed, setCollapsed, onClose }) {
   const { user, logout } = useAuthStore()
   const groups = user?.role === 'superadmin' ? adminGroups : centerGroups
+  const { data: center } = useQuery({
+    queryKey: ['center-settings', 'sidebar'],
+    queryFn: () => getCenterSettings().then(r => r.data),
+    enabled: user?.role !== 'superadmin',
+  })
+  const centerName = center?.name || 'تشغيل المركز'
 
   return (
     <div className="flex h-full flex-col border-l border-slate-900 bg-[#08111f] text-white">
@@ -50,7 +58,7 @@ function SidebarContent({ collapsed, setCollapsed, onClose }) {
             <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-cyan-400 text-lg font-black text-slate-950 shadow-lg shadow-cyan-500/20">CC</div>
             {!collapsed && (
               <div>
-                <h2 className="font-black text-white">{user?.role === 'superadmin' ? 'care-car-saas' : 'تشغيل المركز'}</h2>
+                <h2 className="max-w-[170px] truncate font-black text-white">{user?.role === 'superadmin' ? 'care-car-saas' : centerName}</h2>
                 <p className="mt-1 text-xs text-slate-400">{user?.role === 'superadmin' ? 'لوحة السوبر أدمن' : 'ERP مركز الزيت'}</p>
               </div>
             )}
@@ -94,6 +102,7 @@ function SidebarContent({ collapsed, setCollapsed, onClose }) {
       <div className="border-t border-white/10 p-4">
         {!collapsed && (
           <div className="mb-3 rounded-lg border border-white/10 bg-white/[0.04] p-3">
+            {user?.role !== 'superadmin' && <p className="mb-1 truncate text-xs font-bold text-cyan-200">{centerName}</p>}
             <p className="truncate text-sm font-bold">{user?.email}</p>
             <p className="mt-1 text-xs text-slate-400">{user?.role === 'superadmin' ? 'مدير المنصة' : 'حساب مركز'}</p>
           </div>

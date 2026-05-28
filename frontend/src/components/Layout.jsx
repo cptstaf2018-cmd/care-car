@@ -1,11 +1,19 @@
 import { useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
 import { useAuthStore } from '../store/auth'
+import { getCenterSettings } from '../api/settings'
 
 export default function Layout({ children, hideHeader = false, compact = false }) {
   const { user } = useAuthStore()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { data: center } = useQuery({
+    queryKey: ['center-settings', 'layout'],
+    queryFn: () => getCenterSettings().then(r => r.data),
+    enabled: user?.role !== 'superadmin',
+  })
+  const pageTitle = user?.role === 'superadmin' ? 'لوحة السوبر أدمن' : center?.name || 'لوحة المركز'
 
   return (
     <div className="flex min-h-screen bg-[#f4f7fb]">
@@ -24,7 +32,7 @@ export default function Layout({ children, hideHeader = false, compact = false }
                 <div>
                   <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">care-car-saas</p>
                   <h1 className="text-base font-black text-slate-950 lg:text-lg">
-                    {user?.role === 'superadmin' ? 'لوحة السوبر أدمن' : 'لوحة المركز'}
+                    {pageTitle}
                   </h1>
                 </div>
               </div>

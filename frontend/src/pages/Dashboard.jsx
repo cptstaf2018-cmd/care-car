@@ -9,6 +9,7 @@ import { getDailyReport, getMonthlyReport } from '../api/reports'
 import { getCars } from '../api/cars'
 import { getInventory } from '../api/inventory'
 import { getInvoices } from '../api/invoices'
+import { getCenterSettings } from '../api/settings'
 import { useAuthStore } from '../store/auth'
 import centerTemplateRed from '../assets/center-template-red.png'
 import centerTemplateSuv from '../assets/center-template-suv.png'
@@ -48,12 +49,17 @@ export default function Dashboard() {
     queryKey: ['invoices'],
     queryFn: () => getInvoices().then(r => r.data),
   })
+  const centerQuery = useQuery({
+    queryKey: ['center-settings', 'dashboard'],
+    queryFn: () => getCenterSettings().then(r => r.data),
+  })
 
   const daily = dailyQuery.data
   const monthly = monthlyQuery.data
   const cars = carsQuery.data || []
   const inventory = inventoryQuery.data || []
   const invoices = invoicesQuery.data || []
+  const centerName = centerQuery.data?.name || 'مركزك'
   const lowStock = inventory.filter(item => item.low_stock)
   const unpaidInvoices = invoices.filter(inv => inv.status !== 'paid')
   const dueCars = cars
@@ -134,7 +140,8 @@ export default function Dashboard() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-cyan-300">مباشر الآن</p>
-                <h2 className="text-base font-black text-white">نشاط اليوم</h2>
+                <h2 className="text-base font-black text-white">{centerName}</h2>
+                <p className="mt-0.5 text-xs font-bold text-slate-400">نشاط اليوم</p>
               </div>
               <div className="hidden gap-3 sm:flex">
                 <HeroMetric label="خدمات منجزة" value={daily?.service_count ?? '—'} />
