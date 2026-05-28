@@ -1,9 +1,18 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import auth, tenants, cars, services, invoices, inventory, debts, reports, settings, vision
+from app.services.scheduler_service import start_scheduler
 
 
-app = FastAPI(title="care-car-saas")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    scheduler = start_scheduler()
+    yield
+    scheduler.shutdown()
+
+
+app = FastAPI(title="care-car-saas", lifespan=lifespan)
 
 
 app.add_middleware(

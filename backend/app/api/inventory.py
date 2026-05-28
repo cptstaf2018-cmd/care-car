@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.deps import get_current_user
@@ -79,3 +80,15 @@ def update_item(item_id: int, body: InventoryUpdate, db: Session = Depends(get_d
     db.commit()
     db.refresh(item)
     return item
+
+@router.delete("/{item_id}", status_code=204)
+def delete_item(item_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    item = db.get(InventoryItem, item_id)
+    if not item or item.tenant_id != user.tenant_id:
+        raise HTTPException(status_code=404, detail="Item not found")
+    try:
+        db.delete(item)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Cannot delete item with related records")

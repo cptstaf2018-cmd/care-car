@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Download, Filter, PlusCircle, Printer, Receipt, Search, Zap } from 'lucide-react'
+import { Download, Filter, Printer, PlusCircle, Receipt, Search, Trash2, Zap } from 'lucide-react'
 import Layout from '../components/Layout'
-import { getInvoices, updateInvoice } from '../api/invoices'
+import { getInvoices, updateInvoice, deleteInvoice } from '../api/invoices'
 
 const statusLabel = { paid: 'مدفوعة', unpaid: 'غير مدفوعة', partial: 'جزئية' }
 const statusStyle = {
@@ -14,18 +14,31 @@ const statusStyle = {
 
 const money = value => `${Number(value || 0).toLocaleString()} IQD`
 
+const nextStatus = { unpaid: 'partial', partial: 'paid', paid: 'unpaid' }
+const nextStatusLabel = { unpaid: 'جزئي', partial: 'مدفوعة', paid: 'غير مدفوعة' }
+
 export default function Invoices() {
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const [filters, setFilters] = useState({ search: '', status: 'all' })
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['invoices'],
     queryFn: () => getInvoices().then(r => r.data),
   })
 
-  const markPaid = useMutation({
-    mutationFn: (id) => updateInvoice(id, { status: 'paid' }),
+  const changeStatus = useMutation({
+    mutationFn: ({ id, status }) => updateInvoice(id, { status }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['invoices'] }),
   })
+
+  const removeMutation = useMutation({
+    mutationFn: deleteInvoice,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['invoices'] }),
+  })
+
+  const confirmDelete = (inv) => {
+    if (window.confirm(`حذف الفاتورة #${inv.id}؟`)) removeMutation.mutate(inv.id)
+  }
 
   const filteredInvoices = useMemo(() => {
     const q = filters.search.trim().toLowerCase()
@@ -151,16 +164,29 @@ export default function Invoices() {
                       </span>
                     </td>
                     <td className="px-4 py-4">
-                      {inv.status !== 'paid' ? (
+                      <div className="flex items-center gap-2">
                         <button
-                          onClick={() => markPaid.mutate(inv.id)}
-                          disabled={markPaid.isPending}
-                          className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-700 disabled:opacity-50">
-                          تأكيد الدفع
+                          onClick={() => navigate(`/center/invoices/${inv.id}/print`)}
+                          className="flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-200">
+                          <Printer size={12} /> طباعة
                         </button>
-                      ) : (
-                        <span className="text-xs font-bold text-slate-400">مكتملة</span>
-                      )}
+                        <button
+                          onClick={() => changeStatus.mutate({ id: inv.id, status: nextStatus[inv.status] || 'paid' })}
+                          disabled={changeStatus.isPending}
+                          className={`rounded-lg px-3 py-2 text-xs font-black transition disabled:opacity-50 ${
+                            inv.status === 'paid'
+                              ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                              : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                          }`}>
+                          {nextStatusLabel[inv.status] || 'مدفوعة'}
+                        </button>
+                        <button
+                          onClick={() => confirmDelete(inv)}
+                          disabled={removeMutation.isPending}
+                          className="flex items-center gap-1 rounded-lg bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 hover:bg-rose-100 disabled:opacity-50">
+                          <Trash2 size={12} /> حذف
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )

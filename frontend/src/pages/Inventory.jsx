@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, ArrowDownUp, PackagePlus, ReceiptText, Search, SlidersHorizontal } from 'lucide-react'
+import { AlertTriangle, ArrowDownUp, Check, PackagePlus, Pencil, ReceiptText, Search, SlidersHorizontal, Trash2, X } from 'lucide-react'
 import Layout from '../components/Layout'
-import { getInventory, createInventoryItem, updateInventoryItem, addInventoryReceipt } from '../api/inventory'
+import { getInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem, addInventoryReceipt } from '../api/inventory'
 
 const emptyLine = {
   oil_type: '',
@@ -34,6 +34,10 @@ export default function Inventory() {
 
   const [mode, setMode] = useState('manual')
   const [qtyInputs, setQtyInputs] = useState({})
+  const [costInputs, setCostInputs] = useState({})
+  const [saleInputs, setSaleInputs] = useState({})
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({})
   const [manual, setManual] = useState(initialManual)
   const [receiptImage, setReceiptImage] = useState(null)
   const [supplierName, setSupplierName] = useState('')
@@ -66,6 +70,27 @@ export default function Inventory() {
       setReceiptImage(null)
     },
   })
+  const deleteItem = useMutation({
+    mutationFn: deleteInventoryItem,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['inventory'] }),
+    onError: () => alert('تعذر حذف المادة'),
+  })
+  const editItem = useMutation({
+    mutationFn: ({ id, data }) => updateInventoryItem(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['inventory'] })
+      setEditingId(null)
+    },
+  })
+
+  const startEdit = (item) => {
+    setEditingId(item.id)
+    setEditForm({ oil_type: item.oil_type, category: item.category || '', supplier_name: item.supplier_name || '' })
+  }
+
+  const confirmDelete = (item) => {
+    if (window.confirm(`حذف "${item.oil_type}" من المخزون؟`)) deleteItem.mutate(item.id)
+  }
 
   const categories = useMemo(() => [...new Set(items.map(i => i.category).filter(Boolean))], [items])
   const suppliers = useMemo(() => [...new Set(items.map(i => i.supplier_name).filter(Boolean))], [items])
@@ -244,10 +269,10 @@ export default function Inventory() {
 
       <section className="surface overflow-hidden rounded-lg">
         <div className="overflow-x-auto">
-          <table className="min-w-[980px] w-full text-right text-sm">
+          <table className="min-w-[1100px] w-full text-right text-sm">
             <thead className="bg-slate-50 text-slate-500">
               <tr>
-                {['المنتج', 'الكمية', 'شراء', 'بيع', 'الربح', 'التنبيه', 'المورد'].map(h => (
+                {['المنتج', 'الكمية', 'شراء', 'بيع', 'الربح', 'التنبيه', 'المورد', ''].map(h => (
                   <th key={h} className="border-b border-slate-200 px-4 py-3 font-black">{h}</th>
                 ))}
               </tr>
@@ -255,11 +280,25 @@ export default function Inventory() {
             <tbody>
               {filteredItems.map(item => {
                 const profit = Number(item.sale_price || 0) - Number(item.unit_cost || 0)
+                const isEditing = editingId === item.id
                 return (
-                  <tr key={item.id} className={`border-b border-slate-100 last:border-0 ${item.low_stock ? 'bg-rose-50/55' : 'bg-white'}`}>
+                  <tr key={item.id} className={`border-b border-slate-100 last:border-0 ${isEditing ? 'bg-amber-50/60' : item.low_stock ? 'bg-rose-50/55' : 'bg-white'}`}>
                     <td className="px-4 py-4">
-                      <p className="font-black text-slate-950">{item.oil_type}</p>
-                      <p className="mt-1 text-xs text-slate-500">{item.category || 'بدون تصنيف'}</p>
+                      {isEditing ? (
+                        <div className="space-y-2">
+                          <input value={editForm.oil_type} onChange={e => setEditForm({ ...editForm, oil_type: e.target.value })}
+                            placeholder="اسم المنتج"
+                            className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 font-black text-slate-950 outline-none focus:ring-2 focus:ring-amber-200" />
+                          <input value={editForm.category} onChange={e => setEditForm({ ...editForm, category: e.target.value })}
+                            placeholder="التصنيف"
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-amber-300" />
+                        </div>
+                      ) : (
+                        <>
+                          <p className="font-black text-slate-950">{item.oil_type}</p>
+                          <p className="mt-1 text-xs text-slate-500">{item.category || 'بدون تصنيف'}</p>
+                        </>
+                      )}
                     </td>
                     <td className="px-4 py-4">
                       <input type="number" placeholder={money(item.quantity)}
@@ -271,17 +310,73 @@ export default function Inventory() {
                             onSuccess: () => setQtyInputs(prev => { const next = { ...prev }; delete next[item.id]; return next }),
                           })
                         }}
-                        className="w-28 rounded-lg border border-slate-200 px-3 py-2 font-black outline-none focus:border-cyan-400" />
+                        className="w-24 rounded-lg border border-slate-200 px-3 py-2 font-black outline-none focus:border-cyan-400" />
                     </td>
-                    <td className="px-4 py-4 font-bold text-slate-700">{item.unit_cost ? `${money(item.unit_cost)} IQD` : '-'}</td>
-                    <td className="px-4 py-4 font-bold text-slate-950">{item.sale_price ? `${money(item.sale_price)} IQD` : '-'}</td>
+                    <td className="px-4 py-4">
+                      <input type="number" placeholder={item.unit_cost ? money(item.unit_cost) : '—'}
+                        value={costInputs[item.id] ?? ''}
+                        onChange={e => setCostInputs({ ...costInputs, [item.id]: e.target.value })}
+                        onBlur={() => {
+                          const val = costInputs[item.id]
+                          if (val !== undefined && val !== '') update.mutate({ id: item.id, data: { unit_cost: Number(val) } }, {
+                            onSuccess: () => setCostInputs(prev => { const next = { ...prev }; delete next[item.id]; return next }),
+                          })
+                        }}
+                        className="w-24 rounded-lg border border-slate-200 px-3 py-2 font-bold text-slate-700 outline-none focus:border-cyan-400" />
+                    </td>
+                    <td className="px-4 py-4">
+                      <input type="number" placeholder={item.sale_price ? money(item.sale_price) : '—'}
+                        value={saleInputs[item.id] ?? ''}
+                        onChange={e => setSaleInputs({ ...saleInputs, [item.id]: e.target.value })}
+                        onBlur={() => {
+                          const val = saleInputs[item.id]
+                          if (val !== undefined && val !== '') update.mutate({ id: item.id, data: { sale_price: Number(val) } }, {
+                            onSuccess: () => setSaleInputs(prev => { const next = { ...prev }; delete next[item.id]; return next }),
+                          })
+                        }}
+                        className="w-24 rounded-lg border border-slate-200 px-3 py-2 font-bold text-slate-950 outline-none focus:border-cyan-400" />
+                    </td>
                     <td className={`px-4 py-4 font-black ${profit > 0 ? 'text-emerald-700' : 'text-slate-400'}`}>{profit > 0 ? `${money(profit)} IQD` : '-'}</td>
                     <td className="px-4 py-4">
                       <span className={`rounded-full px-2.5 py-1 text-xs font-black ${item.low_stock ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
                         {item.low_stock ? `ناقص <= ${money(item.min_threshold)}` : `مستقر > ${money(item.min_threshold)}`}
                       </span>
                     </td>
-                    <td className="px-4 py-4 font-bold text-slate-600">{item.supplier_name || '-'}</td>
+                    <td className="px-4 py-4">
+                      {isEditing ? (
+                        <input value={editForm.supplier_name} onChange={e => setEditForm({ ...editForm, supplier_name: e.target.value })}
+                          placeholder="المورد"
+                          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-amber-300" />
+                      ) : (
+                        <span className="font-bold text-slate-600">{item.supplier_name || '-'}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4">
+                      {isEditing ? (
+                        <div className="flex gap-2">
+                          <button onClick={() => editItem.mutate({ id: item.id, data: editForm })}
+                            disabled={!editForm.oil_type || editItem.isPending}
+                            className="flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white disabled:opacity-50 hover:bg-emerald-700">
+                            <Check size={12} /> حفظ
+                          </button>
+                          <button onClick={() => setEditingId(null)}
+                            className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
+                            <X size={12} /> إلغاء
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <button onClick={() => startEdit(item)}
+                            className="flex items-center gap-1 rounded-lg bg-amber-50 px-3 py-2 text-xs font-black text-amber-800 hover:bg-amber-100">
+                            <Pencil size={12} /> تعديل
+                          </button>
+                          <button onClick={() => confirmDelete(item)} disabled={deleteItem.isPending}
+                            className="flex items-center gap-1 rounded-lg bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 hover:bg-rose-100 disabled:opacity-50">
+                            <Trash2 size={12} /> حذف
+                          </button>
+                        </div>
+                      )}
+                    </td>
                   </tr>
                 )
               })}

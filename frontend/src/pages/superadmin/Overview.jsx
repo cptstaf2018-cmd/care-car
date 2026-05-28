@@ -5,9 +5,13 @@ import { Building2, CalendarClock, CreditCard, MessageCircle, ShieldAlert, Spark
 import Layout from '../../components/Layout'
 import StatCard from '../../components/StatCard'
 import { getTenants } from '../../api/tenants'
+import { PLAN_DETAILS, PLAN_ORDER, planShortName } from '../../constants/plans'
 
-const planPrice = { basic: 50, pro: 100, enterprise: 200 }
-const planLabel = { basic: 'Basic', pro: 'Pro', enterprise: 'Enterprise' }
+const planPrice = {
+  basic: PLAN_DETAILS.basic.adminPrice,
+  pro: PLAN_DETAILS.pro.adminPrice,
+  enterprise: PLAN_DETAILS.enterprise.adminPrice,
+}
 
 function remainingDays(date) {
   if (!date) return null
@@ -81,12 +85,12 @@ export default function AdminOverview() {
             </Link>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
-            {['basic', 'pro', 'enterprise'].map(plan => {
+            {PLAN_ORDER.map(plan => {
               const count = tenants.filter(t => t.plan === plan).length
               const activeCount = tenants.filter(t => t.plan === plan && t.is_active).length
               return (
                 <div key={plan} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs font-bold text-slate-500">{planLabel[plan]}</p>
+                  <p className="text-xs font-bold text-slate-500">{planShortName(plan)}</p>
                   <p className="mt-2 text-2xl font-black text-slate-950">{count}</p>
                   <p className="mt-1 text-xs text-slate-500">{activeCount} نشط · ${planPrice[plan]}/شهر</p>
                 </div>
@@ -112,7 +116,7 @@ export default function AdminOverview() {
                 <div key={t.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
                   <div>
                     <p className="text-sm font-black text-slate-900">{t.name}</p>
-                    <p className="text-xs text-slate-500">{planLabel[t.plan] || t.plan} · {t.subscription_ends_at || 'بدون تاريخ انتهاء'}</p>
+                    <p className="text-xs text-slate-500">{planShortName(t.plan)} · {t.subscription_ends_at || 'بدون تاريخ انتهاء'}</p>
                   </div>
                   <Badge
                     text={!t.is_active ? 'موقوف' : days === null ? 'أضف تاريخ' : days < 0 ? 'منتهي' : `باقي ${days} يوم`}
@@ -144,7 +148,7 @@ export default function AdminOverview() {
               {visibleTenants.map(t => (
                 <tr key={t.id} className={`border-t border-slate-100 text-sm hover:bg-slate-50 ${!t.is_active ? 'bg-rose-50/45' : ''}`}>
                   <td className="px-5 py-4"><p className="font-black text-slate-950">{t.name}</p><p className="text-xs text-slate-500">{t.contact_phone || 'لا يوجد هاتف'}</p></td>
-                  <td className="px-5 py-4"><Badge text={`${planLabel[t.plan] || t.plan} · $${planPrice[t.plan] || 0}`} tone="slate" /></td>
+                  <td className="px-5 py-4"><Badge text={`${planShortName(t.plan)} · $${planPrice[t.plan] || 0}`} tone="slate" /></td>
                   <td className="px-5 py-4">{t.subscription_ends_at || 'غير محدد'}</td>
                   <td className="px-5 py-4">
                     <Badge
@@ -172,11 +176,11 @@ export default function AdminOverview() {
               <h3 className="font-black text-slate-950">توزيع الخطط</h3>
             </div>
             <div className="space-y-2">
-              {['basic', 'pro', 'enterprise'].map(plan => {
+              {PLAN_ORDER.map(plan => {
                 const count = tenants.filter(t => t.plan === plan).length
                 return (
                   <div key={plan} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-                    <span className="text-sm font-bold text-slate-700 capitalize">{plan}</span>
+                    <span className="text-sm font-bold text-slate-700">{planShortName(plan)}</span>
                     <span className="text-sm font-black text-slate-950">{count} مركز</span>
                   </div>
                 )

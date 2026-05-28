@@ -1,11 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Layout from '../../components/Layout'
 import { getTenants, updateTenant } from '../../api/tenants'
+import { PLAN_DETAILS, PLAN_ORDER, planName } from '../../constants/plans'
 
 const planPrice = {
-  basic: '50$ / شهر',
-  pro: '100$ / شهر',
-  enterprise: '200$ / شهر',
+  basic: `${PLAN_DETAILS.basic.adminPrice}$ / شهر`,
+  pro: `${PLAN_DETAILS.pro.adminPrice}$ / شهر`,
+  enterprise: `${PLAN_DETAILS.enterprise.adminPrice}$ / شهر`,
 }
 
 function remainingDays(date) {
@@ -50,9 +51,7 @@ export default function Subscriptions() {
                   <span className="mb-1 block text-slate-500">الخطة</span>
                   <select value={t.plan} onChange={e => update.mutate({ id: t.id, data: { plan: e.target.value } })}
                     className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 outline-none focus:border-cyan-400">
-                    <option value="basic">Basic</option>
-                    <option value="pro">Pro</option>
-                    <option value="enterprise">Enterprise</option>
+                    {PLAN_ORDER.map(plan => <option key={plan} value={plan}>{planName(plan)}</option>)}
                   </select>
                 </label>
                 <label className="text-sm">
