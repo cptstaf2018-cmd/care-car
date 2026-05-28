@@ -357,7 +357,7 @@ function LaunchButton({ launching, label = 'دخول النظام' }) {
       <span className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.62),transparent_42%)]" />
       <span className="absolute bottom-3 left-7 right-7 h-px bg-slate-950/15" />
       <motion.span
-        className="absolute left-1/2 top-1 block h-14 w-px -translate-x-1/2 bg-slate-700"
+        className="absolute left-1/2 top-1 block h-14 w-36 -translate-x-1/2"
         animate={launching ? { x: [0, 34, -460], scale: [1, 0.98, 1.05] } : { x: 0, scale: 1 }}
         transition={launching ? { duration: 0.78, times: [0, 0.28, 1], ease: ['easeOut', 'easeIn'] } : { duration: 0.2 }}
       >
