@@ -34,15 +34,8 @@ const formVariants = {
 
 export default function Login() {
   const [searchParams] = useSearchParams()
-  const [mode, setMode] = useState('login') // 'login' | 'register'
+  const [mode, setMode] = useState('login')
   const [dir, setDir] = useState(1)
-
-  // Auto-switch to register if ?mode=register
-  useEffect(() => {
-    if (searchParams.get('mode') === 'register') {
-      setMode('register')
-    }
-  }, [searchParams])
 
   // Login state
   const [email, setEmail] = useState('')
@@ -58,10 +51,16 @@ export default function Login() {
   const [regEmail, setRegEmail] = useState('')
   const [regLoading, setRegLoading] = useState(false)
   const [regError, setRegError] = useState('')
-  const [regSuccess, setRegSuccess] = useState(false)
 
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.login)
+
+  useEffect(() => {
+    if (searchParams.get('mode') === 'register') {
+      setMode('register')
+      setDir(1)
+    }
+  }, [searchParams])
 
   const switchMode = (newMode) => {
     setDir(newMode === 'register' ? 1 : -1)
@@ -94,16 +93,22 @@ export default function Login() {
     setRegLoading(true)
     setRegError('')
     try {
-      await client.post('/auth/register', {
+      const res = await client.post('/auth/register', {
         center_name: centerName,
         full_name: fullName,
         contact_method: contactMethod,
         whatsapp: contactMethod === 'whatsapp' ? whatsapp : undefined,
         email: contactMethod === 'email' ? regEmail : undefined,
       })
-      setRegSuccess(true)
+
+      // تسجيل الدخول التلقائي بعد إنشاء الحساب
+      const { access_token, role, tenant_id } = res.data
+      const userEmail = contactMethod === 'email' ? regEmail : `${centerName}@carecar`
+      setAuth(access_token, { email: userEmail, role, tenant_id })
+      navigate('/')
     } catch (err) {
-      setRegError(err.response?.data?.detail || 'خطأ في التسجيل، حاول مجددًا')
+      const detail = err.response?.data?.detail
+      setRegError(detail || 'خطأ في إنشاء الحساب، حاول مجددًا')
     } finally {
       setRegLoading(false)
     }
@@ -252,79 +257,68 @@ export default function Login() {
                     </motion.div>
                   ) : (
                     <motion.div key="register" custom={dir} variants={formVariants} initial="enter" animate="center" exit="exit">
-                      {regSuccess ? (
-                        <div className="py-6 text-center">
-                          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-cyan-400/20">
-                            <CheckCircle2 size={32} className="text-cyan-400" />
+                      <h2 className="mb-1 text-2xl font-extrabold leading-tight">إنشاء حساب جديد</h2>
+                      <p className="mb-5 text-sm leading-6 text-slate-300">
+                        سجّل مركزك وابدأ التجربة المجانية، لا حاجة لبطاقة.
+                      </p>
+                      <form onSubmit={handleRegisterSubmit} className="space-y-4">
+                        <label className="block">
+                          <span className="mb-2 block text-sm font-bold text-slate-200">اسم المركز</span>
+                          <input type="text" placeholder="مركز الخليج لتبديل الزيت" value={centerName}
+                            onChange={(e) => setCenterName(e.target.value)} required
+                            className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                        </label>
+                        <label className="block">
+                          <span className="mb-2 block text-sm font-bold text-slate-200">اسمك الكامل</span>
+                          <input type="text" placeholder="أحمد محمد" value={fullName}
+                            onChange={(e) => setFullName(e.target.value)} required
+                            className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                        </label>
+                        <div>
+                          <span className="mb-2 block text-sm font-bold text-slate-200">طريقة التواصل</span>
+                          <div className="flex rounded-xl border border-white/10 bg-slate-900/60 p-1">
+                            <button type="button" onClick={() => setContactMethod('whatsapp')}
+                              className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-bold transition-all ${contactMethod === 'whatsapp' ? 'bg-cyan-400 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white'}`}>
+                              <Phone size={15} /> واتساب
+                            </button>
+                            <button type="button" onClick={() => setContactMethod('email')}
+                              className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-bold transition-all ${contactMethod === 'email' ? 'bg-cyan-400 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white'}`}>
+                              <Mail size={15} /> إيميل
+                            </button>
                           </div>
-                          <h2 className="mb-2 text-xl font-extrabold">تم إنشاء حسابك!</h2>
-                          <p className="mb-5 text-sm text-slate-300">سيتم التواصل معك قريباً لتفعيل المركز.</p>
-                          <button onClick={() => { setRegSuccess(false); switchMode('login') }}
-                            className="text-sm font-bold text-cyan-300 hover:text-cyan-200 transition-colors">
-                            العودة لتسجيل الدخول
-                          </button>
                         </div>
-                      ) : (
-                        <>
-                          <h2 className="mb-1 text-2xl font-extrabold leading-tight">إنشاء حساب جديد</h2>
-                          <p className="mb-5 text-sm leading-6 text-slate-300">
-                            سجّل مركزك وابدأ التجربة المجانية، لا حاجة لبطاقة.
-                          </p>
-                          <form onSubmit={handleRegisterSubmit} className="space-y-4">
-                            <label className="block">
-                              <span className="mb-2 block text-sm font-bold text-slate-200">اسم المركز</span>
-                              <input type="text" placeholder="مركز الخليج لتبديل الزيت" value={centerName}
-                                onChange={(e) => setCenterName(e.target.value)} required
-                                className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
-                            </label>
-                            <label className="block">
-                              <span className="mb-2 block text-sm font-bold text-slate-200">اسمك الكامل</span>
-                              <input type="text" placeholder="أحمد محمد" value={fullName}
-                                onChange={(e) => setFullName(e.target.value)} required
-                                className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
-                            </label>
-                            <div>
-                              <span className="mb-2 block text-sm font-bold text-slate-200">طريقة استلام كود التفعيل</span>
-                              <div className="flex rounded-xl border border-white/10 bg-slate-900/60 p-1">
-                                <button type="button" onClick={() => setContactMethod('whatsapp')}
-                                  className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-bold transition-all ${contactMethod === 'whatsapp' ? 'bg-cyan-400 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white'}`}>
-                                  <Phone size={15} /> واتساب
-                                </button>
-                                <button type="button" onClick={() => setContactMethod('email')}
-                                  className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-bold transition-all ${contactMethod === 'email' ? 'bg-cyan-400 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white'}`}>
-                                  <Mail size={15} /> إيميل
-                                </button>
-                              </div>
-                            </div>
-                            {contactMethod === 'whatsapp' ? (
-                              <label className="block">
-                                <span className="mb-2 block text-sm font-bold text-slate-200">رقم الواتساب</span>
-                                <input type="text" placeholder="07xxxxxxxxx" value={whatsapp}
-                                  onChange={(e) => setWhatsapp(e.target.value)} required
-                                  className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
-                              </label>
-                            ) : (
-                              <label className="block">
-                                <span className="mb-2 block text-sm font-bold text-slate-200">البريد الإلكتروني</span>
-                                <input type="email" placeholder="example@mail.com" value={regEmail}
-                                  onChange={(e) => setRegEmail(e.target.value)} required
-                                  className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
-                              </label>
-                            )}
-                            {regError && <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-200">{regError}</p>}
-                            <button type="submit" disabled={regLoading}
-                              className="group relative mt-1 h-[52px] w-full overflow-hidden rounded-lg bg-[linear-gradient(180deg,#48e8e8,#22c4c4)] font-extrabold text-slate-950 shadow-lg shadow-cyan-500/25 transition hover:shadow-cyan-500/40 disabled:opacity-60">
-                              {regLoading ? 'جاري الإنشاء...' : 'إنشاء الحساب مجاناً ←'}
-                            </button>
-                          </form>
-                          <p className="mt-4 text-center text-sm text-slate-400">
-                            لديك حساب؟{' '}
-                            <button onClick={() => switchMode('login')} className="font-bold text-cyan-300 hover:text-cyan-200 transition-colors">
-                              تسجيل الدخول
-                            </button>
-                          </p>
-                        </>
-                      )}
+                        {contactMethod === 'whatsapp' ? (
+                          <label className="block">
+                            <span className="mb-2 block text-sm font-bold text-slate-200">رقم الواتساب</span>
+                            <input type="text" placeholder="07xxxxxxxxx" value={whatsapp}
+                              onChange={(e) => setWhatsapp(e.target.value)} required
+                              className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                          </label>
+                        ) : (
+                          <label className="block">
+                            <span className="mb-2 block text-sm font-bold text-slate-200">البريد الإلكتروني</span>
+                            <input type="email" placeholder="example@mail.com" value={regEmail}
+                              onChange={(e) => setRegEmail(e.target.value)} required
+                              className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                          </label>
+                        )}
+                        {regError && <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-200">{regError}</p>}
+                        <button type="submit" disabled={regLoading}
+                          className="group relative mt-1 h-[52px] w-full overflow-hidden rounded-lg bg-[linear-gradient(180deg,#48e8e8,#22c4c4)] font-extrabold text-slate-950 shadow-lg shadow-cyan-500/25 transition hover:shadow-cyan-500/40 disabled:opacity-60">
+                          {regLoading ? (
+                            <span className="flex items-center justify-center gap-2">
+                              <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950/30 border-t-slate-950" />
+                              جاري إنشاء مركزك...
+                            </span>
+                          ) : 'إنشاء الحساب مجاناً ←'}
+                        </button>
+                      </form>
+                      <p className="mt-4 text-center text-sm text-slate-400">
+                        لديك حساب؟{' '}
+                        <button onClick={() => switchMode('login')} className="font-bold text-cyan-300 hover:text-cyan-200 transition-colors">
+                          تسجيل الدخول
+                        </button>
+                      </p>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -337,9 +331,8 @@ export default function Login() {
                 <TrustItem icon={MessageCircle} label="واتساب جاهز" />
               </div>
 
-              {/* Launch hint */}
               <p className="mt-4 text-center text-xs text-slate-500">
-                دخول موحد: النظام يفتح لوحة السوبر أدمن أو لوحة المركز تلقائياً حسب صلاحية الحساب.
+                دخول موحد: النظام يفتح لوحة المركز تلقائياً بعد التسجيل.
               </p>
             </motion.div>
           </div>
@@ -383,9 +376,7 @@ function LaunchButton({ launching, label = 'دخول النظام' }) {
           />
         ))}
       </motion.span>
-      <motion.span
-        className="absolute inset-x-0 bottom-3 flex items-center justify-center gap-2 text-sm font-extrabold"
-      >
+      <motion.span className="absolute inset-x-0 bottom-3 flex items-center justify-center gap-2 text-sm font-extrabold">
         {label}
         <ArrowLeft size={17} className="transition group-hover:-translate-x-1" />
       </motion.span>
