@@ -1,37 +1,56 @@
+import logging
 import secrets
 import smtplib
 import string
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
-from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
-from app.core.database import get_db
-from app.core.security import verify_password, create_access_token, hash_password
-from app.core.deps import get_current_user
-from app.core.config import settings
-from app.models.user import User, Role
-from app.models.tenant import Tenant, Plan
-from app.schemas.auth import LoginRequest, TokenResponse, UserOut
-import httpx
 
+import httpx
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, EmailStr
+from sqlalchemy.orm import Session
+
+from app.core.config import settings
+from app.core.database import get_db
+from app.core.deps import get_current_user
+from app.core.security import create_access_token, hash_password, verify_password
+from app.models.tenant import Plan, Tenant
+from app.models.user import Role, User
+from app.schemas.auth import LoginRequest, TokenResponse, UserOut
+
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+class RegisterRequest(BaseModel):
+    center_name: str
+    full_name: str | None = None
+    manager_name: str | None = None
+    contact_method: str | None = None
+    whatsapp: str | None = None
+    phone: str | None = None
+    email: EmailStr | None = None
+
+
+class ActivateRequest(BaseModel):
+    email: str | None = None
+    code: str
+    new_password: str
 
 
 def _send_activation_whatsapp(phone: str, code: str, center_name: str) -> str:
     if not settings.PLATFORM_WASNDER_API_KEY or not settings.PLATFORM_WHATSAPP_NUMBER:
         return "not_configured"
-    lines = [
-        "مرحباً بك في منصة Care Car \U0001f697",
+    recipient = phone.strip()
+    if recipient.startswith("0"):
+        recipient = "+964" + recipient[1:]
+    message = "\n".join([
+        "مرحباً بك في منصة Care Car 🚗",
         f"تم إنشاء حساب مركز «{center_name}» بنجاح.",
         f"كود التفعيل الخاص بك: *{code}*",
         "أدخل الكود في صفحة التسجيل لإكمال التفعيل.",
         "الكود صالح لمدة 48 ساعة.",
-    ]
-    message = "\n".join(lines)
-    recipient = phone.strip()
-    if recipient.startswith("0"):
-        recipient = "+964" + recipient[1:]
+    ])
     try:
         resp = httpx.post(
             settings.WASNDER_API_URL,
@@ -52,15 +71,13 @@ def _send_activation_email(email: str, code: str, center_name: str) -> str:
     message["Subject"] = "كود تفعيل حساب Care Car"
     message["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM_EMAIL or settings.SMTP_USER}>"
     message["To"] = email
-    message.set_content(
-        "\n".join([
-            "مرحباً بك في منصة Care Car",
-            f"تم إنشاء حساب مركز «{center_name}» بنجاح.",
-            f"كود التفعيل الخاص بك: {code}",
-            "أدخل الكود في صفحة التسجيل لإكمال التفعيل.",
-            "الكود صالح لمدة 48 ساعة.",
-        ])
-    )
+    message.set_content("\n".join([
+        "مرحباً بك في منصة Care Car",
+        f"تم إنشاء حساب مركز «{center_name}» بنجاح.",
+        f"كود التفعيل الخاص بك: {code}",
+        "أدخل الكود في صفحة التسجيل لإكمال التفعيل.",
+        "الكود صالح لمدة 48 ساعة.",
+    ]))
 
     try:
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as smtp:
@@ -96,73 +113,119 @@ def me(user: User = Depends(get_current_user)):
     return user
 
 
-# Self-registration
-
-class RegisterRequest(BaseModel):
-    center_name: str
-    manager_name: str | None = None
-    email: str | None = None
-    phone: str | None = None
-
-
 @router.post("/register", status_code=201)
 def register(body: RegisterRequest, db: Session = Depends(get_db)):
+    if not body.center_name or not body.center_name.strip():
+        raise HTTPException(status_code=400, detail="اسم المركز مطلوب")
+
+    center_name = body.center_name.strip()
+    if db.query(Tenant).filter(Tenant.name == center_name).first():
+        raise HTTPException(status_code=409, detail="اسم المركز مستخدم بالفعل، يرجى اختيار اسم آخر")
+
+    uses_auto_login_flow = bool(body.full_name or body.contact_method)
+    if uses_auto_login_flow:
+        return _register_with_auto_login(body, db, center_name)
+    return _register_with_activation_code(body, db, center_name)
+
+
+def _register_with_auto_login(body: RegisterRequest, db: Session, center_name: str):
+    if not body.full_name or not body.full_name.strip():
+        raise HTTPException(status_code=400, detail="الاسم الكامل مطلوب")
+    if body.contact_method == "whatsapp" and not body.whatsapp:
+        raise HTTPException(status_code=400, detail="رقم الواتساب مطلوب")
+    if body.contact_method == "email" and not body.email:
+        raise HTTPException(status_code=400, detail="البريد الإلكتروني مطلوب")
+
+    contact_email = str(body.email) if body.contact_method == "email" and body.email else None
+    contact_phone = body.whatsapp if body.contact_method == "whatsapp" else None
+    if not contact_email:
+        safe_name = center_name.lower().replace(" ", "_")[:30]
+        contact_email = f"{safe_name}_{secrets.token_hex(4)}@carecar.internal"
+    if db.query(User).filter(User.email == contact_email).first():
+        raise HTTPException(status_code=409, detail="البريد الإلكتروني مستخدم بالفعل")
+
+    temp_password = secrets.token_urlsafe(12)
+    try:
+        tenant = Tenant(
+            name=center_name,
+            plan=Plan.basic,
+            is_active=True,
+            contact_phone=contact_phone,
+            whatsapp_number=contact_phone,
+            trial_ends_at=datetime.now(timezone.utc) + timedelta(days=3),
+        )
+        db.add(tenant)
+        db.flush()
+
+        user = User(
+            tenant_id=tenant.id,
+            email=contact_email,
+            hashed_password=hash_password(temp_password),
+            full_name=body.full_name.strip(),
+            role=Role.manager,
+            is_active=True,
+            is_verified=True,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        db.refresh(tenant)
+
+        token = create_access_token({"sub": str(user.id), "role": user.role, "tenant_id": user.tenant_id})
+        logger.info("[NEW REGISTRATION] tenant_id=%s user_id=%s email=%s", tenant.id, user.id, contact_email)
+        return {
+            "message": f"تم إنشاء مركز '{center_name}' بنجاح! كلمة المرور المؤقتة: {temp_password}",
+            "access_token": token,
+            "token_type": "bearer",
+            "role": user.role,
+            "tenant_id": tenant.id,
+        }
+    except Exception as exc:
+        db.rollback()
+        logger.error("[REGISTER ERROR] %s", exc)
+        raise HTTPException(status_code=500, detail="حدث خطأ أثناء إنشاء الحساب، حاول مجددًا")
+
+
+def _register_with_activation_code(body: RegisterRequest, db: Session, center_name: str):
     if not body.email and not body.phone:
         raise HTTPException(status_code=400, detail="يجب تقديم إيميل أو رقم واتساب")
-    email = body.email if body.email else body.phone.strip() + "@carecar.app"
-    if db.query(User).filter(User.email == email).first():
+
+    manager_email = str(body.email) if body.email else body.phone.strip() + "@carecar.app"
+    if db.query(User).filter(User.email == manager_email).first():
         raise HTTPException(status_code=400, detail="الحساب مسجل بالفعل، جرب تسجيل الدخول")
-    if db.query(Tenant).filter(Tenant.name == body.center_name).first():
-        raise HTTPException(status_code=400, detail="اسم المركز مستخدم بالفعل، جرب اسماً آخر")
 
     tenant = Tenant(
-        name=body.center_name,
+        name=center_name,
         plan=Plan.basic,
         is_active=True,
+        contact_phone=body.phone,
+        whatsapp_number=body.phone,
         trial_ends_at=datetime.now(timezone.utc) + timedelta(days=3),
     )
     db.add(tenant)
     db.flush()
 
-    code = ''.join(secrets.choice(string.digits) for _ in range(6))
-    expires = datetime.now(timezone.utc) + timedelta(hours=48)
-
+    code = "".join(secrets.choice(string.digits) for _ in range(6))
     manager = User(
         tenant_id=tenant.id,
-        email=email,
+        email=manager_email,
         hashed_password=hash_password(secrets.token_urlsafe(32)),
         full_name=body.manager_name,
         role=Role.manager,
+        is_active=True,
         is_verified=False,
         activation_code=code,
-        activation_expires_at=expires,
+        activation_expires_at=datetime.now(timezone.utc) + timedelta(hours=48),
     )
     db.add(manager)
 
-    delivery_status = "skipped"
-    if body.phone:
-        delivery_status = _send_activation_whatsapp(body.phone, code, body.center_name)
-    elif body.email:
-        delivery_status = _send_activation_email(body.email, code, body.center_name)
-
+    delivery_status = _send_activation_whatsapp(body.phone, code, center_name) if body.phone else _send_activation_email(str(body.email), code, center_name)
     if delivery_status != "sent":
         db.rollback()
         raise HTTPException(status_code=502, detail="تعذر إرسال كود التفعيل، حاول مرة أخرى أو اختر طريقة أخرى")
 
     db.commit()
-
-    return {
-        "delivery_status": delivery_status,
-        "manager_email": email,
-    }
-
-
-# Activation
-
-class ActivateRequest(BaseModel):
-    email: str | None = None
-    code: str
-    new_password: str
+    return {"delivery_status": delivery_status, "manager_email": manager_email}
 
 
 MAX_ACTIVATION_ATTEMPTS = 10
@@ -177,6 +240,7 @@ def activate(body: ActivateRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=429, detail="تم تجاوز عدد المحاولات المسموح بها، تواصل مع الإدارة")
     if not user.activation_expires_at:
         raise HTTPException(status_code=400, detail="لا يوجد كود تفعيل")
+
     expires = user.activation_expires_at
     if expires.tzinfo is None:
         expires = expires.replace(tzinfo=timezone.utc)
@@ -187,6 +251,7 @@ def activate(body: ActivateRequest, db: Session = Depends(get_db)):
         db.commit()
         remaining = MAX_ACTIVATION_ATTEMPTS - user.activation_attempts
         raise HTTPException(status_code=400, detail=f"كود التفعيل غير صحيح ({remaining} محاولة متبقية)")
+
     user.hashed_password = hash_password(body.new_password)
     user.is_verified = True
     user.activation_code = None
