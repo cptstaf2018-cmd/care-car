@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, BarChart3, Camera, Car, CheckCircle2, Clock3, MessageCircle, ShieldCheck, Sparkles, Zap, Phone, Mail } from 'lucide-react'
 import { login } from '../api/auth'
@@ -33,8 +33,16 @@ const formVariants = {
 }
 
 export default function Login() {
+  const [searchParams] = useSearchParams()
   const [mode, setMode] = useState('login') // 'login' | 'register'
   const [dir, setDir] = useState(1)
+
+  // Auto-switch to register if ?mode=register
+  useEffect(() => {
+    if (searchParams.get('mode') === 'register') {
+      setMode('register')
+    }
+  }, [searchParams])
 
   // Login state
   const [email, setEmail] = useState('')
@@ -416,18 +424,6 @@ function Feature({ icon: Icon, label, delay = 0 }) {
       </span>
       {label}
     </motion.div>
-  )
-}
-
-function MiniStat({ icon: Icon, label, value }) {
-  return (
-    <div className="rounded-lg border border-white/10 bg-white/[0.06] p-3 transition hover:border-cyan-200/25 hover:bg-white/[0.09]">
-      <div className="mb-2 flex items-center gap-2 text-cyan-200">
-        <Icon size={16} />
-        <span className="text-xs font-extrabold">{label}</span>
-      </div>
-      <p className="text-sm font-bold text-slate-200">{value}</p>
-    </div>
   )
 }
 
