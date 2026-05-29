@@ -10,6 +10,7 @@ import { getCars } from '../api/cars'
 import { getInventory } from '../api/inventory'
 import { getInvoices } from '../api/invoices'
 import { getCenterSettings } from '../api/settings'
+import { getPlatformAds } from '../api/platform'
 import { useAuthStore } from '../store/auth'
 import centerTemplateRed from '../assets/center-template-red.png'
 import centerTemplateSuv from '../assets/center-template-suv.png'
@@ -17,6 +18,8 @@ import centerTemplateWhite from '../assets/center-template-white.png'
 import centerTemplateService from '../assets/center-template-service.png'
 import centerCarCarousel from '../assets/center-car-carousel.png'
 import centerOilCarousel from '../assets/center-oil-carousel.png'
+
+const FALLBACK_IMAGES = [centerOilCarousel, centerCarCarousel, centerTemplateService, centerTemplateRed, centerTemplateWhite, centerTemplateSuv]
 
 function daysUntilReminder(car) {
   const seed = Number(car.id || 1) * 7
@@ -53,6 +56,11 @@ export default function Dashboard() {
     queryKey: ['center-settings', 'dashboard'],
     queryFn: () => getCenterSettings().then(r => r.data),
   })
+  const adsQuery = useQuery({
+    queryKey: ['platform-ads'],
+    queryFn: () => getPlatformAds().then(r => r.data),
+    staleTime: 5 * 60 * 1000,
+  })
 
   const daily = dailyQuery.data
   const monthly = monthlyQuery.data
@@ -66,14 +74,10 @@ export default function Dashboard() {
     .map(car => ({ ...car, days_left: daysUntilReminder(car) }))
     .filter(car => car.days_left <= 5)
     .slice(0, 6)
-  const promoItems = [
-    centerOilCarousel,
-    centerCarCarousel,
-    centerTemplateService,
-    centerTemplateRed,
-    centerTemplateWhite,
-    centerTemplateSuv,
-  ]
+  const apiAds = adsQuery.data || []
+  const promoItems = apiAds.length > 0
+    ? apiAds.map(a => a.url)
+    : FALLBACK_IMAGES
   const platformAds = [
     {
       title: 'أدر مركز خدمات السيارات باحترافية تامة',
@@ -189,7 +193,7 @@ export default function Dashboard() {
           </div>
 
           {/* Image carousel */}
-          <div className="relative hidden overflow-hidden lg:order-1 lg:block">
+          <div className="relative hidden h-full overflow-hidden lg:order-1 lg:block">
             {promoItems.map((src, index) => (
               <img
                 key={src}

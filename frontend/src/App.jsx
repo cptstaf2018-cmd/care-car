@@ -13,6 +13,7 @@ import InvoicePrint from './pages/InvoicePrint'
 import AdminOverview from './pages/superadmin/Overview'
 import AdminTenants from './pages/superadmin/Tenants'
 import Subscriptions from './pages/superadmin/Subscriptions'
+import PlatformAds from './pages/superadmin/PlatformAds'
 import Activate from './pages/Activate'
 import { useAuthStore } from './store/auth'
 
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="/admin" element={<ProtectedRoute requiredRole="superadmin"><AdminOverview /></ProtectedRoute>} />
           <Route path="/admin/tenants" element={<ProtectedRoute requiredRole="superadmin"><AdminTenants /></ProtectedRoute>} />
           <Route path="/admin/subscriptions" element={<ProtectedRoute requiredRole="superadmin"><Subscriptions /></ProtectedRoute>} />
+          <Route path="/admin/ads" element={<ProtectedRoute requiredRole="superadmin"><PlatformAds /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>

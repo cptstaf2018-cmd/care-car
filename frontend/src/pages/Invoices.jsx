@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Download, Filter, Printer, PlusCircle, Receipt, Search, Trash2, Zap } from 'lucide-react'
+import { Download, Edit2, Filter, Printer, PlusCircle, Receipt, Search, Trash2, X, Zap } from 'lucide-react'
 import Layout from '../components/Layout'
 import { getInvoices, updateInvoice, deleteInvoice } from '../api/invoices'
 
@@ -21,6 +21,8 @@ export default function Invoices() {
   const qc = useQueryClient()
   const navigate = useNavigate()
   const [filters, setFilters] = useState({ search: '', status: 'all' })
+  const [editInvoice, setEditInvoice] = useState(null)
+  const [editForm, setEditForm] = useState({ amount: '', discount: '', status: '' })
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ['invoices'],
     queryFn: () => getInvoices().then(r => r.data),
@@ -30,6 +32,27 @@ export default function Invoices() {
     mutationFn: ({ id, status }) => updateInvoice(id, { status }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['invoices'] }),
   })
+
+  const editMutation = useMutation({
+    mutationFn: ({ id, data }) => updateInvoice(id, data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['invoices'] }); setEditInvoice(null) },
+  })
+
+  const openEdit = (inv) => {
+    setEditInvoice(inv)
+    setEditForm({ amount: String(inv.amount), discount: String(inv.discount), status: inv.status })
+  }
+
+  const saveEdit = () => {
+    editMutation.mutate({
+      id: editInvoice.id,
+      data: {
+        amount: parseFloat(editForm.amount) || editInvoice.amount,
+        discount: parseFloat(editForm.discount) || 0,
+        status: editForm.status,
+      },
+    })
+  }
 
   const removeMutation = useMutation({
     mutationFn: deleteInvoice,
@@ -166,6 +189,11 @@ export default function Invoices() {
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-2">
                         <button
+                          onClick={() => openEdit(inv)}
+                          className="flex items-center gap-1 rounded-lg bg-cyan-50 px-3 py-2 text-xs font-black text-cyan-700 hover:bg-cyan-100">
+                          <Edit2 size={12} /> تعديل
+                        </button>
+                        <button
                           onClick={() => navigate(`/center/invoices/${inv.id}/print`)}
                           className="flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-200">
                           <Printer size={12} /> طباعة
@@ -200,6 +228,50 @@ export default function Invoices() {
           </div>
         )}
       </section>
+
+      {editInvoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" dir="rtl">
+            <div className="mb-5 flex items-center justify-between">
+              <h3 className="text-lg font-black text-slate-950">تعديل الفاتورة #{editInvoice.id}</h3>
+              <button onClick={() => setEditInvoice(null)} className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"><X size={18} /></button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-black text-slate-500">المبلغ الإجمالي (IQD)</label>
+                <input type="number" value={editForm.amount}
+                  onChange={e => setEditForm({ ...editForm, amount: e.target.value })}
+                  className="w-full rounded-lg border border-slate-200 px-4 py-3 text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-black text-slate-500">الخصم (IQD)</label>
+                <input type="number" value={editForm.discount}
+                  onChange={e => setEditForm({ ...editForm, discount: e.target.value })}
+                  className="w-full rounded-lg border border-slate-200 px-4 py-3 text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-black text-slate-500">حالة الفاتورة</label>
+                <select value={editForm.status} onChange={e => setEditForm({ ...editForm, status: e.target.value })}
+                  className="w-full rounded-lg border border-slate-200 px-4 py-3 text-sm font-bold text-slate-700 outline-none focus:border-cyan-400">
+                  <option value="paid">مدفوعة</option>
+                  <option value="unpaid">غير مدفوعة</option>
+                  <option value="partial">جزئية</option>
+                </select>
+              </div>
+            </div>
+            <div className="mt-5 flex gap-3">
+              <button onClick={saveEdit} disabled={editMutation.isPending}
+                className="flex-1 rounded-lg bg-slate-950 py-3 text-sm font-black text-white hover:bg-slate-800 disabled:opacity-50">
+                {editMutation.isPending ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+              </button>
+              <button onClick={() => setEditInvoice(null)}
+                className="rounded-lg border border-slate-200 px-5 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50">
+                إلغاء
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   )
 }

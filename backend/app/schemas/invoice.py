@@ -21,3 +21,4 @@ class InvoiceOut(BaseModel):
 class InvoiceUpdate(BaseModel):
     status: InvoiceStatus | None = None
     discount: float | None = None
+    amount: float | None = None

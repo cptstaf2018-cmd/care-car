@@ -1,7 +1,9 @@
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth, tenants, cars, services, invoices, inventory, debts, reports, settings, vision
+from fastapi.staticfiles import StaticFiles
+from app.api import auth, tenants, cars, services, invoices, inventory, debts, reports, settings, vision, platform
 from app.services.scheduler_service import start_scheduler
 
 
@@ -26,5 +28,8 @@ app.add_middleware(
 
 for router in [auth.router, tenants.router, cars.router, services.router,
                invoices.router, inventory.router, debts.router, reports.router,
-               settings.router, vision.router]:
+               settings.router, vision.router, platform.router]:
     app.include_router(router)
+
+os.makedirs("/app/uploads/ads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="/app/uploads"), name="uploads")

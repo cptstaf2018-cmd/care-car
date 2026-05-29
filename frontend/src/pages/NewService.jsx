@@ -222,22 +222,26 @@ export default function NewService() {
 
   if (result) return (
     <Layout>
-      <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="surface mx-auto max-w-lg rounded-lg p-8 text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 font-black text-emerald-700"><CheckCircle2 size={28} /></div>
+      <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="surface mx-auto max-w-lg rounded-2xl p-8 text-center shadow-xl">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><CheckCircle2 size={32} /></div>
         <h2 className="text-2xl font-black text-slate-950 mb-1">تم تسجيل الخدمة</h2>
-        <p className="text-slate-500 text-sm mb-5">الفاتورة جاهزة للطباعة والإرسال</p>
-        <div className="mb-6 space-y-2 rounded-lg bg-slate-50 p-4 text-right border border-slate-200">
+        <p className="text-slate-500 text-sm mb-5">الفاتورة جاهزة — يمكنك طباعتها أو تعديلها أو حذفها</p>
+        <div className="mb-6 space-y-2 rounded-xl bg-slate-50 p-4 text-right border border-slate-200">
           <div className="flex justify-between"><span className="text-slate-500">رقم الفاتورة</span><span className="font-black text-slate-950">#{result.invoice_id}</span></div>
           <div className="flex justify-between"><span className="text-slate-500">المبلغ</span><span className="font-black text-emerald-700">{result.amount?.toLocaleString()} IQD</span></div>
           <div className="flex justify-between"><span className="text-slate-500">الحالة</span><span className={`font-black ${result.status === 'paid' ? 'text-emerald-700' : 'text-amber-700'}`}>{result.status === 'paid' ? 'مدفوعة' : 'غير مدفوعة'}</span></div>
         </div>
         <div className="flex flex-col gap-3">
           <button onClick={() => navigate(`/center/invoices/${result.invoice_id}/print`)}
-            className="flex items-center justify-center gap-2 rounded-lg bg-slate-950 px-8 py-3 font-black text-white hover:bg-slate-800">
+            className="flex items-center justify-center gap-2 rounded-xl bg-slate-950 px-8 py-3 font-black text-white hover:bg-slate-800">
             <Printer size={18} /> طباعة الفاتورة وإرسالها
           </button>
+          <button onClick={() => navigate('/center/invoices')}
+            className="flex items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-8 py-3 text-sm font-black text-cyan-700 hover:bg-cyan-100">
+            تعديل أو حذف الفاتورة
+          </button>
           <button onClick={() => { setResult(null); setSelectedCar(null); setSearch(''); setServiceType('تبديل زيت'); setOilGrade('15W40'); setInvoiceLines([]); setForm({ amount: '', discount: '0', mileage: '', notes: '' }) }}
-            className="rounded-lg border border-slate-200 px-8 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
+            className="rounded-xl border border-slate-200 px-8 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
             خدمة جديدة
           </button>
         </div>

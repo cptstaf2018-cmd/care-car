@@ -134,7 +134,10 @@ def _send_activation_email(email: str, code: str, center_name: str) -> str:
 
 @router.post("/login", response_model=TokenResponse)
 def login(body: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == body.email).first()
+    identifier = body.email.strip()
+    if "@" not in identifier:
+        identifier = identifier + "@carecar.app"
+    user = db.query(User).filter(User.email == identifier).first()
     if not user or not verify_password(body.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     if user.tenant_id:

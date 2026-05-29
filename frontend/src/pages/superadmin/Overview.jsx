@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { Building2, CalendarClock, CreditCard, MessageCircle, ShieldAlert, Sparkles } from 'lucide-react'
+import { Building2, CalendarClock, CreditCard, Image, MessageCircle, ShieldAlert, Sparkles } from 'lucide-react'
 import Layout from '../../components/Layout'
 import StatCard from '../../components/StatCard'
 import { getTenants } from '../../api/tenants'
@@ -133,6 +133,22 @@ export default function AdminOverview() {
           </div>
         </div>
       </section>
+
+      {/* Platform Ads quick link */}
+      <div className="mb-5 flex items-center justify-between rounded-lg border border-slate-900 bg-slate-950 px-5 py-4 text-white">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-400 text-slate-950">
+            <Image size={18} />
+          </div>
+          <div>
+            <p className="font-black">إعلانات لوحة التحكم</p>
+            <p className="text-xs text-slate-400">الصور التي تظهر في كاروسيل لوحة كل مركز</p>
+          </div>
+        </div>
+        <Link to="/admin/ads" className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-black text-slate-950 hover:bg-cyan-300 transition-colors">
+          إدارة الإعلانات
+        </Link>
+      </div>
 
       <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
         <div className="premium-card overflow-hidden rounded-lg">
