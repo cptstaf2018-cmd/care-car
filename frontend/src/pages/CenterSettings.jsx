@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Layout from '../components/Layout'
-import { getCenterSettings, updateCenterSettings, requestSubscription } from '../api/settings'
+import { getCenterSettings, updateCenterSettings, requestSubscription, uploadLogo } from '../api/settings'
 import { PLAN_DETAILS } from '../constants/plans'
 
 const PLANS = [
@@ -239,6 +239,35 @@ const defaultForm = {
   reminder_message_template: '',
 }
 
+function LogoUpload({ currentUrl, onUploaded }) {
+  const ref = useRef(null)
+  const logoMutation = useMutation({
+    mutationFn: (file) => {
+      const fd = new FormData()
+      fd.append('file', file)
+      return uploadLogo(fd).then(r => r.data)
+    },
+    onSuccess: (data) => onUploaded(data.logo_url),
+  })
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+      <p className="text-xs font-bold text-slate-500 mb-3">شعار المركز</p>
+      <div className="flex h-20 items-center justify-center rounded-lg bg-white border border-dashed border-slate-300 mb-3">
+        {currentUrl
+          ? <img src={currentUrl} alt="شعار" className="max-h-16 max-w-full object-contain" />
+          : <span className="text-sm text-slate-400">لم يتم إضافة شعار</span>}
+      </div>
+      <input ref={ref} type="file" accept="image/jpeg,image/png,image/webp" className="hidden"
+        onChange={e => { if (e.target.files?.[0]) logoMutation.mutate(e.target.files[0]) }} />
+      <button onClick={() => ref.current?.click()} disabled={logoMutation.isPending}
+        className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-100 disabled:opacity-50 transition">
+        {logoMutation.isPending ? 'جاري الرفع...' : '📷 رفع شعار جديد (JPG/PNG)'}
+      </button>
+      {logoMutation.isError && <p className="mt-1 text-xs text-rose-600">فشل الرفع</p>}
+    </div>
+  )
+}
+
 export default function CenterSettings() {
   const qc = useQueryClient()
   const [form, setForm] = useState(defaultForm)
@@ -296,15 +325,10 @@ export default function CenterSettings() {
             <input value={form.contact_phone} onChange={e => update('contact_phone', e.target.value)}
               placeholder="هاتف المركز"
               className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
-            <input value={form.logo_url} onChange={e => update('logo_url', e.target.value)}
-              placeholder="رابط شعار المركز Logo URL"
-              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <p className="text-xs font-bold text-slate-500">معاينة الشعار</p>
-              <div className="mt-3 flex h-20 items-center justify-center rounded-lg bg-white">
-                {form.logo_url ? <img src={form.logo_url} alt="Center logo" className="max-h-16 max-w-full object-contain" /> : <span className="text-sm text-slate-400">لم يتم إضافة شعار</span>}
-              </div>
-            </div>
+            <LogoUpload
+              currentUrl={form.logo_url}
+              onUploaded={(url) => { update('logo_url', url); qc.invalidateQueries({ queryKey: ['center-settings'] }) }}
+            />
           </div>
         </section>
 

@@ -41,7 +41,7 @@ def update_center_settings(
         raise HTTPException(status_code=404, detail="Center not found")
 
     allowed = {
-        "name", "contact_phone",
+        "name", "contact_phone", "logo_url",
         "ip_camera_url", "ip_camera_username", "ip_camera_password",
         "wasnder_api_key", "whatsapp_number",
         "reminder_days", "reminder_message_template",
