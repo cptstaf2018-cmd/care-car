@@ -38,7 +38,7 @@ export default function Login({ initialMode = 'login' }) {
   const [dir, setDir] = useState(1)
 
   // Login state
-  const [email, setEmail] = useState('')
+  const [loginId, setLoginId] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [launching, setLaunching] = useState(false)
@@ -80,9 +80,9 @@ export default function Login({ initialMode = 'login' }) {
     e.preventDefault()
     setLaunching(true)
     try {
-      const res = await login(email, password)
+      const res = await login(loginId, password)
       window.setTimeout(() => {
-        setAuth(res.data.access_token, { email, role: res.data.role, tenant_id: res.data.tenant_id })
+        setAuth(res.data.access_token, { login: loginId, role: res.data.role, tenant_id: res.data.tenant_id })
         navigate(res.data.role === 'superadmin' ? '/admin' : '/')
       }, 760)
     } catch (err) {
@@ -257,9 +257,9 @@ export default function Login({ initialMode = 'login' }) {
                       </p>
                       <form onSubmit={handleLoginSubmit} className="space-y-4">
                         <label className="block">
-                          <span className="mb-2 block text-sm font-bold text-slate-200">البريد الإلكتروني</span>
-                          <input type="email" placeholder="admin@oil.com" value={email}
-                            onChange={(e) => setEmail(e.target.value)} required
+                          <span className="mb-2 block text-sm font-bold text-slate-200">الإيميل أو رقم الواتساب</span>
+                          <input type="text" inputMode="email" placeholder="admin@oil.com أو 07xxxxxxxxx" value={loginId}
+                            onChange={(e) => setLoginId(e.target.value)} required
                             className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
                         </label>
                         <label className="block">

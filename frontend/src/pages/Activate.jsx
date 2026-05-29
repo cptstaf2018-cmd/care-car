@@ -10,6 +10,14 @@ export default function Activate() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const resolveLoginId = (value) => {
+    const trimmed = value.trim()
+    if (!trimmed.includes('@') && /^[+\d][\d\s-]{6,}$/.test(trimmed)) {
+      return `${trimmed.replace(/[\s-]/g, '')}@carecar.app`
+    }
+    return trimmed
+  }
+
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
@@ -23,7 +31,7 @@ export default function Activate() {
     }
     setLoading(true)
     try {
-      const res = await activate(form.email, form.code, form.new_password)
+      const res = await activate(resolveLoginId(form.email), form.code, form.new_password)
       const { access_token, role, tenant_id } = res.data
       storeLogin(access_token, { role, tenant_id })
       navigate(role === 'superadmin' ? '/admin' : '/center', { replace: true })
@@ -45,13 +53,13 @@ export default function Activate() {
 
         <form onSubmit={handleSubmit} className="surface rounded-xl p-8 shadow-sm space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">البريد الإلكتروني</label>
+            <label className="block text-sm font-medium text-slate-700 mb-1">الإيميل أو رقم الواتساب</label>
             <input
-              type="email"
+              type="text"
               required
               value={form.email}
               onChange={e => setForm({ ...form, email: e.target.value })}
-              placeholder="manager@example.com"
+              placeholder="manager@example.com أو 07xxxxxxxxx"
               className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
             />
           </div>
