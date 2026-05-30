@@ -38,44 +38,51 @@ button, input, select { font: inherit; }
   box-shadow: 0 14px 30px rgba(15, 23, 42, 0.06);
 }
 
-/* ───────── Landing page (world-class theme) ───────── */
-.lp-grid {
+/* ───────── Landing page (refined light theme) ───────── */
+.lp-grid-light {
   background-image:
-    linear-gradient(to right, rgba(255,255,255,0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255,255,255,0.045) 1px, transparent 1px);
-  background-size: 60px 60px;
-  -webkit-mask-image: radial-gradient(ellipse 75% 55% at 50% 0%, #000 35%, transparent 100%);
-          mask-image: radial-gradient(ellipse 75% 55% at 50% 0%, #000 35%, transparent 100%);
+    linear-gradient(to right, rgba(15,23,42,0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(15,23,42,0.035) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 55% at 50% 0%, #000 25%, transparent 100%);
+          mask-image: radial-gradient(ellipse 70% 55% at 50% 0%, #000 25%, transparent 100%);
 }
 
 @keyframes lp-float-a {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(30px, -40px) scale(1.1); }
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(26px, -34px); }
 }
 @keyframes lp-float-b {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-35px, 25px) scale(1.15); }
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-30px, 24px); }
 }
-.lp-blob-a { animation: lp-float-a 16s ease-in-out infinite; }
-.lp-blob-b { animation: lp-float-b 20s ease-in-out infinite; }
+.lp-blob-a { animation: lp-float-a 18s ease-in-out infinite; }
+.lp-blob-b { animation: lp-float-b 22s ease-in-out infinite; }
 
 @keyframes lp-marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
 }
-.lp-marquee-track { animation: lp-marquee 28s linear infinite; }
+.lp-marquee-track { animation: lp-marquee 32s linear infinite; }
 
 @keyframes lp-shimmer {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 .lp-gradient-text {
-  background: linear-gradient(110deg, #60a5fa, #818cf8, #22d3ee, #60a5fa);
+  background: linear-gradient(110deg, #2563eb, #4f46e5, #0ea5e9, #2563eb);
   background-size: 200% auto;
   -webkit-background-clip: text;
           background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: lp-shimmer 6s linear infinite;
+  animation: lp-shimmer 7s linear infinite;
+}
+
+.lp-soft-shadow {
+  box-shadow: 0 40px 80px -28px rgba(15, 23, 42, 0.28), 0 12px 28px -14px rgba(15, 23, 42, 0.12);
+}
+.lp-card-shadow {
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 12px 28px -16px rgba(15,23,42,0.12);
 }
 
 @media (prefers-reduced-motion: reduce) {
