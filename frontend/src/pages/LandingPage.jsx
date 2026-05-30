@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Sparkles, Globe, ArrowLeft, ArrowRight, Star,
@@ -84,6 +84,25 @@ const ABOUT_T = {
       cta: 'زيارة Baghdad Future AI',
       pills: ['هندسة محلية', 'ذكاء اصطناعي تطبيقي', 'دعم باللغة العربية', 'بنية سحابية آمنة'],
     },
+    pricing: {
+      eyebrow: 'أسعار واضحة',
+      title: 'اختر الخطة التي تناسب مركزك',
+      sub: 'بالدينار العراقي. بدون رسوم خفية. ألغِ في أي وقت.',
+      currency: 'د.ع / شهرياً',
+      popular: 'الأكثر طلباً',
+      cta: 'ابدأ بهذه الخطة',
+      plans: [
+        { name: 'الأساسية', price: '100,000', popular: false,
+          features: ['سيارات الزبائن وتاريخ الخدمة', 'خدمة سريعة وفواتير', 'تقارير أساسية', 'إعدادات المركز والشعار'],
+          no: ['تذكيرات واتساب', 'إدارة المخزون', 'كاميرا IP', 'قراءة اللوحة'] },
+        { name: 'الاحترافية', price: '150,000', popular: true,
+          features: ['كل مميزات الأساسية', 'المخزون مع خصم تلقائي', 'تذكيرات واتساب التلقائية', 'تقارير متقدمة'],
+          no: ['كاميرا IP', 'قراءة اللوحة OCR'] },
+        { name: 'المؤسسية', price: '250,000', popular: false,
+          features: ['كل مميزات الاحترافية', 'ربط كاميرا IP', 'قراءة اللوحة بالكاميرا', 'دعم متقدم وإعداد مخصص'],
+          no: [] },
+      ],
+    },
     cta: { title: 'جاهز ترفع مستوى مركزك؟', sub: 'انضم لمئات المراكز التي تدير عملها باحتراف — وابدأ اليوم مجاناً.', btn: 'ابدأ مجاناً الآن' },
     footer: { desc: 'منصة الإدارة الأذكى لمراكز تغيير الزيت في العراق.', product: 'المنتج', company: 'الشركة', contact: 'تواصل معنا', dev: 'تطوير وتشغيل', rights: 'جميع الحقوق محفوظة' },
   },
@@ -94,7 +113,7 @@ const ABOUT_T = {
       badge: 'About — the CearCar story',
       title1: 'We built the system',
       titleAccent: 'we wished existed',
-      sub: 'CearCar was born inside Iraqi workshops, not in a distant boardroom. Our mission is singular: let a center owner run the business with confidence, using tools as simple as they are powerful — from the first car in to the last invoice of the day.',
+      sub: "CearCar was born inside Iraqi workshops, not in a distant boardroom. Our mission is singular: let a center owner run the business with confidence, using tools as simple as they are powerful — from the first car in to the last invoice of the day.",
       cta1: 'Start Free Now',
       cta2: 'Explore the platform',
       trust: 'Trusted by 200+ centers across Iraq',
@@ -109,7 +128,7 @@ const ABOUT_T = {
       eyebrow: 'Our story',
       title: 'It started with a torn notebook and end-of-day chaos',
       p1: "At an oil-change center in Baghdad, everything was handwritten: plate numbers on a scrap of paper, prices in the owner's head, and the next oil date… usually forgotten by the customer. At day's end, nobody knew exactly how much came in or what was left in stock.",
-      p2: "We saw the problem up close, so we decided not to sell a complex imported program, but to build an Iraqi tool any employee understands on day one: it logs the car, totals the invoice, reminds the customer, and tells you honestly where your profit goes.",
+      p2: 'We saw the problem up close, so we decided not to sell a complex imported program, but to build an Iraqi tool any employee understands on day one: it logs the car, totals the invoice, reminds the customer, and tells you honestly where your profit goes.',
       quote: 'We never wanted to teach centers how to work — we wanted to give them the time to work more.',
       quoteBy: 'The CearCar team',
     },
@@ -141,7 +160,7 @@ const ABOUT_T = {
       rows: [
         { old: 'Notebooks and papers that get lost or damaged', neu: 'Everything stored in the cloud and organized' },
         { old: 'The customer forgets the oil date', neu: 'A WhatsApp reminder reaches them automatically' },
-        { old: 'You only guess today\'s profit', neu: 'A live report with one tap' },
+        { old: "You only guess today's profit", neu: 'A live report with one tap' },
         { old: 'Inventory runs out suddenly', neu: 'Auto-deduction and a low-stock alert' },
         { old: 'An unprofessional handwritten invoice', neu: 'An invoice with your logo, ready to print' },
       ],
@@ -163,6 +182,25 @@ const ABOUT_T = {
       cta: 'Visit Baghdad Future AI',
       pills: ['Local engineering', 'Applied AI', 'Arabic-language support', 'Secure cloud infrastructure'],
     },
+    pricing: {
+      eyebrow: 'Clear pricing',
+      title: 'Pick the plan that fits your center',
+      sub: 'In Iraqi Dinar. No hidden fees. Cancel anytime.',
+      currency: 'IQD / month',
+      popular: 'Most Popular',
+      cta: 'Start with this plan',
+      plans: [
+        { name: 'Basic', price: '100,000', popular: false,
+          features: ['Customer cars & service history', 'Fast service & invoices', 'Basic reports', 'Center settings & logo'],
+          no: ['WhatsApp reminders', 'Inventory management', 'IP camera', 'Plate reading'] },
+        { name: 'Pro', price: '150,000', popular: true,
+          features: ['Everything in Basic', 'Inventory with auto-deduction', 'Automatic WhatsApp reminders', 'Advanced reports'],
+          no: ['IP camera', 'OCR plate reading'] },
+        { name: 'Enterprise', price: '250,000', popular: false,
+          features: ['Everything in Pro', 'IP camera integration', 'Camera plate reading', 'Advanced support & custom setup'],
+          no: [] },
+      ],
+    },
     cta: { title: 'Ready to level up your center?', sub: 'Join hundreds of centers running professionally — and start today, free.', btn: 'Start Free Now' },
     footer: { desc: 'The smartest management platform for oil-change centers in Iraq.', product: 'Product', company: 'Company', contact: 'Contact', dev: 'Built & operated by', rights: 'All rights reserved' },
   },
@@ -170,56 +208,23 @@ const ABOUT_T = {
 
 const ICONS = { Lightbulb, MapPin, ShieldCheck, Zap, Headphones, TrendingUp, Target, Eye }
 
-/* ── Reveal on scroll ── */
-function Reveal({ children, className = '', i = 0, as: Tag = 'div' }) {
-  const ref = useRef(null)
-  const [shown, setShown] = useState(false)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    let done = false
-    const check = () => {
-      if (done || !ref.current) return
-      const r = ref.current.getBoundingClientRect()
-      if (r.top < window.innerHeight * 0.88 && r.bottom > 0) {
-        done = true
-        setShown(true)
-        window.removeEventListener('scroll', check)
-        window.removeEventListener('resize', check)
-      }
-    }
-    check()
-    window.addEventListener('scroll', check, { passive: true })
-    window.addEventListener('resize', check)
-    return () => {
-      window.removeEventListener('scroll', check)
-      window.removeEventListener('resize', check)
-    }
-  }, [])
+function Logo() {
   return (
-    <Tag ref={ref} className={`reveal ${shown ? 'reveal-in' : ''} ${className}`} style={{ transitionDelay: `${i * 70}ms` }}>
-      {children}
-    </Tag>
+    <div className="flex items-center gap-2">
+      <span className="w-8 h-8 rounded-lg accent-grad flex items-center justify-center shadow-md" style={{ boxShadow: '0 4px 12px rgba(37,99,235,0.35)' }}>
+        <Sparkles size={16} className="text-white" />
+      </span>
+      <span className="font-black text-lg tracking-tight text-slate-900">CearCar</span>
+    </div>
   )
 }
 
 function Eyebrow({ children }) {
   return (
     <span className="inline-flex items-center gap-2 text-sm font-semibold accent-text mb-4">
-      <span className="w-6 h-px bg-blue-300" />
+      <span className="w-6 h-px accent-line-bg" />
       {children}
     </span>
-  )
-}
-
-function Logo() {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-md" style={{ boxShadow: '0 4px 12px rgba(37,99,235,0.35)' }}>
-        <Sparkles size={16} className="text-white" />
-      </span>
-      <span className="font-black text-lg tracking-tight text-slate-900">CearCar</span>
-    </div>
   )
 }
 
@@ -250,7 +255,7 @@ export default function LandingPage() {
           <button onClick={() => scrollTo('top')} className="flex items-center"><Logo /></button>
           <div className="hidden md:flex items-center gap-8 text-sm text-slate-500 font-medium">
             <button onClick={() => scrollTo('values')} className="hover:text-slate-900 transition-colors">{c.nav.features}</button>
-            <button onClick={() => navigate('/register')} className="hover:text-slate-900 transition-colors">{c.nav.pricing}</button>
+            <button onClick={() => scrollTo('pricing')} className="hover:text-slate-900 transition-colors">{c.nav.pricing}</button>
             <span className="accent-text font-semibold">{c.nav.about}</span>
             <button onClick={() => scrollTo('why')} className="hover:text-slate-900 transition-colors">{c.nav.faq}</button>
           </div>
@@ -270,47 +275,35 @@ export default function LandingPage() {
         <div className="absolute inset-0">
           <img src="/hero-suv.png" alt="" aria-hidden="true"
             className={`w-full h-full object-cover ${isRtl ? 'object-left' : 'object-right'}`} />
-          <div className={`absolute inset-0 ${
-            isRtl
-              ? 'bg-gradient-to-l from-[#060a14]/96 via-[#060a14]/78 to-[#060a14]/15'
-              : 'bg-gradient-to-r from-[#060a14]/96 via-[#060a14]/78 to-[#060a14]/15'}`} />
+          <div className={`absolute inset-0 ${isRtl
+            ? 'bg-gradient-to-l from-[#060a14]/96 via-[#060a14]/78 to-[#060a14]/15'
+            : 'bg-gradient-to-r from-[#060a14]/96 via-[#060a14]/78 to-[#060a14]/15'}`} />
         </div>
-
         <div className="relative z-10 w-full max-w-6xl mx-auto px-5 py-20">
           <div className={`max-w-xl ${isRtl ? 'mr-0 ml-auto' : 'ml-0 mr-auto'}`}>
-            <Reveal i={0}>
-              <span className="inline-flex items-center gap-2 text-sm text-blue-300 bg-white/[0.08] border border-white/15 px-4 py-1.5 rounded-full mb-7">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-                {c.hero.badge}
-              </span>
-            </Reveal>
-            <Reveal i={1}>
-              <h1 className="text-5xl md:text-6xl font-black leading-[1.1] tracking-tight mb-5 text-white">
-                {c.hero.title1}<br />
-                <span className="lp-gradient-text">{c.hero.titleAccent}</span>
-              </h1>
-            </Reveal>
-            <Reveal i={2}>
-              <p className="text-lg text-white/65 leading-relaxed mb-8">{c.hero.sub}</p>
-            </Reveal>
-            <Reveal i={3}>
-              <div className="flex flex-wrap gap-3 mb-10">
-                <button onClick={() => navigate('/register')}
-                  className="group flex items-center gap-2 bg-blue-600 text-white px-7 py-3.5 rounded-xl font-bold text-base hover:bg-blue-500 hover:scale-[1.02] transition-all"
-                  style={{ boxShadow: '0 16px 40px -10px rgba(37,99,235,0.5)' }}>
-                  {c.hero.cta1}<Arrow size={18} className="group-hover:translate-x-0.5 transition-transform" />
-                </button>
-                <button onClick={() => scrollTo('story')} className="px-7 py-3.5 rounded-xl font-semibold text-base border border-white/25 text-white hover:bg-white/10 transition-all">
-                  {c.hero.cta2}
-                </button>
-              </div>
-            </Reveal>
-            <Reveal i={4}>
-              <div className="flex items-center gap-2 text-sm text-white/50">
-                <span className="flex gap-0.5">{[0,1,2,3,4].map(i => <Star key={i} size={13} className="text-amber-400 fill-amber-400" />)}</span>
-                {c.hero.trust}
-              </div>
-            </Reveal>
+            <span className="inline-flex items-center gap-2 text-sm accent-text-light bg-white/[0.08] border border-white/15 px-4 py-1.5 rounded-full mb-7">
+              <span className="w-1.5 h-1.5 rounded-full accent-dot animate-pulse" />
+              {c.hero.badge}
+            </span>
+            <h1 className="text-5xl md:text-6xl font-black leading-[1.1] tracking-tight mb-5 text-white">
+              {c.hero.title1}<br />
+              <span className="lp-gradient-text">{c.hero.titleAccent}</span>
+            </h1>
+            <p className="text-lg text-white/65 leading-relaxed mb-8">{c.hero.sub}</p>
+            <div className="flex flex-wrap gap-3 mb-10">
+              <button onClick={() => navigate('/register')}
+                className="group flex items-center gap-2 accent-bg text-white px-7 py-3.5 rounded-xl font-bold text-base hover:brightness-110 hover:scale-[1.02] transition-all"
+                style={{ boxShadow: '0 16px 40px -10px rgba(37,99,235,0.5)' }}>
+                {c.hero.cta1}<Arrow size={18} className="group-hover:translate-x-0.5 transition-transform" />
+              </button>
+              <button onClick={() => scrollTo('story')} className="px-7 py-3.5 rounded-xl font-semibold text-base border border-white/25 text-white hover:bg-white/10 transition-all">
+                {c.hero.cta2}
+              </button>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-white/50">
+              <span className="flex gap-0.5">{[0,1,2,3,4].map(i => <Star key={i} size={13} className="text-amber-400 fill-amber-400" />)}</span>
+              {c.hero.trust}
+            </div>
           </div>
         </div>
         <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-white to-transparent" />
@@ -320,10 +313,10 @@ export default function LandingPage() {
       <section className="relative px-5 -mt-8 z-10">
         <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 rounded-2xl overflow-hidden border border-slate-200 bg-white lp-card-shadow divide-x divide-slate-100">
           {c.stats.map((s, i) => (
-            <Reveal key={i} i={i} className="p-6 text-center">
+            <div key={i} className="p-6 text-center">
               <div className="text-3xl md:text-4xl font-black text-slate-900">{s.val}</div>
               <div className="text-sm text-slate-400 mt-1">{s.label}</div>
-            </Reveal>
+            </div>
           ))}
         </div>
       </section>
@@ -331,45 +324,43 @@ export default function LandingPage() {
       {/* ── Story ── */}
       <section id="story" className="relative px-5 py-28">
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-14 items-center">
-          <Reveal className="order-2 lg:order-1">
+          <div className="order-2 lg:order-1">
             <Eyebrow>{c.story.eyebrow}</Eyebrow>
             <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-6 text-slate-900 leading-tight">{c.story.title}</h2>
             <p className="text-slate-500 leading-relaxed text-lg mb-4">{c.story.p1}</p>
             <p className="text-slate-500 leading-relaxed text-lg mb-8">{c.story.p2}</p>
-            <div className="relative rounded-2xl bg-blue-50 border border-slate-200/60 p-6 pr-7">
-              <Quote size={22} className="text-blue-600 mb-3" />
+            <div className="relative rounded-2xl accent-soft-bg border border-slate-200/60 p-6 pr-7">
+              <Quote size={22} className="accent-text mb-3" />
               <p className="text-slate-800 text-xl font-bold leading-snug mb-2">{c.story.quote}</p>
               <p className="text-slate-400 text-sm font-medium">— {c.story.quoteBy}</p>
             </div>
-          </Reveal>
-          <Reveal i={1} className="order-1 lg:order-2">
+          </div>
+          <div className="order-1 lg:order-2">
             <div className="relative rounded-3xl overflow-hidden lp-soft-shadow border border-slate-200">
               <img src="/car-garage.png" alt="" className="w-full h-full object-cover aspect-[4/3]" />
               <div className="absolute inset-0 bg-gradient-to-t from-[#060a14]/40 to-transparent" />
             </div>
-          </Reveal>
+          </div>
         </div>
       </section>
 
       {/* ── Mission & Vision ── */}
       <section className="relative px-5 py-28 bg-slate-50 border-y border-slate-100">
         <div className="max-w-5xl mx-auto">
-          <Reveal className="text-center max-w-2xl mx-auto mb-14">
+          <div className="text-center max-w-2xl mx-auto mb-14">
             <Eyebrow>{c.mv.eyebrow}</Eyebrow>
             <h2 className="text-3xl md:text-5xl font-black tracking-tight text-slate-900">{c.mv.title}</h2>
-          </Reveal>
+          </div>
           <div className="grid md:grid-cols-2 gap-6">
             {[{ d: c.mv.mission, Icon: Target }, { d: c.mv.vision, Icon: Eye }].map(({ d, Icon }, i) => (
-              <Reveal key={i} i={i}>
-                <div className="h-full rounded-3xl bg-white border border-slate-200 p-9 lp-card-shadow">
-                  <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mb-6">
-                    <Icon size={26} className="text-blue-600" />
-                  </div>
-                  <span className="inline-block text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full mb-4">{d.tag}</span>
-                  <h3 className="text-2xl font-black mb-3 text-slate-900">{d.title}</h3>
-                  <p className="text-slate-500 leading-relaxed text-[15px]">{d.desc}</p>
+              <div key={i} className="h-full rounded-3xl bg-white border border-slate-200 p-9 lp-card-shadow">
+                <div className="w-14 h-14 rounded-2xl accent-soft-bg flex items-center justify-center mb-6">
+                  <Icon size={26} className="accent-text" />
                 </div>
-              </Reveal>
+                <span className="inline-block text-xs font-bold uppercase tracking-wider accent-text accent-soft-bg px-3 py-1 rounded-full mb-4">{d.tag}</span>
+                <h3 className="text-2xl font-black mb-3 text-slate-900">{d.title}</h3>
+                <p className="text-slate-500 leading-relaxed text-[15px]">{d.desc}</p>
+              </div>
             ))}
           </div>
         </div>
@@ -378,24 +369,22 @@ export default function LandingPage() {
       {/* ── Values ── */}
       <section id="values" className="relative px-5 py-28">
         <div className="max-w-6xl mx-auto">
-          <Reveal className="text-center max-w-2xl mx-auto mb-16">
+          <div className="text-center max-w-2xl mx-auto mb-16">
             <Eyebrow>{c.values.eyebrow}</Eyebrow>
             <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4 text-slate-900">{c.values.title}</h2>
             <p className="text-slate-500 text-lg">{c.values.sub}</p>
-          </Reveal>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {c.values.items.map((v, i) => {
               const Icon = ICONS[v.icon] || Lightbulb
               return (
-                <Reveal key={i} i={i % 3}>
-                  <div className="group h-full rounded-2xl border border-slate-200 bg-white p-7 lp-card-shadow hover:border-blue-200 transition-colors">
-                    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-5 group-hover:bg-blue-100 transition-colors">
-                      <Icon size={22} className="text-blue-600" />
-                    </div>
-                    <h3 className="text-lg font-bold mb-2 text-slate-900">{v.title}</h3>
-                    <p className="text-slate-500 leading-relaxed text-[15px]">{v.desc}</p>
+                <div key={i} className="group h-full rounded-2xl border border-slate-200 bg-white p-7 lp-card-shadow hover:border-blue-200 transition-colors">
+                  <div className="w-12 h-12 rounded-xl accent-soft-bg flex items-center justify-center mb-5 group-hover:bg-blue-100 transition-colors">
+                    <Icon size={22} className="accent-text" />
                   </div>
-                </Reveal>
+                  <h3 className="text-lg font-bold mb-2 text-slate-900">{v.title}</h3>
+                  <p className="text-slate-500 leading-relaxed text-[15px]">{v.desc}</p>
+                </div>
               )
             })}
           </div>
@@ -403,7 +392,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Visual break ── */}
-      <Reveal className="relative overflow-hidden h-64 md:h-80 mx-5 my-4 rounded-3xl lp-soft-shadow">
+      <div className="relative overflow-hidden h-64 md:h-80 mx-5 my-4 rounded-3xl lp-soft-shadow">
         <img src="/hero-suv.png" alt="" aria-hidden="true"
           className={`absolute inset-0 w-full h-full object-cover ${isRtl ? 'object-left' : 'object-right'}`} />
         <div className={`absolute inset-0 ${isRtl
@@ -411,7 +400,7 @@ export default function LandingPage() {
           : 'bg-gradient-to-r from-slate-950/90 via-slate-900/65 to-transparent'}`} />
         <div className={`absolute inset-0 flex items-center ${isRtl ? 'justify-end px-10 md:px-16' : 'justify-start px-10 md:px-16'}`}>
           <div className="max-w-md">
-            <p className="text-blue-300 text-xs font-bold mb-3 uppercase tracking-widest flex items-center gap-2">
+            <p className="accent-text-light text-xs font-bold mb-3 uppercase tracking-widest flex items-center gap-2">
               <Cpu size={14} />{isRtl ? 'ذكاء اصطناعي عراقي' : 'Iraqi-built AI'}
             </p>
             <h3 className="text-white text-2xl md:text-3xl font-black leading-snug">
@@ -419,70 +408,120 @@ export default function LandingPage() {
             </h3>
           </div>
         </div>
-      </Reveal>
+      </div>
 
       {/* ── Why CearCar ── */}
       <section id="why" className="relative px-5 py-28 bg-slate-50 border-y border-slate-100">
         <div className="max-w-4xl mx-auto">
-          <Reveal className="text-center max-w-2xl mx-auto mb-14">
+          <div className="text-center max-w-2xl mx-auto mb-14">
             <Eyebrow>{c.why.eyebrow}</Eyebrow>
             <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4 text-slate-900">{c.why.title}</h2>
             <p className="text-slate-500 text-lg">{c.why.sub}</p>
-          </Reveal>
-          <Reveal>
-            <div className="grid sm:grid-cols-2 gap-px rounded-3xl overflow-hidden border border-slate-200 bg-slate-200 lp-card-shadow">
-              <div className="bg-white p-6 sm:p-7">
-                <div className="flex items-center gap-2 mb-5 text-slate-400 font-bold">
-                  <span className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center"><X size={16} /></span>
-                  {c.why.oldTitle}
+          </div>
+          <div className="grid sm:grid-cols-2 gap-px rounded-3xl overflow-hidden border border-slate-200 bg-slate-200 lp-card-shadow">
+            <div className="bg-white p-6 sm:p-7">
+              <div className="flex items-center gap-2 mb-5 text-slate-400 font-bold">
+                <span className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center"><X size={16} /></span>
+                {c.why.oldTitle}
+              </div>
+              <ul className="space-y-4">
+                {c.why.rows.map((r, i) => (
+                  <li key={i} className="flex items-start gap-3 text-slate-400 text-[15px] leading-snug">
+                    <X size={17} className="shrink-0 mt-0.5 text-slate-300" />{r.old}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-white p-6 sm:p-7 relative">
+              <div className="absolute inset-0 accent-soft-bg opacity-50 pointer-events-none" />
+              <div className="relative">
+                <div className="flex items-center gap-2 mb-5 accent-text font-bold">
+                  <span className="w-7 h-7 rounded-lg accent-bg text-white flex items-center justify-center"><Check size={16} /></span>
+                  {c.why.newTitle}
                 </div>
                 <ul className="space-y-4">
                   {c.why.rows.map((r, i) => (
-                    <li key={i} className="flex items-start gap-3 text-slate-400 text-[15px] leading-snug">
-                      <X size={17} className="shrink-0 mt-0.5 text-slate-300" />{r.old}
+                    <li key={i} className="flex items-start gap-3 text-slate-700 text-[15px] font-medium leading-snug">
+                      <span className="mt-0.5 w-[18px] h-[18px] rounded-full accent-bg flex items-center justify-center shrink-0"><Check size={11} className="text-white" /></span>{r.neu}
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="bg-white p-6 sm:p-7 relative">
-                <div className="absolute inset-0 bg-blue-50/50 pointer-events-none" />
-                <div className="relative">
-                  <div className="flex items-center gap-2 mb-5 text-blue-600 font-bold">
-                    <span className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center"><Check size={16} /></span>
-                    {c.why.newTitle}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Pricing ── */}
+      <section id="pricing" className="relative px-5 py-28">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <Eyebrow>{c.pricing.eyebrow}</Eyebrow>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4 text-slate-900">{c.pricing.title}</h2>
+            <p className="text-slate-500 text-lg">{c.pricing.sub}</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch max-w-5xl mx-auto">
+            {c.pricing.plans.map((plan, i) => (
+              <div key={i} className="relative">
+                <div className={`relative h-full rounded-3xl p-7 flex flex-col bg-white ${plan.popular
+                  ? 'lp-soft-shadow md:-mt-3 md:mb-3 border-2 border-blue-500'
+                  : 'border border-slate-200 lp-card-shadow'}`}>
+                  {plan.popular && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 accent-grad text-white text-xs font-bold px-4 py-1 rounded-full shadow-md whitespace-nowrap"
+                      style={{ boxShadow: '0 6px 16px -4px rgba(37,99,235,0.4)' }}>
+                      {c.pricing.popular}
+                    </span>
+                  )}
+                  <h3 className="text-lg font-bold text-slate-800 mb-3">{plan.name}</h3>
+                  <div className="flex items-end gap-1.5 mb-1">
+                    <span className={`text-4xl font-black ${plan.popular ? 'lp-gradient-text' : 'text-slate-900'}`}>{plan.price}</span>
                   </div>
-                  <ul className="space-y-4">
-                    {c.why.rows.map((r, i) => (
-                      <li key={i} className="flex items-start gap-3 text-slate-700 text-[15px] font-medium leading-snug">
-                        <span className="mt-0.5 w-[18px] h-[18px] rounded-full bg-blue-600 flex items-center justify-center shrink-0"><Check size={11} className="text-white" /></span>{r.neu}
+                  <div className="text-sm text-slate-400 mb-7">{c.pricing.currency}</div>
+                  <ul className="space-y-3 mb-8 flex-1">
+                    {plan.features.map((f, j) => (
+                      <li key={j} className="flex items-start gap-2.5 text-sm text-slate-600">
+                        <span className="mt-0.5 w-4 h-4 rounded-full accent-soft-bg flex items-center justify-center shrink-0">
+                          <Check size={11} className="accent-text" />
+                        </span>{f}
+                      </li>
+                    ))}
+                    {plan.no.map((f, j) => (
+                      <li key={j} className="flex items-start gap-2.5 text-sm text-slate-300 line-through decoration-slate-200">
+                        <span className="mt-0.5 w-4 h-4 shrink-0" />{f}
                       </li>
                     ))}
                   </ul>
+                  <button onClick={() => navigate('/register')}
+                    className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${plan.popular
+                      ? 'accent-grad text-white hover:scale-[1.02]'
+                      : 'bg-slate-900 text-white hover:bg-slate-800'}`}>
+                    {c.pricing.cta}
+                  </button>
                 </div>
               </div>
-            </div>
-          </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ── Timeline ── */}
-      <section className="relative px-5 py-28">
+      <section className="relative px-5 py-28 bg-slate-50 border-t border-slate-100">
         <div className="max-w-5xl mx-auto">
-          <Reveal className="text-center mb-16">
+          <div className="text-center mb-16">
             <Eyebrow>{c.timeline.eyebrow}</Eyebrow>
             <h2 className="text-3xl md:text-5xl font-black tracking-tight text-slate-900">{c.timeline.title}</h2>
-          </Reveal>
+          </div>
           <div className="grid md:grid-cols-4 gap-8 relative">
             <div className="hidden md:block absolute top-8 inset-x-[12%] h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
             {c.timeline.items.map((s, i) => (
-              <Reveal key={i} i={i} className="relative text-center">
+              <div key={i} className="relative text-center">
                 <div className="relative z-10 w-16 h-16 mx-auto mb-5 rounded-2xl bg-white border border-slate-200 flex items-center justify-center lp-card-shadow">
-                  <span className="text-blue-600 font-black text-sm">{i + 1}</span>
-                  <span className="absolute -top-2 -right-2 px-2 h-6 rounded-full bg-blue-600 text-white text-[11px] font-bold flex items-center justify-center whitespace-nowrap">{s.year}</span>
+                  <span className="accent-text font-black text-sm">{i + 1}</span>
+                  <span className="absolute -top-2 -right-2 px-2 h-6 rounded-full accent-bg text-white text-[11px] font-bold flex items-center justify-center whitespace-nowrap">{s.year}</span>
                 </div>
                 <h3 className="text-lg font-bold mb-2 text-slate-900">{s.title}</h3>
                 <p className="text-slate-500 leading-relaxed text-[15px]">{s.desc}</p>
-              </Reveal>
+              </div>
             ))}
           </div>
         </div>
@@ -490,13 +529,11 @@ export default function LandingPage() {
 
       {/* ── Baghdad Future AI Studio ── */}
       <section className="relative px-5 py-12">
-        <Reveal className="relative max-w-5xl mx-auto rounded-[32px] overflow-hidden border border-slate-800 bg-[#060a14]">
-          <div className="absolute inset-0" style={{
-            background: 'radial-gradient(ellipse at 20% 50%, rgba(37,99,235,0.15), transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(79,70,229,0.1), transparent 40%)'
-          }} />
+        <div className="relative max-w-5xl mx-auto rounded-[32px] overflow-hidden border border-slate-800 bg-[#060a14]">
+          <div className="absolute inset-0 studio-mesh" />
           <div className="relative z-10 px-8 md:px-14 py-16 grid lg:grid-cols-[1.2fr_1fr] gap-10 items-center">
             <div>
-              <span className="inline-flex items-center gap-2 text-sm text-blue-300 bg-white/[0.07] border border-white/15 px-4 py-1.5 rounded-full mb-6">
+              <span className="inline-flex items-center gap-2 text-sm accent-text-light bg-white/[0.07] border border-white/15 px-4 py-1.5 rounded-full mb-6">
                 <Building size={14} />{c.studio.eyebrow}
               </span>
               <h2 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-5 leading-tight">{c.studio.title}</h2>
@@ -509,31 +546,29 @@ export default function LandingPage() {
             <div className="grid grid-cols-2 gap-3">
               {c.studio.pills.map((p, i) => (
                 <div key={i} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-white/80 text-sm font-medium flex items-center gap-2.5">
-                  <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />{p}
+                  <span className="w-2 h-2 rounded-full accent-dot shrink-0" />{p}
                 </div>
               ))}
             </div>
           </div>
-        </Reveal>
+        </div>
       </section>
 
       {/* ── CTA ── */}
       <section className="relative px-5 py-12">
-        <Reveal className="relative max-w-5xl mx-auto rounded-[32px] overflow-hidden lp-soft-shadow">
+        <div className="relative max-w-5xl mx-auto rounded-[32px] overflow-hidden lp-soft-shadow">
           <img src="/hero-white.png" alt="" aria-hidden="true"
             className={`absolute inset-0 w-full h-full object-cover ${isRtl ? 'object-left' : 'object-right'}`} />
-          <div className={`absolute inset-0 ${isRtl
-            ? 'bg-gradient-to-l from-blue-700/95 via-blue-800/90 to-blue-900/50'
-            : 'bg-gradient-to-r from-blue-700/95 via-blue-800/90 to-blue-900/50'}`} />
+          <div className={`absolute inset-0 cta-overlay ${isRtl ? 'cta-overlay-rtl' : 'cta-overlay-ltr'}`} />
           <div className="relative z-10 text-center px-6 py-20 text-white">
             <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4">{c.cta.title}</h2>
             <p className="text-white/85 text-lg mb-9 max-w-xl mx-auto">{c.cta.sub}</p>
             <button onClick={() => navigate('/register')}
-              className="inline-flex items-center gap-2 bg-white px-9 py-4 rounded-xl font-black text-lg hover:scale-[1.03] transition-transform shadow-xl text-blue-700">
+              className="inline-flex items-center gap-2 bg-white px-9 py-4 rounded-xl font-black text-lg hover:scale-[1.03] transition-transform shadow-xl accent-text">
               {c.cta.btn}<Arrow size={20} />
             </button>
           </div>
-        </Reveal>
+        </div>
       </section>
 
       {/* ── Footer ── */}
@@ -547,22 +582,22 @@ export default function LandingPage() {
             <h4 className="font-semibold text-slate-900 mb-4 text-sm">{c.footer.product}</h4>
             <ul className="space-y-2.5 text-sm text-slate-500">
               <li><button onClick={() => scrollTo('values')} className="hover:text-slate-900 transition-colors">{c.nav.features}</button></li>
-              <li><button onClick={() => navigate('/register')} className="hover:text-slate-900 transition-colors">{c.nav.pricing}</button></li>
+              <li><button onClick={() => scrollTo('pricing')} className="hover:text-slate-900 transition-colors">{c.nav.pricing}</button></li>
               <li><button onClick={() => scrollTo('why')} className="hover:text-slate-900 transition-colors">{c.nav.faq}</button></li>
             </ul>
           </div>
           <div>
             <h4 className="font-semibold text-slate-900 mb-4 text-sm">{c.footer.company}</h4>
             <ul className="space-y-2.5 text-sm text-slate-500">
-              <li><span className="text-blue-600 font-medium">{c.nav.about}</span></li>
+              <li><span className="accent-text font-medium">{c.nav.about}</span></li>
               <li><button onClick={() => navigate('/register')} className="hover:text-slate-900 transition-colors">{c.nav.register}</button></li>
             </ul>
           </div>
           <div>
             <h4 className="font-semibold text-slate-900 mb-4 text-sm">{c.footer.contact}</h4>
-            <p className="text-sm text-slate-500 mb-3 flex items-center gap-2"><Mail size={15} className="text-blue-600" />cptstaf2018@gmail.com</p>
+            <p className="text-sm text-slate-500 mb-3 flex items-center gap-2"><Mail size={15} className="accent-text" />cptstaf2018@gmail.com</p>
             <p className="text-xs text-slate-400">{c.footer.dev}{' '}
-              <a href="https://baghdad-future-ai.my/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">Baghdad Future AI</a>
+              <a href="https://baghdad-future-ai.my/" target="_blank" rel="noopener noreferrer" className="accent-text hover:underline font-medium">Baghdad Future AI</a>
             </p>
           </div>
         </div>

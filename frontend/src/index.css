@@ -90,18 +90,25 @@ button, input, select { font: inherit; }
 }
 
 /* ── About page: accent utilities ── */
-.accent-text { color: #2563eb; }
+.accent-text        { color: #2563eb; }
+.accent-text-light  { color: #93c5fd; }
+.accent-bg          { background-color: #2563eb; }
+.accent-grad        { background: linear-gradient(135deg, #2563eb, #4f46e5); }
+.accent-soft-bg     { background-color: #dbeafe; }
+.accent-line-bg     { background-color: #93c5fd; }
+.accent-dot         { background-color: #2563eb; }
 
-/* ── About page: reveal on scroll ── */
-.reveal {
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1), transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+/* ── Studio dark section mesh ── */
+.studio-mesh {
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(37,99,235,0.18), transparent 55%),
+    radial-gradient(ellipse at 80% 20%, rgba(79,70,229,0.12), transparent 45%);
 }
-.reveal-in {
-  opacity: 1;
-  transform: translateY(0);
-}
+
+/* ── CTA overlay ── */
+.cta-overlay { position: absolute; inset: 0; }
+.cta-overlay-rtl { background: linear-gradient(to left,  rgba(29,78,216,0.95), rgba(30,58,138,0.88), rgba(17,24,39,0.5)); }
+.cta-overlay-ltr { background: linear-gradient(to right, rgba(29,78,216,0.95), rgba(30,58,138,0.88), rgba(17,24,39,0.5)); }
 
 .skeleton {
   position: relative;
