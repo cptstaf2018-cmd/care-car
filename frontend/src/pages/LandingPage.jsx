@@ -1,338 +1,325 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import {
-  Camera, MessageCircle, Package, FileText, BarChart3, Headphones,
-  Check, ChevronDown, Globe, ArrowLeft, ArrowRight, Sparkles,
-  Zap, ShieldCheck, Clock, Star
+  Sparkles, Globe, ArrowLeft, ArrowRight, Star,
+  Target, Eye, Zap, ShieldCheck, Headphones, TrendingUp,
+  Lightbulb, MapPin, Quote, Building, Cpu, Check, X, Mail
 } from 'lucide-react'
-import { PLAN_DETAILS, PLAN_ORDER } from '../constants/plans'
 
-/* ───────────────────────── Copy (AR / EN) ───────────────────────── */
-const T = {
+/* ── Bilingual content ── */
+const ABOUT_T = {
   ar: {
-    dir: 'rtl',
-    nav: { features: 'المميزات', how: 'كيف يعمل', pricing: 'الأسعار', faq: 'الأسئلة', login: 'دخول', register: 'ابدأ مجاناً' },
+    dir: 'rtl', lang: 'ar',
+    nav: { features: 'المميزات', pricing: 'الأسعار', about: 'من نحن', faq: 'الأسئلة', login: 'دخول', register: 'ابدأ مجاناً', toggle: 'EN' },
     hero: {
-      badge: 'منصة سحابية متكاملة لإدارة المراكز',
-      title1: 'أدر مركزك',
-      titleAccent: 'بمستوى عالمي',
-      sub: 'نظام واحد يدير كل شيء — السيارات، الخدمات، الفواتير، المخزون، والتذكيرات. مصمّم خصيصاً لمراكز تغيير الزيت في العراق.',
+      badge: 'من نحن — قصة CearCar',
+      title1: 'بنينا النظام الذي',
+      titleAccent: 'تمنّينا وجوده',
+      sub: 'CearCar وُلد داخل ورش العراق، لا في غرفة اجتماعات بعيدة. مهمتنا واحدة: أن يدير صاحب المركز عمله بثقة، بأدوات بسيطة بقدر ما هي قوية — من أول سيارة تدخل حتى آخر فاتورة في اليوم.',
       cta1: 'ابدأ الآن مجاناً',
-      cta2: 'شاهد المنصة',
+      cta2: 'تعرّف على المنصة',
       trust: 'يثق بنا أكثر من ٢٠٠ مركز في العراق',
     },
     stats: [
-      { val: '+٢٠٠', label: 'مركز نشط' },
-      { val: '٩٩٪', label: 'رضا العملاء' },
-      { val: '٢٤/٧', label: 'دعم متواصل' },
-      { val: '٣ دقائق', label: 'للإعداد والبدء' },
+      { val: '+٢٠٠', label: 'مركز يعتمد علينا' },
+      { val: '+٥٠ ألف', label: 'سيارة تُدار عبر النظام' },
+      { val: '٩٩٪', label: 'رضا أصحاب المراكز' },
+      { val: '٢٠٢٤', label: 'سنة الانطلاق' },
     ],
-    marquee: ['فواتير فورية', 'قراءة اللوحة', 'تذكيرات واتساب', 'مخزون ذكي', 'تقارير لحظية', 'كاميرا IP', 'طباعة A4', 'متعدد الفروع'],
-    feat: {
-      eyebrow: 'كل ما تحتاجه',
-      title: 'منصة كاملة، لا أدوات متفرقة',
-      sub: 'من لحظة دخول السيارة حتى الفاتورة — كل شيء متصل ويعمل تلقائياً.',
+    story: {
+      eyebrow: 'قصتنا',
+      title: 'بدأت من دفتر ممزّق وزحمة آخر النهار',
+      p1: 'في مركز لتغيير الزيت في بغداد، كان كل شيء يُكتب بخط اليد: أرقام اللوحات على ورقة، الأسعار في رأس صاحب المحل، وموعد الزيت القادم… ينساه الزبون غالباً. عند آخر النهار، لا أحد يعرف بدقة كم دخل ولا كم بقي في المخزن.',
+      p2: 'رأينا المشكلة عن قرب، فقررنا ألّا نبيع برنامجاً معقّداً مستورداً، بل أن نبني أداة عراقية يفهمها أي موظف من أول يوم: تسجّل السيارة، تحسب الفاتورة، تنبّه الزبون، وتقول لك بصدق أين تذهب أرباحك.',
+      quote: 'لم نُرد أن نُعلّم المراكز كيف تعمل — أردنا أن نمنحها الوقت لتعمل أكثر.',
+      quoteBy: 'فريق CearCar',
+    },
+    mv: {
+      eyebrow: 'رسالتنا ورؤيتنا',
+      title: 'لماذا نستيقظ كل صباح',
+      mission: { tag: 'الرسالة', title: 'نُبسّط إدارة المراكز', desc: 'أن نضع بين يدي كل مركز في العراق نظاماً واحداً يدير السيارات والخدمات والفواتير والمخزون بثقة — بلغته، وبسعر يقدر عليه.' },
+      vision: { tag: 'الرؤية', title: 'مستوى عالمي بهوية محلية', desc: 'أن يصبح CearCar المعيار الذي تُدار به ورش ومراكز السيارات في العراق والمنطقة، حيث تتساوى البساطة مع القوة، والتقنية مع الواقع اليومي.' },
+    },
+    values: {
+      eyebrow: 'قيمنا',
+      title: 'مبادئ نُهندس عليها كل تفصيل',
+      sub: 'ليست شعارات على الجدار — هي القرارات التي نتخذها في كل شاشة.',
       items: [
-        { icon: Camera, title: 'كاميرا وقراءة اللوحة', desc: 'تُسجّل السيارة تلقائياً بمجرد دخولها بالذكاء الاصطناعي.' },
-        { icon: MessageCircle, title: 'تذكيرات واتساب', desc: 'الزبون يصله تذكير تلقائي قبل انتهاء موعد الزيت.' },
-        { icon: Package, title: 'مخزون ذكي', desc: 'المواد والزيوت تنخفض تلقائياً مع كل خدمة.' },
-        { icon: FileText, title: 'فاتورة في ثانية', desc: 'فاتورة احترافية بشعارك جاهزة للطباعة والإرسال.' },
-        { icon: BarChart3, title: 'تقارير لحظية', desc: 'اعرف أرباحك اليوم والشهر بضغطة واحدة.' },
-        { icon: Headphones, title: 'دعم فني حقيقي', desc: 'فريق عراقي جاهز لمساعدتك في أي وقت.' },
+        { icon: 'Lightbulb', title: 'بساطة قبل كل شيء', desc: 'إن احتاجت الميزة إلى شرح طويل، فهي غير جاهزة بعد. نختصر حتى يفهمها أي موظف فوراً.' },
+        { icon: 'MapPin', title: 'عراقي حتى النخاع', desc: 'بالدينار العراقي، بالعربية، وبفهمٍ لواقع الورشة — لا ترجمة باهتة لمنتج أجنبي.' },
+        { icon: 'ShieldCheck', title: 'بياناتك ملكك', desc: 'قاعدة بيانات معزولة لكل مركز، تشفير، ونسخ احتياطي تلقائي. أمانك ليس خياراً إضافياً.' },
+        { icon: 'Zap', title: 'السرعة احترام للوقت', desc: 'فاتورة في ثانية، وسيارة تُسجَّل قبل أن يُغلق الزبون باب سيارته.' },
+        { icon: 'Headphones', title: 'دعم بشري حقيقي', desc: 'فريق عراقي يردّ عليك بلسانك، لا روبوت ولا رسائل آلية باردة.' },
+        { icon: 'TrendingUp', title: 'ننمو معك', desc: 'من مركز واحد إلى عدة فروع — النظام يكبر بقدر طموحك دون أن يتعثّر.' },
       ],
     },
-    how: {
-      eyebrow: 'البداية سهلة',
-      title: 'ثلاث خطوات وأنت جاهز',
-      steps: [
-        { icon: Zap, title: 'سجّل مركزك', desc: 'أدخل اسم المركز والبيانات الأساسية خلال دقيقة.' },
-        { icon: ShieldCheck, title: 'اضبط الخدمات', desc: 'أضف خدماتك وأسعارك ومخزونك بسهولة.' },
-        { icon: Clock, title: 'ابدأ الشغل', desc: 'أدخل أول سيارة وأصدر أول فاتورة فوراً.' },
+    why: {
+      eyebrow: 'لماذا CearCar',
+      title: 'الفرق بين أن «تشتغل» وأن «تدير»',
+      sub: 'هكذا يبدو يومك قبل CearCar وبعده.',
+      oldTitle: 'الطريقة التقليدية',
+      newTitle: 'مع CearCar',
+      rows: [
+        { old: 'دفاتر وأوراق تضيع وتتلف', neu: 'كل شيء محفوظ سحابياً ومنظّم' },
+        { old: 'الزبون ينسى موعد الزيت', neu: 'تذكير واتساب يصله تلقائياً' },
+        { old: 'لا تعرف أرباح اليوم إلا بالحَزر', neu: 'تقرير لحظي بضغطة واحدة' },
+        { old: 'المخزون ينفد فجأة', neu: 'خصم تلقائي وتنبيه قبل النفاد' },
+        { old: 'فاتورة بخط اليد غير احترافية', neu: 'فاتورة بشعارك جاهزة للطباعة' },
       ],
     },
-    show: {
-      eyebrow: 'شاهد المنصة',
-      title: 'بساطة في الواجهة، قوة في الأداء',
-      sub: 'واجهة عربية بالكامل، يتقنها أي موظف من أول يوم.',
+    timeline: {
+      eyebrow: 'رحلتنا',
+      title: 'من فكرة إلى ٢٠٠ مركز',
       items: [
-        { img: '/ss-cars.png', tag: 'إدارة السيارات', title: 'كل تاريخ الزبون في ثانية', desc: 'أدخل رقم اللوحة لتظهر كل خدمات السيارة السابقة، نوع الزيت، والموعد القادم — دون أوراق ودون بحث.' },
-        { img: '/ss-services.png', tag: 'الخدمات', title: 'أضف الخدمات والسعر يحتسب وحده', desc: 'اختر الزيت والفلتر والإضافات من قائمة جاهزة، والنظام يحسب الإجمالي تلقائياً بدقة.' },
-        { img: '/ss-invoice.png', tag: 'الفواتير', title: 'فاتورة احترافية جاهزة للإرسال', desc: 'فاتورة بشعار مركزك، اطبعها A4 أو أرسلها على واتساب للزبون مباشرة بنقرة.' },
+        { year: '٢٠٢٤', title: 'الشرارة الأولى', desc: 'انطلقت الفكرة من ورشة حقيقية، وبُنيت أول نسخة تجريبية مع ثلاثة مراكز في بغداد.' },
+        { year: '٢٠٢٤', title: 'الإطلاق الرسمي', desc: 'أطلقنا CearCar بواجهة عربية كاملة، فواتير فورية، وإدارة سيارات وخدمات.' },
+        { year: '٢٠٢٥', title: 'الذكاء يدخل الورشة', desc: 'أضفنا قراءة اللوحة بالكاميرا، تذكيرات واتساب، والمخزون الذكي.' },
+        { year: 'اليوم', title: '+٢٠٠ مركز ونكبر', desc: 'منصة يعتمد عليها مئات المراكز يومياً، ونعمل على دعم الفروع المتعددة والمنطقة.' },
       ],
     },
-    pricing: {
-      eyebrow: 'أسعار واضحة',
-      title: 'اختر الخطة التي تناسب مركزك',
-      sub: 'بالدينار العراقي. بدون رسوم خفية. ألغِ في أي وقت.',
-      currency: 'د.ع / شهرياً',
-      popular: 'الأكثر طلباً',
-      cta: 'ابدأ بهذه الخطة',
+    studio: {
+      eyebrow: 'من يقف خلف CearCar',
+      title: 'صُنع بفخر في العراق',
+      desc: 'CearCar من تطوير وتشغيل Baghdad Future AI — فريق هندسي عراقي يبني أدوات ذكاء اصطناعي وبرمجيات تخدم السوق المحلي بمعايير عالمية. نؤمن أن التقنية الجادة تُبنى قريباً من الناس الذين تخدمهم، لا بعيداً عنهم.',
+      cta: 'زيارة Baghdad Future AI',
+      pills: ['هندسة محلية', 'ذكاء اصطناعي تطبيقي', 'دعم باللغة العربية', 'بنية سحابية آمنة'],
     },
-    faq: {
-      eyebrow: 'أسئلة شائعة',
-      title: 'كل ما تريد معرفته',
-      items: [
-        { q: 'هل أستطيع تجربة المنصة قبل الدفع؟', a: 'نعم، تواصل معنا ونفعّل لك حساباً تجريبياً مجاناً لتجرب كل المميزات.' },
-        { q: 'كيف تتم عملية الدفع؟', a: 'الدفع شهري عبر التحويل البنكي أو ZainCash، ويمكنك إلغاء الاشتراك في أي وقت دون التزام.' },
-        { q: 'هل تعمل المنصة على الجوال؟', a: 'نعم، تعمل بشكل كامل على الهاتف والتابلت والكمبيوتر بنفس الجودة.' },
-        { q: 'هل بياناتي آمنة؟', a: 'بالتأكيد. لكل مركز قاعدة بيانات معزولة، وكلمات المرور مشفّرة، والنسخ الاحتياطي تلقائي.' },
-        { q: 'كيف أحصل على الدعم؟', a: 'عبر واتساب أو البريد الإلكتروني، وفريقنا العراقي متاح من ٩ صباحاً حتى ٦ مساءً.' },
-      ],
-    },
-    cta: { title: 'جاهز ترفع مستوى مركزك؟', sub: 'انضم لمئات المراكز التي تدير عملها باحتراف.', btn: 'ابدأ مجاناً الآن' },
+    cta: { title: 'جاهز ترفع مستوى مركزك؟', sub: 'انضم لمئات المراكز التي تدير عملها باحتراف — وابدأ اليوم مجاناً.', btn: 'ابدأ مجاناً الآن' },
     footer: { desc: 'منصة الإدارة الأذكى لمراكز تغيير الزيت في العراق.', product: 'المنتج', company: 'الشركة', contact: 'تواصل معنا', dev: 'تطوير وتشغيل', rights: 'جميع الحقوق محفوظة' },
   },
   en: {
-    dir: 'ltr',
-    nav: { features: 'Features', how: 'How it works', pricing: 'Pricing', faq: 'FAQ', login: 'Login', register: 'Start Free' },
+    dir: 'ltr', lang: 'en',
+    nav: { features: 'Features', pricing: 'Pricing', about: 'About', faq: 'FAQ', login: 'Login', register: 'Start Free', toggle: 'عربي' },
     hero: {
-      badge: 'All-in-one cloud platform for service centers',
-      title1: 'Run Your Center',
-      titleAccent: 'at a World-Class Level',
-      sub: 'One system that runs everything — cars, services, invoices, inventory, and reminders. Built specifically for oil-change centers in Iraq.',
+      badge: 'About — the CearCar story',
+      title1: 'We built the system',
+      titleAccent: 'we wished existed',
+      sub: 'CearCar was born inside Iraqi workshops, not in a distant boardroom. Our mission is singular: let a center owner run the business with confidence, using tools as simple as they are powerful — from the first car in to the last invoice of the day.',
       cta1: 'Start Free Now',
-      cta2: 'See the Platform',
+      cta2: 'Explore the platform',
       trust: 'Trusted by 200+ centers across Iraq',
     },
     stats: [
-      { val: '200+', label: 'Active centers' },
-      { val: '99%', label: 'Customer satisfaction' },
-      { val: '24/7', label: 'Support' },
-      { val: '3 min', label: 'To set up & start' },
+      { val: '200+', label: 'Centers rely on us' },
+      { val: '50K+', label: 'Cars managed via the system' },
+      { val: '99%', label: 'Owner satisfaction' },
+      { val: '2024', label: 'Year we launched' },
     ],
-    marquee: ['Instant invoices', 'Plate reading', 'WhatsApp reminders', 'Smart inventory', 'Live reports', 'IP camera', 'A4 print', 'Multi-branch'],
-    feat: {
-      eyebrow: 'Everything you need',
-      title: 'A full platform, not scattered tools',
-      sub: 'From the moment a car arrives to the invoice — everything is connected and automatic.',
+    story: {
+      eyebrow: 'Our story',
+      title: 'It started with a torn notebook and end-of-day chaos',
+      p1: "At an oil-change center in Baghdad, everything was handwritten: plate numbers on a scrap of paper, prices in the owner's head, and the next oil date… usually forgotten by the customer. At day's end, nobody knew exactly how much came in or what was left in stock.",
+      p2: "We saw the problem up close, so we decided not to sell a complex imported program, but to build an Iraqi tool any employee understands on day one: it logs the car, totals the invoice, reminds the customer, and tells you honestly where your profit goes.",
+      quote: 'We never wanted to teach centers how to work — we wanted to give them the time to work more.',
+      quoteBy: 'The CearCar team',
+    },
+    mv: {
+      eyebrow: 'Mission & Vision',
+      title: 'Why we get up every morning',
+      mission: { tag: 'Mission', title: 'Make center management simple', desc: "To put in every Iraqi center's hands one system that runs cars, services, invoices, and inventory with confidence — in their language, at a price they can afford." },
+      vision: { tag: 'Vision', title: 'World-class, locally rooted', desc: 'For CearCar to become the standard by which car workshops and centers are run across Iraq and the region, where simplicity meets power and technology meets daily reality.' },
+    },
+    values: {
+      eyebrow: 'Our values',
+      title: 'Principles we engineer every detail on',
+      sub: 'Not slogans on a wall — the decisions we make on every screen.',
       items: [
-        { icon: Camera, title: 'Camera & Plate Reading', desc: 'Registers the car automatically on entry using AI.' },
-        { icon: MessageCircle, title: 'WhatsApp Reminders', desc: 'Customers get an automatic reminder before their oil is due.' },
-        { icon: Package, title: 'Smart Inventory', desc: 'Materials and oils deduct automatically with each service.' },
-        { icon: FileText, title: 'Invoice in Seconds', desc: 'Professional invoice with your logo, ready to print and send.' },
-        { icon: BarChart3, title: 'Live Reports', desc: 'Know your daily and monthly profit with one tap.' },
-        { icon: Headphones, title: 'Real Human Support', desc: 'An Iraqi team ready to help you anytime.' },
+        { icon: 'Lightbulb', title: 'Simplicity first', desc: "If a feature needs a long explanation, it isn't ready yet. We trim until any employee gets it instantly." },
+        { icon: 'MapPin', title: 'Iraqi to the core', desc: 'In Iraqi Dinar, in Arabic, with a real grasp of the workshop — not a faded translation of a foreign product.' },
+        { icon: 'ShieldCheck', title: 'Your data is yours', desc: 'An isolated database per center, encryption, and automatic backups. Your safety is not an add-on.' },
+        { icon: 'Zap', title: 'Speed respects time', desc: 'An invoice in a second, and a car logged before the customer shuts their door.' },
+        { icon: 'Headphones', title: 'Real human support', desc: 'An Iraqi team that answers in your language — no bots, no cold automated replies.' },
+        { icon: 'TrendingUp', title: 'We grow with you', desc: 'From a single center to multiple branches — the system scales with your ambition without stumbling.' },
       ],
     },
-    how: {
-      eyebrow: 'Easy to start',
-      title: 'Three steps and you are ready',
-      steps: [
-        { icon: Zap, title: 'Register your center', desc: 'Enter your center name and basics in a minute.' },
-        { icon: ShieldCheck, title: 'Set up services', desc: 'Add your services, prices, and inventory easily.' },
-        { icon: Clock, title: 'Start working', desc: 'Enter the first car and issue the first invoice instantly.' },
+    why: {
+      eyebrow: 'Why CearCar',
+      title: 'The difference between "working" and "running"',
+      sub: "Here's what your day looks like before CearCar and after.",
+      oldTitle: 'The traditional way',
+      newTitle: 'With CearCar',
+      rows: [
+        { old: 'Notebooks and papers that get lost or damaged', neu: 'Everything stored in the cloud and organized' },
+        { old: 'The customer forgets the oil date', neu: 'A WhatsApp reminder reaches them automatically' },
+        { old: 'You only guess today\'s profit', neu: 'A live report with one tap' },
+        { old: 'Inventory runs out suddenly', neu: 'Auto-deduction and a low-stock alert' },
+        { old: 'An unprofessional handwritten invoice', neu: 'An invoice with your logo, ready to print' },
       ],
     },
-    show: {
-      eyebrow: 'See the platform',
-      title: 'Simple to use, powerful underneath',
-      sub: 'A fully Arabic interface any employee masters on day one.',
+    timeline: {
+      eyebrow: 'Our journey',
+      title: 'From an idea to 200 centers',
       items: [
-        { img: '/ss-cars.png', tag: 'Cars', title: 'Full customer history in a second', desc: 'Enter the plate number to instantly see all past services, oil type, and the next appointment — no paper, no searching.' },
-        { img: '/ss-services.png', tag: 'Services', title: 'Add services, price calculates itself', desc: 'Pick oil, filter, and extras from a ready list; the system totals everything automatically and precisely.' },
-        { img: '/ss-invoice.png', tag: 'Invoices', title: 'A professional invoice ready to send', desc: 'An invoice with your center logo — print A4 or send it to the customer on WhatsApp with one tap.' },
+        { year: '2024', title: 'The first spark', desc: 'The idea began in a real workshop, and a first beta was built with three centers in Baghdad.' },
+        { year: '2024', title: 'Official launch', desc: 'We launched CearCar with a fully Arabic interface, instant invoices, and car & service management.' },
+        { year: '2025', title: 'Intelligence enters the workshop', desc: 'We added camera plate-reading, WhatsApp reminders, and smart inventory.' },
+        { year: 'Today', title: '200+ centers and growing', desc: 'A platform hundreds of centers rely on daily, while we work on multi-branch and regional support.' },
       ],
     },
-    pricing: {
-      eyebrow: 'Clear pricing',
-      title: 'Pick the plan that fits your center',
-      sub: 'In Iraqi Dinar. No hidden fees. Cancel anytime.',
-      currency: 'IQD / month',
-      popular: 'Most Popular',
-      cta: 'Start with this plan',
+    studio: {
+      eyebrow: 'Who stands behind CearCar',
+      title: 'Proudly made in Iraq',
+      desc: 'CearCar is built and operated by Baghdad Future AI — an Iraqi engineering team building AI tools and software for the local market to global standards. We believe serious technology is built close to the people it serves, not far from them.',
+      cta: 'Visit Baghdad Future AI',
+      pills: ['Local engineering', 'Applied AI', 'Arabic-language support', 'Secure cloud infrastructure'],
     },
-    faq: {
-      eyebrow: 'FAQ',
-      title: 'Everything you want to know',
-      items: [
-        { q: 'Can I try the platform before paying?', a: 'Yes, contact us and we will activate a free trial so you can test every feature.' },
-        { q: 'How does payment work?', a: 'Monthly via bank transfer or ZainCash, and you can cancel anytime with no commitment.' },
-        { q: 'Does it work on mobile?', a: 'Yes, it works fully on phone, tablet, and computer with the same quality.' },
-        { q: 'Is my data safe?', a: 'Absolutely. Each center has an isolated database, encrypted passwords, and automatic backups.' },
-        { q: 'How do I get support?', a: 'Via WhatsApp or email, and our Iraqi team is available from 9am to 6pm.' },
-      ],
-    },
-    cta: { title: 'Ready to level up your center?', sub: 'Join hundreds of centers running their work professionally.', btn: 'Start Free Now' },
+    cta: { title: 'Ready to level up your center?', sub: 'Join hundreds of centers running professionally — and start today, free.', btn: 'Start Free Now' },
     footer: { desc: 'The smartest management platform for oil-change centers in Iraq.', product: 'Product', company: 'Company', contact: 'Contact', dev: 'Built & operated by', rights: 'All rights reserved' },
   },
 }
 
-const planNames = {
-  basic: { ar: 'الأساسية', en: 'Basic' },
-  pro: { ar: 'الاحترافية', en: 'Pro' },
-  enterprise: { ar: 'المؤسسية', en: 'Enterprise' },
-}
+const ICONS = { Lightbulb, MapPin, ShieldCheck, Zap, Headphones, TrendingUp, Target, Eye }
 
-/* ───────────────────────── Helpers ───────────────────────── */
-const reveal = {
-  hidden: { opacity: 0, y: 24 },
-  show: (i = 0) => ({ opacity: 1, y: 0, transition: { duration: 0.55, delay: i * 0.07, ease: [0.16, 1, 0.3, 1] } }),
-}
-
-function Reveal({ children, className = '', i = 0 }) {
+/* ── Reveal on scroll ── */
+function Reveal({ children, className = '', i = 0, as: Tag = 'div' }) {
+  const ref = useRef(null)
+  const [shown, setShown] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    let done = false
+    const check = () => {
+      if (done || !ref.current) return
+      const r = ref.current.getBoundingClientRect()
+      if (r.top < window.innerHeight * 0.88 && r.bottom > 0) {
+        done = true
+        setShown(true)
+        window.removeEventListener('scroll', check)
+        window.removeEventListener('resize', check)
+      }
+    }
+    check()
+    window.addEventListener('scroll', check, { passive: true })
+    window.addEventListener('resize', check)
+    return () => {
+      window.removeEventListener('scroll', check)
+      window.removeEventListener('resize', check)
+    }
+  }, [])
   return (
-    <motion.div variants={reveal} custom={i} initial="hidden" whileInView="show"
-      viewport={{ once: true, amount: 0.2 }} className={className}>
+    <Tag ref={ref} className={`reveal ${shown ? 'reveal-in' : ''} ${className}`} style={{ transitionDelay: `${i * 70}ms` }}>
       {children}
-    </motion.div>
+    </Tag>
   )
 }
 
 function Eyebrow({ children }) {
   return (
-    <span className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 mb-4">
+    <span className="inline-flex items-center gap-2 text-sm font-semibold accent-text mb-4">
       <span className="w-6 h-px bg-blue-300" />
       {children}
     </span>
   )
 }
 
-function BrowserFrame({ src, alt }) {
+function Logo() {
   return (
-    <div className="relative rounded-2xl overflow-hidden border border-slate-200 bg-white lp-soft-shadow">
-      <div className="flex items-center gap-1.5 px-4 h-9 border-b border-slate-100 bg-slate-50">
-        <span className="w-2.5 h-2.5 rounded-full bg-rose-300" />
-        <span className="w-2.5 h-2.5 rounded-full bg-amber-300" />
-        <span className="w-2.5 h-2.5 rounded-full bg-emerald-300" />
-        <div dir="ltr" className="mx-auto text-[11px] text-slate-400 px-3 py-0.5 rounded-md bg-white border border-slate-100">
-          carecar.online/center
-        </div>
-      </div>
-      <img src={src} alt={alt} className="w-full block" onError={e => { e.target.style.display = 'none' }} />
+    <div className="flex items-center gap-2">
+      <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-md" style={{ boxShadow: '0 4px 12px rgba(37,99,235,0.35)' }}>
+        <Sparkles size={16} className="text-white" />
+      </span>
+      <span className="font-black text-lg tracking-tight text-slate-900">CearCar</span>
     </div>
   )
 }
 
-function FAQItem({ q, a }) {
-  const [open, setOpen] = useState(false)
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden transition-colors hover:border-slate-300">
-      <button onClick={() => setOpen(!open)} className="w-full flex items-center justify-between gap-4 px-6 py-5 text-start">
-        <span className="font-semibold text-slate-800">{q}</span>
-        <ChevronDown size={18} className={`shrink-0 text-blue-600 transition-transform duration-300 ${open ? 'rotate-180' : ''}`} />
-      </button>
-      <motion.div initial={false} animate={{ height: open ? 'auto' : 0, opacity: open ? 1 : 0 }}
-        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }} className="overflow-hidden">
-        <p className="px-6 pb-5 text-slate-500 leading-relaxed text-[15px]">{a}</p>
-      </motion.div>
-    </div>
-  )
-}
-
-/* ───────────────────────── Page ───────────────────────── */
 export default function LandingPage() {
   const [lang, setLang] = useState('ar')
-  const t = T[lang]
   const navigate = useNavigate()
+  const c = ABOUT_T[lang]
   const isRtl = lang === 'ar'
   const Arrow = isRtl ? ArrowLeft : ArrowRight
 
+  useEffect(() => {
+    document.documentElement.dir = c.dir
+    document.documentElement.lang = c.lang
+    return () => {
+      document.documentElement.dir = 'rtl'
+      document.documentElement.lang = 'ar'
+    }
+  }, [c.dir, c.lang])
+
   const scrollTo = id => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
-  const marqueeItems = [...t.marquee, ...t.marquee]
 
   return (
-    <div dir={t.dir} className="min-h-screen bg-white text-slate-900 antialiased selection:bg-blue-100"
-      style={{ fontFamily: "'IBM Plex Sans Arabic', 'Segoe UI', Arial, sans-serif" }}>
+    <div dir={c.dir} className="min-h-screen bg-white text-slate-900 antialiased">
 
       {/* ── Navbar ── */}
-      <nav className="fixed top-0 inset-x-0 z-50 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl">
+      <nav className="fixed top-0 inset-x-0 z-40 border-b border-slate-200/70 bg-white/80 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
-          <button onClick={() => scrollTo('top')} className="flex items-center gap-2">
-            <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-md shadow-blue-500/30">
-              <Sparkles size={16} className="text-white" />
-            </span>
-            <span className="font-black text-lg tracking-tight text-slate-900">CearCar</span>
-          </button>
-
+          <button onClick={() => scrollTo('top')} className="flex items-center"><Logo /></button>
           <div className="hidden md:flex items-center gap-8 text-sm text-slate-500 font-medium">
-            <button onClick={() => scrollTo('features')} className="hover:text-slate-900 transition-colors">{t.nav.features}</button>
-            <button onClick={() => scrollTo('how')} className="hover:text-slate-900 transition-colors">{t.nav.how}</button>
-            <button onClick={() => scrollTo('pricing')} className="hover:text-slate-900 transition-colors">{t.nav.pricing}</button>
-            <button onClick={() => scrollTo('faq')} className="hover:text-slate-900 transition-colors">{t.nav.faq}</button>
+            <button onClick={() => scrollTo('values')} className="hover:text-slate-900 transition-colors">{c.nav.features}</button>
+            <button onClick={() => navigate('/register')} className="hover:text-slate-900 transition-colors">{c.nav.pricing}</button>
+            <span className="accent-text font-semibold">{c.nav.about}</span>
+            <button onClick={() => scrollTo('why')} className="hover:text-slate-900 transition-colors">{c.nav.faq}</button>
           </div>
-
           <div className="flex items-center gap-2">
             <button onClick={() => setLang(isRtl ? 'en' : 'ar')}
               className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-900 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">
-              <Globe size={15} />{isRtl ? 'EN' : 'عربي'}
+              <Globe size={15} />{c.nav.toggle}
             </button>
-            <button onClick={() => navigate('/login')} className="hidden sm:block text-sm text-slate-600 hover:text-slate-900 px-3 py-1.5 transition-colors font-medium">
-              {t.nav.login}
-            </button>
-            <button onClick={() => navigate('/register')}
-              className="text-sm font-semibold bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors">
-              {t.nav.register}
-            </button>
+            <button onClick={() => navigate('/login')} className="hidden sm:block text-sm text-slate-600 hover:text-slate-900 px-3 py-1.5 transition-colors font-medium">{c.nav.login}</button>
+            <button onClick={() => navigate('/register')} className="text-sm font-semibold bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors">{c.nav.register}</button>
           </div>
         </div>
       </nav>
 
       {/* ── Hero ── */}
-      <header id="top" className="relative min-h-screen flex items-center overflow-hidden pt-16">
-        {/* Full background image */}
+      <header id="top" className="relative min-h-[88vh] flex items-center overflow-hidden pt-16">
         <div className="absolute inset-0">
-          <img src="/hero-car.png" alt="" aria-hidden="true" className="w-full h-full object-cover object-left" />
-          {/* Gradient: dark on right (RTL text side), lighter on left (car side) */}
-          <div className={`absolute inset-0 ${isRtl
-            ? 'bg-gradient-to-l from-[#060a14]/95 via-[#060a14]/75 to-[#060a14]/20'
-            : 'bg-gradient-to-r from-[#060a14]/95 via-[#060a14]/75 to-[#060a14]/20'}`} />
+          <img src="/hero-suv.png" alt="" aria-hidden="true"
+            className={`w-full h-full object-cover ${isRtl ? 'object-left' : 'object-right'}`} />
+          <div className={`absolute inset-0 ${
+            isRtl
+              ? 'bg-gradient-to-l from-[#060a14]/96 via-[#060a14]/78 to-[#060a14]/15'
+              : 'bg-gradient-to-r from-[#060a14]/96 via-[#060a14]/78 to-[#060a14]/15'}`} />
         </div>
 
-        {/* Content */}
         <div className="relative z-10 w-full max-w-6xl mx-auto px-5 py-20">
           <div className={`max-w-xl ${isRtl ? 'mr-0 ml-auto' : 'ml-0 mr-auto'}`}>
-            <motion.div
-              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
-              className="inline-flex items-center gap-2 text-sm text-blue-300 bg-white/[0.08] border border-white/15 px-4 py-1.5 rounded-full mb-7">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
-              {t.hero.badge}
-            </motion.div>
-
-            <motion.h1
-              initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-5xl md:text-6xl font-black leading-[1.08] tracking-tight mb-5 text-white">
-              {t.hero.title1}<br />
-              <span className="lp-gradient-text">{t.hero.titleAccent}</span>
-            </motion.h1>
-
-            <motion.p
-              initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-lg text-white/65 leading-relaxed mb-8">
-              {t.hero.sub}
-            </motion.p>
-
-            <motion.div
-              initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}
-              className="flex flex-wrap gap-3 mb-10">
-              <button onClick={() => navigate('/register')}
-                className="group flex items-center gap-2 bg-blue-600 text-white px-7 py-3.5 rounded-xl font-bold text-base shadow-xl shadow-blue-900/40 hover:bg-blue-500 hover:scale-[1.02] transition-all">
-                {t.hero.cta1}
-                <Arrow size={18} className="group-hover:translate-x-0.5 transition-transform" />
-              </button>
-              <button onClick={() => scrollTo('showcase')}
-                className="px-7 py-3.5 rounded-xl font-semibold text-base border border-white/25 text-white hover:bg-white/10 transition-all">
-                {t.hero.cta2}
-              </button>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.45 }}
-              className="flex items-center gap-2 text-sm text-white/50">
-              <span className="flex">{[0,1,2,3,4].map(i => <Star key={i} size={13} className="fill-amber-400 text-amber-400" />)}</span>
-              {t.hero.trust}
-            </motion.div>
+            <Reveal i={0}>
+              <span className="inline-flex items-center gap-2 text-sm text-blue-300 bg-white/[0.08] border border-white/15 px-4 py-1.5 rounded-full mb-7">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                {c.hero.badge}
+              </span>
+            </Reveal>
+            <Reveal i={1}>
+              <h1 className="text-5xl md:text-6xl font-black leading-[1.1] tracking-tight mb-5 text-white">
+                {c.hero.title1}<br />
+                <span className="lp-gradient-text">{c.hero.titleAccent}</span>
+              </h1>
+            </Reveal>
+            <Reveal i={2}>
+              <p className="text-lg text-white/65 leading-relaxed mb-8">{c.hero.sub}</p>
+            </Reveal>
+            <Reveal i={3}>
+              <div className="flex flex-wrap gap-3 mb-10">
+                <button onClick={() => navigate('/register')}
+                  className="group flex items-center gap-2 bg-blue-600 text-white px-7 py-3.5 rounded-xl font-bold text-base hover:bg-blue-500 hover:scale-[1.02] transition-all"
+                  style={{ boxShadow: '0 16px 40px -10px rgba(37,99,235,0.5)' }}>
+                  {c.hero.cta1}<Arrow size={18} className="group-hover:translate-x-0.5 transition-transform" />
+                </button>
+                <button onClick={() => scrollTo('story')} className="px-7 py-3.5 rounded-xl font-semibold text-base border border-white/25 text-white hover:bg-white/10 transition-all">
+                  {c.hero.cta2}
+                </button>
+              </div>
+            </Reveal>
+            <Reveal i={4}>
+              <div className="flex items-center gap-2 text-sm text-white/50">
+                <span className="flex gap-0.5">{[0,1,2,3,4].map(i => <Star key={i} size={13} className="text-amber-400 fill-amber-400" />)}</span>
+                {c.hero.trust}
+              </div>
+            </Reveal>
           </div>
         </div>
-
-        {/* Bottom fade to white */}
         <div className="absolute bottom-0 inset-x-0 h-32 bg-gradient-to-t from-white to-transparent" />
       </header>
 
       {/* ── Stats ── */}
-      <section className="relative px-5 -mt-4">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 rounded-2xl overflow-hidden border border-slate-200 bg-white lp-card-shadow divide-x divide-slate-100 [&>*]:border-slate-100">
-          {t.stats.map((s, i) => (
+      <section className="relative px-5 -mt-8 z-10">
+        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 rounded-2xl overflow-hidden border border-slate-200 bg-white lp-card-shadow divide-x divide-slate-100">
+          {c.stats.map((s, i) => (
             <Reveal key={i} i={i} className="p-6 text-center">
               <div className="text-3xl md:text-4xl font-black text-slate-900">{s.val}</div>
               <div className="text-sm text-slate-400 mt-1">{s.label}</div>
@@ -341,173 +328,72 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── Marquee ── */}
-      <div className="relative overflow-hidden py-10 mt-16">
-        <div className="flex gap-3 w-max lp-marquee-track">
-          {marqueeItems.map((m, i) => (
-            <span key={i} className="flex items-center gap-2 text-slate-500 text-sm whitespace-nowrap px-5 py-2 rounded-full border border-slate-200 bg-slate-50">
-              <Check size={14} className="text-blue-500" />{m}
-            </span>
-          ))}
-        </div>
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-white to-transparent" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-white to-transparent" />
-      </div>
-
-      {/* ── Features ── */}
-      <section id="features" className="relative px-5 py-28">
-        <div className="max-w-6xl mx-auto">
-          <Reveal className="text-center max-w-2xl mx-auto mb-16">
-            <Eyebrow>{t.feat.eyebrow}</Eyebrow>
-            <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4 text-slate-900">{t.feat.title}</h2>
-            <p className="text-slate-500 text-lg">{t.feat.sub}</p>
+      {/* ── Story ── */}
+      <section id="story" className="relative px-5 py-28">
+        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-14 items-center">
+          <Reveal className="order-2 lg:order-1">
+            <Eyebrow>{c.story.eyebrow}</Eyebrow>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-6 text-slate-900 leading-tight">{c.story.title}</h2>
+            <p className="text-slate-500 leading-relaxed text-lg mb-4">{c.story.p1}</p>
+            <p className="text-slate-500 leading-relaxed text-lg mb-8">{c.story.p2}</p>
+            <div className="relative rounded-2xl bg-blue-50 border border-slate-200/60 p-6 pr-7">
+              <Quote size={22} className="text-blue-600 mb-3" />
+              <p className="text-slate-800 text-xl font-bold leading-snug mb-2">{c.story.quote}</p>
+              <p className="text-slate-400 text-sm font-medium">— {c.story.quoteBy}</p>
+            </div>
           </Reveal>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {t.feat.items.map((f, i) => (
-              <Reveal key={i} i={i}>
-                <motion.div whileHover={{ y: -5 }} transition={{ duration: 0.25 }}
-                  className="group h-full rounded-2xl border border-slate-200 bg-white p-7 hover:border-blue-200 lp-card-shadow transition-colors">
-                  <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-5 group-hover:bg-blue-100 transition-colors">
-                    <f.icon size={22} className="text-blue-600" />
-                  </div>
-                  <h3 className="text-lg font-bold mb-2 text-slate-900">{f.title}</h3>
-                  <p className="text-slate-500 leading-relaxed text-[15px]">{f.desc}</p>
-                </motion.div>
-              </Reveal>
-            ))}
-          </div>
+          <Reveal i={1} className="order-1 lg:order-2">
+            <div className="relative rounded-3xl overflow-hidden lp-soft-shadow border border-slate-200">
+              <img src="/car-garage.png" alt="" className="w-full h-full object-cover aspect-[4/3]" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#060a14]/40 to-transparent" />
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* ── Visual break: SUV smart center ── */}
-      <Reveal className="relative overflow-hidden h-64 md:h-80 mx-5 my-4 rounded-3xl lp-soft-shadow">
-        <img src="/hero-suv.png" alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover object-left" />
-        <div className={`absolute inset-0 ${isRtl
-          ? 'bg-gradient-to-l from-slate-950/90 via-slate-900/65 to-transparent'
-          : 'bg-gradient-to-r from-slate-950/90 via-slate-900/65 to-transparent'}`} />
-        <div className={`absolute inset-0 flex items-center ${isRtl ? 'justify-end px-10 md:px-16' : 'justify-start px-10 md:px-16'}`}>
-          <div className="max-w-sm">
-            <p className="text-blue-300 text-xs font-bold mb-3 uppercase tracking-widest">
-              {lang === 'ar' ? '🧠 ذكاء اصطناعي + كاميرا IP' : '🧠 AI + IP Camera'}
-            </p>
-            <h3 className="text-white text-2xl md:text-3xl font-black leading-snug">
-              {lang === 'ar'
-                ? 'السيارة تُسجَّل تلقائياً عند الدخول'
-                : 'Car registered automatically on entry'}
-            </h3>
-            <p className="text-white/55 text-sm mt-2 leading-relaxed">
-              {lang === 'ar'
-                ? 'الكاميرا تقرأ اللوحة والنظام يفتح ملف الزبون فوراً.'
-                : 'Camera reads the plate and the system opens the customer file instantly.'}
-            </p>
-          </div>
-        </div>
-      </Reveal>
-
-      {/* ── How it works ── */}
-      <section id="how" className="relative px-5 py-28 bg-slate-50 border-y border-slate-100">
+      {/* ── Mission & Vision ── */}
+      <section className="relative px-5 py-28 bg-slate-50 border-y border-slate-100">
         <div className="max-w-5xl mx-auto">
-          <Reveal className="text-center mb-16">
-            <Eyebrow>{t.how.eyebrow}</Eyebrow>
-            <h2 className="text-3xl md:text-5xl font-black tracking-tight text-slate-900">{t.how.title}</h2>
+          <Reveal className="text-center max-w-2xl mx-auto mb-14">
+            <Eyebrow>{c.mv.eyebrow}</Eyebrow>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight text-slate-900">{c.mv.title}</h2>
           </Reveal>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-            <div className="hidden md:block absolute top-8 inset-x-[16%] h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
-            {t.how.steps.map((s, i) => (
-              <Reveal key={i} i={i} className="relative text-center">
-                <div className="relative z-10 w-16 h-16 mx-auto mb-5 rounded-2xl bg-white border border-slate-200 flex items-center justify-center lp-card-shadow">
-                  <s.icon size={26} className="text-blue-600" />
-                  <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-slate-900 text-white text-xs font-bold flex items-center justify-center">{i + 1}</span>
+          <div className="grid md:grid-cols-2 gap-6">
+            {[{ d: c.mv.mission, Icon: Target }, { d: c.mv.vision, Icon: Eye }].map(({ d, Icon }, i) => (
+              <Reveal key={i} i={i}>
+                <div className="h-full rounded-3xl bg-white border border-slate-200 p-9 lp-card-shadow">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mb-6">
+                    <Icon size={26} className="text-blue-600" />
+                  </div>
+                  <span className="inline-block text-xs font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full mb-4">{d.tag}</span>
+                  <h3 className="text-2xl font-black mb-3 text-slate-900">{d.title}</h3>
+                  <p className="text-slate-500 leading-relaxed text-[15px]">{d.desc}</p>
                 </div>
-                <h3 className="text-lg font-bold mb-2 text-slate-900">{s.title}</h3>
-                <p className="text-slate-500 leading-relaxed">{s.desc}</p>
               </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Showcase ── */}
-      <section id="showcase" className="relative px-5 py-28">
-        <div className="max-w-6xl mx-auto">
-          <Reveal className="text-center max-w-2xl mx-auto mb-20">
-            <Eyebrow>{t.show.eyebrow}</Eyebrow>
-            <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4 text-slate-900">{t.show.title}</h2>
-            <p className="text-slate-500 text-lg">{t.show.sub}</p>
-          </Reveal>
-
-          <div className="space-y-24">
-            {t.show.items.map((s, i) => (
-              <div key={i} className={`flex flex-col ${i % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'} items-center gap-12`}>
-                <Reveal className="flex-1 w-full">
-                  <BrowserFrame src={s.img} alt={s.title} />
-                </Reveal>
-                <Reveal className="flex-1 space-y-4">
-                  <span className="inline-block text-xs font-semibold uppercase tracking-wider text-blue-600 bg-blue-50 px-3 py-1 rounded-full">{s.tag}</span>
-                  <h3 className="text-2xl md:text-3xl font-black tracking-tight text-slate-900">{s.title}</h3>
-                  <p className="text-slate-500 leading-relaxed text-lg">{s.desc}</p>
-                  <button onClick={() => navigate('/register')} className="inline-flex items-center gap-2 text-blue-600 font-semibold hover:gap-3 transition-all">
-                    {lang === 'ar' ? 'جربه الآن' : 'Try it now'}<Arrow size={16} />
-                  </button>
-                </Reveal>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Pricing ── */}
-      <section id="pricing" className="relative px-5 py-28 bg-slate-50 border-t border-slate-100">
+      {/* ── Values ── */}
+      <section id="values" className="relative px-5 py-28">
         <div className="max-w-6xl mx-auto">
           <Reveal className="text-center max-w-2xl mx-auto mb-16">
-            <Eyebrow>{t.pricing.eyebrow}</Eyebrow>
-            <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4 text-slate-900">{t.pricing.title}</h2>
-            <p className="text-slate-500 text-lg">{t.pricing.sub}</p>
+            <Eyebrow>{c.values.eyebrow}</Eyebrow>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4 text-slate-900">{c.values.title}</h2>
+            <p className="text-slate-500 text-lg">{c.values.sub}</p>
           </Reveal>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch max-w-5xl mx-auto">
-            {PLAN_ORDER.map((key, i) => {
-              const plan = PLAN_DETAILS[key]
-              const isPro = key === 'pro'
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {c.values.items.map((v, i) => {
+              const Icon = ICONS[v.icon] || Lightbulb
               return (
-                <Reveal key={key} i={i} className="relative">
-                  <div className={`relative h-full rounded-3xl p-7 flex flex-col bg-white ${isPro
-                    ? 'border-2 border-blue-600 lp-soft-shadow md:-mt-3 md:mb-3'
-                    : 'border border-slate-200 lp-card-shadow'}`}>
-                    {isPro && (
-                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-bold px-4 py-1 rounded-full shadow-md shadow-blue-500/30">
-                        {t.pricing.popular}
-                      </span>
-                    )}
-                    <h3 className="text-lg font-bold text-slate-800 mb-3">{planNames[key][lang]}</h3>
-                    <div className="flex items-end gap-1.5 mb-1">
-                      <span className={`text-4xl font-black ${isPro ? 'lp-gradient-text' : 'text-slate-900'}`}>{plan.price}</span>
+                <Reveal key={i} i={i % 3}>
+                  <div className="group h-full rounded-2xl border border-slate-200 bg-white p-7 lp-card-shadow hover:border-blue-200 transition-colors">
+                    <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center mb-5 group-hover:bg-blue-100 transition-colors">
+                      <Icon size={22} className="text-blue-600" />
                     </div>
-                    <div className="text-sm text-slate-400 mb-7">{t.pricing.currency}</div>
-
-                    <ul className="space-y-3 mb-8 flex-1">
-                      {plan.features.map((f, j) => (
-                        <li key={j} className="flex items-start gap-2.5 text-sm text-slate-600">
-                          <span className="mt-0.5 w-4 h-4 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
-                            <Check size={11} className="text-blue-600" />
-                          </span>{f}
-                        </li>
-                      ))}
-                      {plan.noFeatures.map((f, j) => (
-                        <li key={j} className="flex items-start gap-2.5 text-sm text-slate-300 line-through decoration-slate-200">
-                          <span className="mt-0.5 w-4 h-4 shrink-0" />{f}
-                        </li>
-                      ))}
-                    </ul>
-
-                    <button onClick={() => navigate('/register')}
-                      className={`w-full py-3 rounded-xl font-bold text-sm transition-all ${isPro
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 hover:scale-[1.02]'
-                        : 'bg-slate-900 text-white hover:bg-slate-800'}`}>
-                      {t.pricing.cta}
-                    </button>
+                    <h3 className="text-lg font-bold mb-2 text-slate-900">{v.title}</h3>
+                    <p className="text-slate-500 leading-relaxed text-[15px]">{v.desc}</p>
                   </div>
                 </Reveal>
               )
@@ -516,35 +402,135 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── FAQ ── */}
-      <section id="faq" className="relative px-5 py-28">
-        <div className="max-w-2xl mx-auto">
-          <Reveal className="text-center mb-14">
-            <Eyebrow>{t.faq.eyebrow}</Eyebrow>
-            <h2 className="text-3xl md:text-5xl font-black tracking-tight text-slate-900">{t.faq.title}</h2>
-          </Reveal>
-          <div className="space-y-3">
-            {t.faq.items.map((item, i) => <Reveal key={i} i={i}><FAQItem q={item.q} a={item.a} /></Reveal>)}
+      {/* ── Visual break ── */}
+      <Reveal className="relative overflow-hidden h-64 md:h-80 mx-5 my-4 rounded-3xl lp-soft-shadow">
+        <img src="/hero-suv.png" alt="" aria-hidden="true"
+          className={`absolute inset-0 w-full h-full object-cover ${isRtl ? 'object-left' : 'object-right'}`} />
+        <div className={`absolute inset-0 ${isRtl
+          ? 'bg-gradient-to-l from-slate-950/90 via-slate-900/65 to-transparent'
+          : 'bg-gradient-to-r from-slate-950/90 via-slate-900/65 to-transparent'}`} />
+        <div className={`absolute inset-0 flex items-center ${isRtl ? 'justify-end px-10 md:px-16' : 'justify-start px-10 md:px-16'}`}>
+          <div className="max-w-md">
+            <p className="text-blue-300 text-xs font-bold mb-3 uppercase tracking-widest flex items-center gap-2">
+              <Cpu size={14} />{isRtl ? 'ذكاء اصطناعي عراقي' : 'Iraqi-built AI'}
+            </p>
+            <h3 className="text-white text-2xl md:text-3xl font-black leading-snug">
+              {isRtl ? 'بُني داخل الورشة، لا بعيداً عنها' : 'Built inside the workshop, not far from it'}
+            </h3>
           </div>
         </div>
+      </Reveal>
+
+      {/* ── Why CearCar ── */}
+      <section id="why" className="relative px-5 py-28 bg-slate-50 border-y border-slate-100">
+        <div className="max-w-4xl mx-auto">
+          <Reveal className="text-center max-w-2xl mx-auto mb-14">
+            <Eyebrow>{c.why.eyebrow}</Eyebrow>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4 text-slate-900">{c.why.title}</h2>
+            <p className="text-slate-500 text-lg">{c.why.sub}</p>
+          </Reveal>
+          <Reveal>
+            <div className="grid sm:grid-cols-2 gap-px rounded-3xl overflow-hidden border border-slate-200 bg-slate-200 lp-card-shadow">
+              <div className="bg-white p-6 sm:p-7">
+                <div className="flex items-center gap-2 mb-5 text-slate-400 font-bold">
+                  <span className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center"><X size={16} /></span>
+                  {c.why.oldTitle}
+                </div>
+                <ul className="space-y-4">
+                  {c.why.rows.map((r, i) => (
+                    <li key={i} className="flex items-start gap-3 text-slate-400 text-[15px] leading-snug">
+                      <X size={17} className="shrink-0 mt-0.5 text-slate-300" />{r.old}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="bg-white p-6 sm:p-7 relative">
+                <div className="absolute inset-0 bg-blue-50/50 pointer-events-none" />
+                <div className="relative">
+                  <div className="flex items-center gap-2 mb-5 text-blue-600 font-bold">
+                    <span className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center"><Check size={16} /></span>
+                    {c.why.newTitle}
+                  </div>
+                  <ul className="space-y-4">
+                    {c.why.rows.map((r, i) => (
+                      <li key={i} className="flex items-start gap-3 text-slate-700 text-[15px] font-medium leading-snug">
+                        <span className="mt-0.5 w-[18px] h-[18px] rounded-full bg-blue-600 flex items-center justify-center shrink-0"><Check size={11} className="text-white" /></span>{r.neu}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── Timeline ── */}
+      <section className="relative px-5 py-28">
+        <div className="max-w-5xl mx-auto">
+          <Reveal className="text-center mb-16">
+            <Eyebrow>{c.timeline.eyebrow}</Eyebrow>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight text-slate-900">{c.timeline.title}</h2>
+          </Reveal>
+          <div className="grid md:grid-cols-4 gap-8 relative">
+            <div className="hidden md:block absolute top-8 inset-x-[12%] h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent" />
+            {c.timeline.items.map((s, i) => (
+              <Reveal key={i} i={i} className="relative text-center">
+                <div className="relative z-10 w-16 h-16 mx-auto mb-5 rounded-2xl bg-white border border-slate-200 flex items-center justify-center lp-card-shadow">
+                  <span className="text-blue-600 font-black text-sm">{i + 1}</span>
+                  <span className="absolute -top-2 -right-2 px-2 h-6 rounded-full bg-blue-600 text-white text-[11px] font-bold flex items-center justify-center whitespace-nowrap">{s.year}</span>
+                </div>
+                <h3 className="text-lg font-bold mb-2 text-slate-900">{s.title}</h3>
+                <p className="text-slate-500 leading-relaxed text-[15px]">{s.desc}</p>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Baghdad Future AI Studio ── */}
+      <section className="relative px-5 py-12">
+        <Reveal className="relative max-w-5xl mx-auto rounded-[32px] overflow-hidden border border-slate-800 bg-[#060a14]">
+          <div className="absolute inset-0" style={{
+            background: 'radial-gradient(ellipse at 20% 50%, rgba(37,99,235,0.15), transparent 50%), radial-gradient(ellipse at 80% 20%, rgba(79,70,229,0.1), transparent 40%)'
+          }} />
+          <div className="relative z-10 px-8 md:px-14 py-16 grid lg:grid-cols-[1.2fr_1fr] gap-10 items-center">
+            <div>
+              <span className="inline-flex items-center gap-2 text-sm text-blue-300 bg-white/[0.07] border border-white/15 px-4 py-1.5 rounded-full mb-6">
+                <Building size={14} />{c.studio.eyebrow}
+              </span>
+              <h2 className="text-3xl md:text-4xl font-black tracking-tight text-white mb-5 leading-tight">{c.studio.title}</h2>
+              <p className="text-white/60 leading-relaxed text-lg mb-8">{c.studio.desc}</p>
+              <a href="https://baghdad-future-ai.my/" target="_blank" rel="noopener noreferrer"
+                className="group inline-flex items-center gap-2 bg-white text-slate-900 px-6 py-3 rounded-xl font-bold hover:scale-[1.02] transition-transform">
+                {c.studio.cta}<Arrow size={17} className="group-hover:translate-x-0.5 transition-transform" />
+              </a>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              {c.studio.pills.map((p, i) => (
+                <div key={i} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-white/80 text-sm font-medium flex items-center gap-2.5">
+                  <span className="w-2 h-2 rounded-full bg-blue-400 shrink-0" />{p}
+                </div>
+              ))}
+            </div>
+          </div>
+        </Reveal>
       </section>
 
       {/* ── CTA ── */}
       <section className="relative px-5 py-12">
         <Reveal className="relative max-w-5xl mx-auto rounded-[32px] overflow-hidden lp-soft-shadow">
-          {/* white Tesla open hood background */}
-          <img src="/hero-white.png" alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover object-left" />
+          <img src="/hero-white.png" alt="" aria-hidden="true"
+            className={`absolute inset-0 w-full h-full object-cover ${isRtl ? 'object-left' : 'object-right'}`} />
           <div className={`absolute inset-0 ${isRtl
             ? 'bg-gradient-to-l from-blue-700/95 via-blue-800/90 to-blue-900/50'
             : 'bg-gradient-to-r from-blue-700/95 via-blue-800/90 to-blue-900/50'}`} />
-          <div className="absolute inset-0 opacity-20"
-            style={{ backgroundImage: 'radial-gradient(circle at 25% 25%, rgba(255,255,255,0.3), transparent 45%)' }} />
           <div className="relative z-10 text-center px-6 py-20 text-white">
-            <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4">{t.cta.title}</h2>
-            <p className="text-blue-100 text-lg mb-9 max-w-xl mx-auto">{t.cta.sub}</p>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4">{c.cta.title}</h2>
+            <p className="text-white/85 text-lg mb-9 max-w-xl mx-auto">{c.cta.sub}</p>
             <button onClick={() => navigate('/register')}
-              className="inline-flex items-center gap-2 bg-white text-blue-700 px-9 py-4 rounded-xl font-black text-lg hover:scale-[1.03] transition-transform shadow-xl">
-              {t.cta.btn}<Arrow size={20} />
+              className="inline-flex items-center gap-2 bg-white px-9 py-4 rounded-xl font-black text-lg hover:scale-[1.03] transition-transform shadow-xl text-blue-700">
+              {c.cta.btn}<Arrow size={20} />
             </button>
           </div>
         </Reveal>
@@ -554,45 +540,34 @@ export default function LandingPage() {
       <footer className="relative px-5 pt-20 pb-10 border-t border-slate-100 bg-slate-50 mt-12">
         <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-10 mb-12">
           <div className="col-span-2 md:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center">
-                <Sparkles size={16} className="text-white" />
-              </span>
-              <span className="font-black text-lg text-slate-900">CearCar</span>
-            </div>
-            <p className="text-slate-500 text-sm leading-relaxed max-w-xs">{t.footer.desc}</p>
+            <div className="mb-4"><Logo /></div>
+            <p className="text-slate-500 text-sm leading-relaxed max-w-xs">{c.footer.desc}</p>
           </div>
-
           <div>
-            <h4 className="font-semibold text-slate-900 mb-4 text-sm">{t.footer.product}</h4>
+            <h4 className="font-semibold text-slate-900 mb-4 text-sm">{c.footer.product}</h4>
             <ul className="space-y-2.5 text-sm text-slate-500">
-              <li><button onClick={() => scrollTo('features')} className="hover:text-slate-900 transition-colors">{t.nav.features}</button></li>
-              <li><button onClick={() => scrollTo('pricing')} className="hover:text-slate-900 transition-colors">{t.nav.pricing}</button></li>
-              <li><button onClick={() => scrollTo('faq')} className="hover:text-slate-900 transition-colors">{t.nav.faq}</button></li>
+              <li><button onClick={() => scrollTo('values')} className="hover:text-slate-900 transition-colors">{c.nav.features}</button></li>
+              <li><button onClick={() => navigate('/register')} className="hover:text-slate-900 transition-colors">{c.nav.pricing}</button></li>
+              <li><button onClick={() => scrollTo('why')} className="hover:text-slate-900 transition-colors">{c.nav.faq}</button></li>
             </ul>
           </div>
-
           <div>
-            <h4 className="font-semibold text-slate-900 mb-4 text-sm">{t.footer.company}</h4>
+            <h4 className="font-semibold text-slate-900 mb-4 text-sm">{c.footer.company}</h4>
             <ul className="space-y-2.5 text-sm text-slate-500">
-              <li><button onClick={() => navigate('/register')} className="hover:text-slate-900 transition-colors">{t.nav.register}</button></li>
-              <li><button onClick={() => navigate('/login')} className="hover:text-slate-900 transition-colors">{t.nav.login}</button></li>
+              <li><span className="text-blue-600 font-medium">{c.nav.about}</span></li>
+              <li><button onClick={() => navigate('/register')} className="hover:text-slate-900 transition-colors">{c.nav.register}</button></li>
             </ul>
           </div>
-
           <div>
-            <h4 className="font-semibold text-slate-900 mb-4 text-sm">{t.footer.contact}</h4>
-            <p className="text-sm text-slate-500 mb-3">cptstaf2018@gmail.com</p>
-            <p className="text-xs text-slate-400">
-              {t.footer.dev}{' '}
-              <a href="https://baghdad-future-ai.my/" target="_blank" rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-700 transition-colors font-medium">Baghdad Future AI</a>
+            <h4 className="font-semibold text-slate-900 mb-4 text-sm">{c.footer.contact}</h4>
+            <p className="text-sm text-slate-500 mb-3 flex items-center gap-2"><Mail size={15} className="text-blue-600" />cptstaf2018@gmail.com</p>
+            <p className="text-xs text-slate-400">{c.footer.dev}{' '}
+              <a href="https://baghdad-future-ai.my/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline font-medium">Baghdad Future AI</a>
             </p>
           </div>
         </div>
-
         <div className="max-w-6xl mx-auto border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
-          © {new Date().getFullYear()} CearCar — {t.footer.rights}.
+          © {new Date().getFullYear()} CearCar — {c.footer.rights}.
         </div>
       </footer>
     </div>
