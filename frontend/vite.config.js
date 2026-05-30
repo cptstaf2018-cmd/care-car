@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    allowedHosts: ['carecar.online', 'www.carecar.online'],
     proxy: {
       '/auth': 'http://localhost:8000',
       '/tenants': 'http://localhost:8000',
