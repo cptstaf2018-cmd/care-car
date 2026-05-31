@@ -61,9 +61,19 @@ def list_tenants(db: Session = Depends(get_db), _=Depends(require_superadmin)):
         manager = db.query(User).filter(User.tenant_id == t.id, User.role == Role.manager).first()
         d = TenantOut.model_validate(t).model_dump()
         d['has_wasnder_api_key'] = bool(t.wasnder_api_key)
-        d['has_plate_recognizer_token'] = bool(t.plate_recognizer_token)
+        d['has_plate_recognizer_token'] = bool(getattr(t, 'plate_recognizer_token', None))
         d['manager_email'] = manager.email if manager else None
         d['manager_name'] = manager.full_name if manager else None
+        d['manager_phone'] = t.whatsapp_number or t.contact_phone
+        if manager and manager.email.endswith('@carecar.app'):
+            d['registration_method'] = 'whatsapp'
+            d['registration_contact'] = t.whatsapp_number or t.contact_phone or manager.email.removesuffix('@carecar.app')
+        elif manager:
+            d['registration_method'] = 'email'
+            d['registration_contact'] = manager.email
+        else:
+            d['registration_method'] = None
+            d['registration_contact'] = t.whatsapp_number or t.contact_phone
         result.append(d)
     return result
 
@@ -112,6 +122,7 @@ SUPERADMIN_ALLOWED_FIELDS = {
     'name', 'plan', 'is_active', 'contact_phone',
     'subscription_starts_at', 'subscription_ends_at', 'subscription_notes',
     'subscription_request_plan', 'subscription_request_ref',
+    'plate_recognizer_token',
 }
 
 

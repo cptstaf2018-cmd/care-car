@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Building2, Phone, Mail, User, Calendar, CreditCard,
   Camera, MessageCircle, Bell, ShieldCheck, ChevronDown,
-  ChevronUp, Tag, Clock, AlertCircle
+  ChevronUp, Tag, Clock, AlertCircle, AtSign, Smartphone
 } from 'lucide-react'
 import Layout from '../../components/Layout'
 import { getTenants, createTenant, updateTenant, deleteTenant } from '../../api/tenants'
@@ -31,6 +31,24 @@ function InfoRow({ icon: Icon, label, value, mono }) {
   )
 }
 
+function ContactChip({ icon: Icon, label, value, tone = 'slate' }) {
+  if (!value) return null
+  const colors = {
+    cyan: 'border-cyan-100 bg-cyan-50 text-cyan-800',
+    emerald: 'border-emerald-100 bg-emerald-50 text-emerald-800',
+    slate: 'border-slate-100 bg-white text-slate-700',
+  }
+  return (
+    <div className={`flex min-w-0 items-center gap-2 rounded-lg border px-3 py-2 ${colors[tone] || colors.slate}`}>
+      <Icon size={15} className="shrink-0" />
+      <div className="min-w-0">
+        <p className="text-[10px] font-black uppercase text-slate-400">{label}</p>
+        <p className="truncate text-xs font-black" dir="ltr">{value}</p>
+      </div>
+    </div>
+  )
+}
+
 function StatusBadge({ active }) {
   return (
     <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${active ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>
@@ -52,6 +70,8 @@ function TenantCard({ t, onToggle, onDelete }) {
   const [expanded, setExpanded] = useState(false)
   const days = remainingDays(t.subscription_ends_at)
   const price = PLAN_DETAILS[t.plan]?.adminPrice || 0
+  const registrationLabel = t.registration_method === 'email' ? 'تسجيل بالإيميل' : t.registration_method === 'whatsapp' ? 'تسجيل بالواتساب' : 'تسجيل غير محدد'
+  const primaryPhone = t.manager_phone || t.whatsapp_number || t.contact_phone
 
   return (
     <div className={`surface rounded-xl overflow-hidden transition-all ${!t.is_active ? 'border-rose-200 bg-rose-50/30' : ''}`}>
@@ -70,7 +90,13 @@ function TenantCard({ t, onToggle, onDelete }) {
         {/* Name + phone */}
         <div className="flex-1 min-w-0">
           <p className="font-black text-slate-950 truncate">{t.name}</p>
-          <p className="text-xs text-slate-500 truncate">{t.contact_phone || 'لا يوجد هاتف'}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+            <span className="inline-flex items-center gap-1">
+              {t.registration_method === 'email' ? <AtSign size={12} /> : <Smartphone size={12} />}
+              {registrationLabel}
+            </span>
+            {t.registration_contact && <span className="truncate" dir="ltr">{t.registration_contact}</span>}
+          </div>
         </div>
 
         {/* Plan + price */}
@@ -106,14 +132,22 @@ function TenantCard({ t, onToggle, onDelete }) {
       {/* ── Expanded details ── */}
       {expanded && (
         <div className="border-t border-slate-100 px-5 py-5 bg-slate-50/50">
+          <div className="mb-5 grid gap-3 md:grid-cols-3">
+            <ContactChip icon={t.registration_method === 'email' ? Mail : MessageCircle} label="بيانات التسجيل" value={t.registration_contact} tone="cyan" />
+            <ContactChip icon={Phone} label="هاتف التواصل" value={primaryPhone} tone="emerald" />
+            <ContactChip icon={Mail} label="إيميل المدير" value={t.manager_email} />
+          </div>
+
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
 
             {/* المدير */}
             <div>
-              <p className="text-xs font-black uppercase text-slate-400 mb-2">المدير</p>
+              <p className="text-xs font-black uppercase text-slate-400 mb-2">بيانات التسجيل والمدير</p>
               <div className="space-y-1.5">
                 <InfoRow icon={User} label="الاسم" value={t.manager_name} />
                 <InfoRow icon={Mail} label="الإيميل" value={t.manager_email} />
+                <InfoRow icon={Smartphone} label="طريقة التسجيل" value={registrationLabel} />
+                <InfoRow icon={MessageCircle} label="رقم المدير" value={t.manager_phone} />
                 <InfoRow icon={Phone} label="هاتف المركز" value={t.contact_phone} />
               </div>
             </div>

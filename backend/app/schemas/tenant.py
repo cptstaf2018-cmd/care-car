@@ -15,6 +15,7 @@ class TenantCreate(BaseModel):
     ip_camera_password: str | None = None
     wasnder_api_key: str | None = None
     whatsapp_number: str | None = None
+    plate_recognizer_token: str | None = None
     reminder_days: int = 30
     reminder_message_template: str | None = None
     subscription_request_plan: str | None = None
@@ -34,6 +35,7 @@ class TenantUpdate(BaseModel):
     ip_camera_password: str | None = None
     wasnder_api_key: str | None = None
     whatsapp_number: str | None = None
+    plate_recognizer_token: str | None = None
     reminder_days: int | None = None
     reminder_message_template: str | None = None
     subscription_request_plan: str | None = None
@@ -64,3 +66,6 @@ class TenantOut(BaseModel):
     # populated by list endpoint (not ORM field)
     manager_email: str | None = None
     manager_name: str | None = None
+    manager_phone: str | None = None
+    registration_contact: str | None = None
+    registration_method: str | None = None

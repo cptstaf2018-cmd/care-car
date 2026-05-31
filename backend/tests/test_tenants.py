@@ -46,6 +46,31 @@ def test_create_tenant_unauthorized(client, db):
     assert r.status_code == 403
 
 
+def test_list_tenants_includes_manager_and_registration_details(client, db, superadmin, superadmin_token):
+    t = Tenant(name="Info Center", plan="basic", contact_phone="07700000001", whatsapp_number="07700000001")
+    db.add(t)
+    db.flush()
+    u = User(
+        tenant_id=t.id,
+        email="07700000001@carecar.app",
+        hashed_password=hash_password("pass"),
+        role=Role.manager,
+        full_name="Center Manager",
+    )
+    db.add(u)
+    db.commit()
+
+    r = client.get("/tenants/", headers={"Authorization": f"Bearer {superadmin_token}"})
+
+    assert r.status_code == 200
+    center = next(item for item in r.json() if item["name"] == "Info Center")
+    assert center["manager_name"] == "Center Manager"
+    assert center["manager_email"] == "07700000001@carecar.app"
+    assert center["manager_phone"] == "07700000001"
+    assert center["registration_method"] == "whatsapp"
+    assert center["registration_contact"] == "07700000001"
+
+
 def test_suspended_tenant_blocks_login_and_existing_tokens(client, db, superadmin, superadmin_token):
     t = Tenant(name="SuspendedCtr", plan="basic")
     db.add(t)
