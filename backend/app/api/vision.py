@@ -120,34 +120,42 @@ async def read_plate(
     plate, car_type, car_color = '', '', ''
     confidence = 0
     candidates = []
+    local_plate = ''
+    local_candidates = []
+
+    # For Iraqi plates, local OCR is often more useful than global plate APIs.
+    try:
+        full_text = read_text_from_image(contents)
+        local_plate = read_plate_from_image(contents)
+        local_candidates = extract_plate_candidates(full_text)
+        if local_plate and local_plate not in local_candidates:
+            local_candidates.insert(0, local_plate)
+        car_type = extract_car_brand(full_text) if full_text else ''
+        car_color = estimate_vehicle_color(contents)
+    except Exception:
+        logger.exception("local plate read failed tenant_id=%s user_id=%s", user.tenant_id, user.id)
 
     if pr_token:
-        # Use Plate Recognizer API (most accurate)
+        # Plate Recognizer is useful, but Iraq is not a supported region on Snapshot Cloud.
+        # Keep it as a helper, not the authority, when local OCR finds a plate.
         pr_result = _plate_recognizer(contents, pr_token)
-        plate = pr_result.get("plate", "")
-        car_type = pr_result.get("car_type", "")
-        car_color = pr_result.get("car_color", "")
+        pr_plate = pr_result.get("plate", "")
+        if not local_plate and pr_result.get("score", 0) >= 0.90:
+            plate = pr_plate
+        car_type = car_type or pr_result.get("car_type", "")
+        car_color = car_color or pr_result.get("car_color", "")
         confidence = pr_result.get("score", 0)
         candidates = pr_result.get("candidates", [])
 
-    if not plate or confidence < 0.72:
-        # Fallback: local OCR / Google Vision if configured.
-        try:
-            full_text = read_text_from_image(contents)
-            local_plate = read_plate_from_image(contents)
-            for candidate in extract_plate_candidates(full_text):
-                if candidate not in candidates:
-                    candidates.append(candidate)
-            if local_plate and (not plate or confidence < 0.68):
-                plate = local_plate
-            if local_plate and local_plate not in candidates:
-                candidates.insert(0, local_plate)
-            car_type = car_type or (extract_car_brand(full_text) if full_text else '')
-            car_color = car_color or estimate_vehicle_color(contents)
-        except Exception:
-            logger.exception("plate read failed tenant_id=%s user_id=%s", user.tenant_id, user.id)
-            if not plate:
-                plate = ''
+    if local_plate:
+        plate = local_plate
+        confidence = min(confidence or 0.82, 0.82)
+
+    merged_candidates = []
+    for candidate in local_candidates + candidates:
+        if candidate and candidate not in merged_candidates:
+            merged_candidates.append(candidate)
+    candidates = merged_candidates
 
     return {
         "plate_number": plate or "",
