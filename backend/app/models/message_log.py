@@ -11,6 +11,7 @@ class MessageLog(Base, TimestampMixin):
     phone = Column(String(30), nullable=False)
     message = Column(Text, nullable=False)
     status = Column(String(30), nullable=False, default="queued")
+    reminder_type = Column(String(20), nullable=False, default="pre_reminder")  # pre_reminder | due_reminder
     provider = Column(String(50), nullable=False, default="wasnderapi")
     provider_response = Column(Text)
     sent_at = Column(DateTime, server_default=func.now(), nullable=False)

@@ -3,7 +3,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from app.core.database import SessionLocal
 from app.models.tenant import Tenant
-from app.services.reminder_service import get_due_reminders, log_reminder_message
+from app.services.reminder_service import get_cars_to_notify, log_reminder_message, render_pre_reminder, render_due_reminder
 from app.services.wasnder_service import send_whatsapp_message
 
 logger = logging.getLogger(__name__)
@@ -19,16 +19,24 @@ def send_daily_reminders():
         ).all()
 
         for tenant in tenants:
-            reminders = get_due_reminders(db, tenant)
-            due = [r for r in reminders if r["is_due"] and r["phone"]]
-            for reminder in due:
-                from app.models.car import Car
-                car = db.get(Car, reminder["car_id"])
-                if not car:
-                    continue
-                status, response = send_whatsapp_message(tenant, reminder["phone"], reminder["message"])
-                log_reminder_message(db, tenant, car, status, response)
-                logger.info(f"Reminder [{status}] → {tenant.name} / {reminder['plate_number']}")
+            cars_to_notify = get_cars_to_notify(db, tenant)
+
+            for item in cars_to_notify:
+                car = item["car"]
+                reminder_type = item["reminder_type"]
+
+                if reminder_type == "due_reminder":
+                    message = render_due_reminder(tenant, car)
+                else:
+                    message = render_pre_reminder(tenant, car)
+
+                status, response = send_whatsapp_message(tenant, item["phone"], message)
+                log_reminder_message(db, tenant, car, reminder_type, status, response)
+                logger.info(
+                    "Reminder [%s][%s] → %s / %s",
+                    reminder_type, status, tenant.name, item["plate_number"]
+                )
+
     except Exception:
         logger.exception("Error in daily reminders job")
     finally:
@@ -37,7 +45,8 @@ def send_daily_reminders():
 
 def start_scheduler():
     scheduler = BackgroundScheduler(timezone="Asia/Baghdad")
-    scheduler.add_job(send_daily_reminders, CronTrigger(hour=9, minute=0))
+    # رسالة "قبل يومين" + رسالة "اليوم" — كلتاهما تُرسلان الساعة 8:00 صباحاً
+    scheduler.add_job(send_daily_reminders, CronTrigger(hour=8, minute=0))
     scheduler.start()
-    logger.info("Scheduler started — daily reminders at 09:00 Baghdad time")
+    logger.info("Scheduler started — reminders at 08:00 Baghdad time")
     return scheduler

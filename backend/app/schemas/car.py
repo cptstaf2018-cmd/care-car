@@ -3,6 +3,7 @@ from pydantic import BaseModel, ConfigDict
 class CarCreate(BaseModel):
     plate_number: str
     car_type: str | None = None
+    car_color: str | None = None
     owner_name: str | None = None
     phone: str | None = None
     photo_url: str | None = None
@@ -10,6 +11,7 @@ class CarCreate(BaseModel):
 
 class CarUpdate(BaseModel):
     car_type: str | None = None
+    car_color: str | None = None
     owner_name: str | None = None
     phone: str | None = None
     photo_url: str | None = None
@@ -21,6 +23,7 @@ class CarOut(BaseModel):
     tenant_id: int
     plate_number: str
     car_type: str | None
+    car_color: str | None
     owner_name: str | None
     phone: str | None
     photo_url: str | None

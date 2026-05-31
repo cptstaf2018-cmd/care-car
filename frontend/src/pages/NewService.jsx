@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { BatteryCharging, Car, CircleDot, Droplets, Fan, Gauge, GaugeCircle, Package, Printer, PlusCircle, ShowerHead, Sparkles, SprayCan, Trash2, Wrench, Camera, CameraOff, CheckCircle2, Keyboard, ScanLine, Search, Smartphone, Zap } from 'lucide-react'
 import Layout from '../components/Layout'
-import { getCars } from '../api/cars'
+import { getCars, createCar } from '../api/cars'
 import { createService } from '../api/services'
 import { getInventory } from '../api/inventory'
 import { readPlate } from '../api/vision'
@@ -26,8 +26,10 @@ const SERVICE_TYPES = [
 
 export default function NewService() {
   const navigate = useNavigate()
+  const qc = useQueryClient()
   const [search, setSearch] = useState('')
   const [selectedCar, setSelectedCar] = useState(null)
+  const [newCarForm, setNewCarForm] = useState(null) // { plate_number, car_type, car_color }
   const [serviceType, setServiceType] = useState('تبديل زيت')
   const [oilGrade, setOilGrade] = useState('15W40')
   const [form, setForm] = useState({ amount: '', discount: '0', mileage: '', notes: '' })
@@ -96,6 +98,15 @@ export default function NewService() {
   const mutation = useMutation({
     mutationFn: createService,
     onSuccess: (res) => setResult(res.data),
+  })
+
+  const createCarMutation = useMutation({
+    mutationFn: createCar,
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['cars'] })
+      setSelectedCar(res.data)
+      setNewCarForm(null)
+    },
   })
 
   const invoiceTotal = invoiceLines.reduce((sum, line) => sum + Number(line.amount || 0), 0)
@@ -176,10 +187,11 @@ export default function NewService() {
     setScanning(true)
     try {
       const res = await readPlate(file)
-      const plate = res.data.plate_number
-      setScanResult(plate || null)
+      const { plate_number: plate, car_type, car_color } = res.data
+      setScanResult({ plate, car_type, car_color })
       if (plate) {
         setSearch(plate)
+        setNewCarForm({ plate_number: plate, car_type: car_type || '', car_color: car_color || '', owner_name: '', phone: '' })
         stopCamera()
       } else {
         alert('لم يتم التعرف على رقم اللوحة. حاول مجدداً.')
@@ -204,10 +216,11 @@ export default function NewService() {
       try {
         const file = new File([blob], 'plate.jpg', { type: 'image/jpeg' })
         const res = await readPlate(file)
-        const plate = res.data.plate_number
-        setScanResult(plate || null)
+        const { plate_number: plate, car_type, car_color } = res.data
+        setScanResult({ plate, car_type, car_color })
         if (plate) {
           setSearch(plate)
+          setNewCarForm({ plate_number: plate, car_type: car_type || '', car_color: car_color || '', owner_name: '', phone: '' })
           stopCamera()
         } else {
           alert('لم يتم التعرف على رقم اللوحة. حاول مجدداً أو ابحث يدوياً.')
@@ -297,9 +310,15 @@ export default function NewService() {
           )}
 
           {scanResult && (
-            <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
-              <p className="text-xs text-emerald-600">تم قراءة اللوحة</p>
-              <p className="font-mono text-lg font-black text-emerald-800">{scanResult}</p>
+            <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 space-y-1">
+              <p className="text-xs font-bold text-emerald-600">✓ تم قراءة اللوحة</p>
+              <p className="font-mono text-lg font-black text-emerald-800">{scanResult.plate}</p>
+              {scanResult.car_type && (
+                <p className="text-xs font-bold text-slate-600">النوع: {scanResult.car_type}</p>
+              )}
+              {scanResult.car_color && (
+                <p className="text-xs font-bold text-slate-600">اللون: {scanResult.car_color}</p>
+              )}
             </div>
           )}
 
@@ -341,14 +360,40 @@ export default function NewService() {
               </div>
               <div className="space-y-2">
                 {cars.map(c => (
-                  <div key={c.id} onClick={() => setSelectedCar(c)}
+                  <div key={c.id} onClick={() => { setSelectedCar(c); setNewCarForm(null) }}
                     className="surface flex cursor-pointer items-center justify-between rounded-lg px-5 py-4 transition hover:border-cyan-300 hover:bg-cyan-50">
                     <span className="font-mono text-xl font-black text-slate-950">{c.plate_number}</span>
-                    <span className="text-slate-500 text-sm">{c.owner_name} {c.car_type ? `— ${c.car_type}` : ''}</span>
+                    <span className="text-slate-500 text-sm">{c.owner_name} {c.car_type ? `— ${c.car_type}` : ''} {c.car_color ? `· ${c.car_color}` : ''}</span>
                   </div>
                 ))}
                 {search.length > 1 && cars.length === 0 && (
-                  <p className="text-center py-4 text-slate-500">لا توجد نتائج</p>
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                    <p className="mb-3 text-sm font-black text-amber-800">السيارة غير مسجلة — أضفها الآن</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {[
+                        ['plate_number', 'رقم اللوحة *'],
+                        ['car_type', 'نوع السيارة'],
+                        ['car_color', 'لون السيارة'],
+                        ['owner_name', 'اسم المالك'],
+                        ['phone', 'رقم الهاتف / واتساب'],
+                      ].map(([k, label]) => (
+                        <input key={k} placeholder={label}
+                          value={newCarForm?.[k] ?? ''}
+                          onChange={e => setNewCarForm(prev => ({ ...prev, [k]: e.target.value }))}
+                          className="rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100" />
+                      ))}
+                    </div>
+                    {createCarMutation.isError && (
+                      <p className="mt-2 text-xs font-bold text-rose-600">رقم اللوحة مسجل مسبقاً</p>
+                    )}
+                    <button
+                      onClick={() => createCarMutation.mutate(newCarForm)}
+                      disabled={!newCarForm?.plate_number || createCarMutation.isPending}
+                      className="mt-3 flex items-center gap-2 rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-black text-white hover:bg-amber-700 disabled:opacity-50 transition">
+                      <PlusCircle size={15} />
+                      {createCarMutation.isPending ? 'جاري الحفظ...' : 'حفظ وتابع الخدمة'}
+                    </button>
+                  </div>
                 )}
               </div>
             </>

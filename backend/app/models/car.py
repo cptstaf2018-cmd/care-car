@@ -8,6 +8,7 @@ class Car(Base, TimestampMixin):
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     plate_number = Column(String(30), nullable=False)
     car_type = Column(String(50))
+    car_color = Column(String(30))
     owner_name = Column(String(100))
     phone = Column(String(20))
     photo_url = Column(String(300))
