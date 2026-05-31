@@ -51,7 +51,7 @@ export default function AdminOverview() {
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg border border-white/10 bg-white/10 p-4">
               <p className="text-xs text-slate-300">MRR</p>
-              <p className="mt-1 text-3xl font-black">${mrr.toLocaleString()}</p>
+              <p className="mt-1 text-3xl font-black">{(mrr/1000).toFixed(0)}K IQD</p>
             </div>
             <div className="rounded-lg border border-white/10 bg-white/10 p-4">
               <p className="text-xs text-slate-300">Active Centers</p>
@@ -63,7 +63,7 @@ export default function AdminOverview() {
 
       <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
         <StatCard icon={Building2} label="المراكز المشتركة" value={tenants.length} color="blue" trend={`${active} نشط`} loading={isLoading} />
-        <StatCard icon={CreditCard} label="الاشتراكات" value={`$${mrr}`} color="green" trend="MRR" loading={isLoading} />
+        <StatCard icon={CreditCard} label="الاشتراكات" value={`${(mrr/1000).toFixed(0)}K IQD`} color="green" trend="MRR" loading={isLoading} />
         <StatCard icon={MessageCircle} label="واتساب مفعل" value={connectedWhatsapp} color="purple" trend={`من ${tenants.length}`} loading={isLoading} />
         <StatCard icon={ShieldAlert} label="مراكز موقوفة" value={suspended} color="orange" trend={suspended ? 'تحتاج متابعة' : 'كلها فعالة'} loading={isLoading} />
       </div>
@@ -92,7 +92,7 @@ export default function AdminOverview() {
                 <div key={plan} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <p className="text-xs font-bold text-slate-500">{planShortName(plan)}</p>
                   <p className="mt-2 text-2xl font-black text-slate-950">{count}</p>
-                  <p className="mt-1 text-xs text-slate-500">{activeCount} نشط · ${planPrice[plan]}/شهر</p>
+                  <p className="mt-1 text-xs text-slate-500">{activeCount} نشط · {(planPrice[plan]/1000).toFixed(0)}K IQD/شهر</p>
                 </div>
               )
             })}
@@ -164,7 +164,7 @@ export default function AdminOverview() {
               {visibleTenants.map(t => (
                 <tr key={t.id} className={`border-t border-slate-100 text-sm hover:bg-slate-50 ${!t.is_active ? 'bg-rose-50/45' : ''}`}>
                   <td className="px-5 py-4"><p className="font-black text-slate-950">{t.name}</p><p className="text-xs text-slate-500">{t.contact_phone || 'لا يوجد هاتف'}</p></td>
-                  <td className="px-5 py-4"><Badge text={`${planShortName(t.plan)} · $${planPrice[t.plan] || 0}`} tone="slate" /></td>
+                  <td className="px-5 py-4"><Badge text={`${planShortName(t.plan)} · ${((planPrice[t.plan] || 0)/1000).toFixed(0)}K د.ع`} tone="slate" /></td>
                   <td className="px-5 py-4">{t.subscription_ends_at || 'غير محدد'}</td>
                   <td className="px-5 py-4">
                     <Badge
