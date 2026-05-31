@@ -3,15 +3,16 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.api import auth, tenants, cars, services, invoices, inventory, debts, reports, settings, vision, platform
+from app.api import auth, tenants, cars, services, invoices, inventory, debts, reports, settings, vision, platform, camera_ws
 from app.services.scheduler_service import start_scheduler
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    scheduler = start_scheduler()
+    scheduler = start_scheduler() if os.getenv("START_SCHEDULER", "true").lower() == "true" else None
     yield
-    scheduler.shutdown()
+    if scheduler:
+        scheduler.shutdown()
 
 
 app = FastAPI(title="care-car-saas", lifespan=lifespan)
@@ -30,6 +31,8 @@ for router in [auth.router, tenants.router, cars.router, services.router,
                invoices.router, inventory.router, debts.router, reports.router,
                settings.router, vision.router, platform.router]:
     app.include_router(router)
+
+app.include_router(camera_ws.router)
 
 os.makedirs("/app/uploads/ads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="/app/uploads"), name="uploads")
