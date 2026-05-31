@@ -30,6 +30,7 @@ export default function NewService() {
   const qc = useQueryClient()
   const arrivalPlate = searchParams.get('plate') || ''
   const arrivalCarType = searchParams.get('car_type') || ''
+  const arrivalCarColor = searchParams.get('car_color') || ''
   const [search, setSearch] = useState('')
   const [selectedCar, setSelectedCar] = useState(null)
   const [newCarForm, setNewCarForm] = useState(null) // { plate_number, car_type, car_color }
@@ -105,11 +106,11 @@ export default function NewService() {
     setNewCarForm(current => current || {
       plate_number: arrivalPlate,
       car_type: arrivalCarType,
-      car_color: '',
+      car_color: arrivalCarColor,
       owner_name: '',
       phone: '',
     })
-  }, [arrivalPlate, arrivalCarType])
+  }, [arrivalPlate, arrivalCarType, arrivalCarColor])
 
   useEffect(() => {
     if (!arrivalPlate || selectedCar || !cars.length) return

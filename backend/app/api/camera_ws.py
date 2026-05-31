@@ -40,13 +40,26 @@ def _frame_to_b64(frame) -> str:
     return base64.b64encode(buf.tobytes()).decode()
 
 
-def _plate_recognizer_sync(image_bytes: bytes, token: str) -> str:
+COLOR_AR = {
+    "black": "أسود",
+    "blue": "أزرق",
+    "brown": "بني",
+    "green": "أخضر",
+    "red": "أحمر",
+    "silver": "فضي",
+    "white": "أبيض",
+    "yellow": "أصفر",
+    "unknown": "",
+}
+
+
+def _plate_recognizer_sync(image_bytes: bytes, token: str) -> dict:
     """Call Plate Recognizer API synchronously."""
     try:
         import requests
         resp = requests.post(
             'https://api.platerecognizer.com/v1/plate-reader/',
-            data={'regions': ['iq', 'sa', 'ae', 'kw']},
+            data={'mmc': 'true'},
             files={'upload': ('plate.jpg', image_bytes, 'image/jpeg')},
             headers={'Authorization': f'Token {token}'},
             timeout=10,
@@ -54,18 +67,31 @@ def _plate_recognizer_sync(image_bytes: bytes, token: str) -> str:
         if resp.ok:
             results = resp.json().get('results', [])
             if results:
-                return results[0].get('plate', '').upper()
+                r = results[0]
+                make_model = (r.get('model_make') or [{}])[0]
+                make = make_model.get('make', '')
+                model = make_model.get('model', '')
+                vehicle_type = (r.get('vehicle') or {}).get('type', '')
+                color_raw = ((r.get('color') or [{}])[0].get('color') or '').lower()
+                car_type = f"{make} {model}".strip()
+                if not car_type and vehicle_type and vehicle_type.lower() != 'unknown':
+                    car_type = vehicle_type
+                return {
+                    "plate": r.get('plate', '').upper(),
+                    "car_type": car_type,
+                    "car_color": COLOR_AR.get(color_raw, color_raw),
+                }
     except Exception:
         pass
-    return ''
+    return {"plate": "", "car_type": "", "car_color": ""}
 
 
-async def _read_plate_async(frame_bytes: bytes, pr_token: str = None) -> str:
+async def _read_plate_async(frame_bytes: bytes, pr_token: str = None) -> dict:
     loop = asyncio.get_event_loop()
     if pr_token:
-        plate = await loop.run_in_executor(None, _plate_recognizer_sync, frame_bytes, pr_token)
-        if plate:
-            return plate
+        result = await loop.run_in_executor(None, _plate_recognizer_sync, frame_bytes, pr_token)
+        if result.get("plate"):
+            return result
     # Local fallback
     crop = detect_plate_crop(frame_bytes)
     if crop:
@@ -73,9 +99,9 @@ async def _read_plate_async(frame_bytes: bytes, pr_token: str = None) -> str:
         text = await loop.run_in_executor(None, _paddle_read_bytes, crop)
         plate = _extract_plate(text)
         if plate:
-            return plate
+            return {"plate": plate, "car_type": "", "car_color": ""}
     text = await loop.run_in_executor(None, _paddle_read_bytes, frame_bytes)
-    return _extract_plate(text)
+    return {"plate": _extract_plate(text), "car_type": "", "car_color": ""}
 
 
 @router.websocket("/ws/camera/{tenant_id}")
@@ -162,26 +188,28 @@ async def camera_stream(websocket: WebSocket, tenant_id: int, db: Session = Depe
                                 crop_bytes = _cv2_to_bytes(crop)
                                 crop_bytes = _enhance_plate(crop_bytes)
 
-                                plate = await _read_plate_async(crop_bytes, pr_token)
+                                plate_result = await _read_plate_async(crop_bytes, pr_token)
+                                plate = plate_result.get("plate", "")
                                 if plate and len(plate) >= 4:
                                     last_time = seen_plates.get(plate, 0)
                                     if now - last_time >= PLATE_COOLDOWN:
                                         seen_plates[plate] = now
                                         car = db.query(Car).filter(Car.tenant_id == tenant_id, Car.plate_number == plate).first()
                                         car_info = {"id": car.id, "plate_number": car.plate_number, "owner_name": car.owner_name, "car_type": car.car_type, "phone": car.phone} if car else None
-                                        await websocket.send_json({"type": "plate_detected", "plate": plate, "car": car_info, "frame": _frame_to_b64(frame)})
+                                        await websocket.send_json({"type": "plate_detected", "plate": plate, "car_type": plate_result.get("car_type", ""), "car_color": plate_result.get("car_color", ""), "car": car_info, "frame": _frame_to_b64(frame)})
                     except Exception:
                         pass
                 else:
                     # Simple fallback without tracking
-                    plate = await _read_plate_async(frame_bytes, pr_token)
+                    plate_result = await _read_plate_async(frame_bytes, pr_token)
+                    plate = plate_result.get("plate", "")
                     if plate and len(plate) >= 4:
                         last_time = seen_plates.get(plate, 0)
                         if now - last_time >= PLATE_COOLDOWN:
                             seen_plates[plate] = now
                             car = db.query(Car).filter(Car.tenant_id == tenant_id, Car.plate_number == plate).first()
                             car_info = {"id": car.id, "plate_number": car.plate_number, "owner_name": car.owner_name, "car_type": car.car_type, "phone": car.phone} if car else None
-                            await websocket.send_json({"type": "plate_detected", "plate": plate, "car": car_info, "frame": _frame_to_b64(frame)})
+                            await websocket.send_json({"type": "plate_detected", "plate": plate, "car_type": plate_result.get("car_type", ""), "car_color": plate_result.get("car_color", ""), "car": car_info, "frame": _frame_to_b64(frame)})
 
             await asyncio.sleep(0.033)  # ~30fps max
 

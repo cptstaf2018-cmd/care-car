@@ -34,7 +34,7 @@ export default function CameraMonitor() {
       } else if (msg.type === 'plate_detected') {
         setTodayCount(n => n + 1)
         setRecentPlates(prev => [
-          { plate: msg.plate, car: msg.car, time: new Date().toLocaleTimeString('ar-IQ') },
+          { plate: msg.plate, car: msg.car, car_type: msg.car_type, car_color: msg.car_color, time: new Date().toLocaleTimeString('ar-IQ') },
           ...prev.slice(0, 9)
         ])
       } else if (msg.type === 'error') {
@@ -64,7 +64,10 @@ export default function CameraMonitor() {
 
   const startService = (item) => {
     const params = new URLSearchParams({ plate: item.plate })
-    if (item.car?.car_type) params.set('car_type', item.car.car_type)
+    const carType = item.car?.car_type || item.car_type
+    const carColor = item.car?.car_color || item.car_color
+    if (carType) params.set('car_type', carType)
+    if (carColor) params.set('car_color', carColor)
     navigate(`/center/services/new?${params.toString()}`)
   }
 
@@ -163,7 +166,10 @@ export default function CameraMonitor() {
                         <p className="font-mono font-black text-slate-950">{item.plate}</p>
                         {item.car
                           ? <p className="text-xs text-emerald-600 font-bold">✓ {item.car.owner_name || 'زبون معروف'} · {item.car.car_type || 'نوع غير محدد'}</p>
-                          : <p className="text-xs text-amber-600 font-bold">سيارة جديدة — أكمل بياناتها عند بدء الخدمة</p>
+                          : <p className="text-xs text-amber-600 font-bold">
+                              سيارة جديدة
+                              {(item.car_type || item.car_color) ? ` · ${[item.car_type, item.car_color].filter(Boolean).join(' · ')}` : ' — أكمل بياناتها عند بدء الخدمة'}
+                            </p>
                         }
                       </div>
                     </div>

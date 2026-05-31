@@ -12,14 +12,25 @@ router = APIRouter(prefix="/vision", tags=["vision"])
 logger = logging.getLogger(__name__)
 PLATE_NOT_READ_MESSAGE = "لم نتمكن من قراءة رقم اللوحة من الصورة. أعد التصوير بإضاءة أوضح، أو أدخل رقم اللوحة يدوياً للمتابعة."
 
+COLOR_AR = {
+    "black": "أسود",
+    "blue": "أزرق",
+    "brown": "بني",
+    "green": "أخضر",
+    "red": "أحمر",
+    "silver": "فضي",
+    "white": "أبيض",
+    "yellow": "أصفر",
+    "unknown": "",
+}
+
 
 def _plate_recognizer(image_bytes: bytes, token: str) -> tuple[str, str, str]:
     """Call Plate Recognizer API. Returns (plate, car_type, car_color)."""
     try:
-        regions = ['iq', 'sa', 'ae', 'kw', 'bh', 'qa', 'om', 'jo', 'sy', 'lb', 'eg']
         resp = http_requests.post(
             'https://api.platerecognizer.com/v1/plate-reader/',
-            data=[('regions', region) for region in regions],
+            data={'mmc': 'true'},
             files={'upload': ('plate.jpg', image_bytes, 'image/jpeg')},
             headers={'Authorization': f'Token {token}'},
             timeout=15,
@@ -37,11 +48,15 @@ def _plate_recognizer(image_bytes: bytes, token: str) -> tuple[str, str, str]:
             return '', '', ''
         r = results[0]
         plate = r.get('plate', '').upper()
-        v = r.get('vehicle', {})
-        make = v.get('make', [{}])[0].get('name', '') if v.get('make') else ''
-        model = v.get('model', [{}])[0].get('name', '') if v.get('model') else ''
-        color = v.get('color', [{}])[0].get('name', '') if v.get('color') else ''
+        make_model = (r.get('model_make') or [{}])[0]
+        make = make_model.get('make', '')
+        model = make_model.get('model', '')
+        vehicle_type = (r.get('vehicle') or {}).get('type', '')
+        color_raw = ((r.get('color') or [{}])[0].get('color') or '').lower()
+        color = COLOR_AR.get(color_raw, color_raw)
         car_type = f"{make} {model}".strip()
+        if not car_type and vehicle_type and vehicle_type.lower() != 'unknown':
+            car_type = vehicle_type
         return plate, car_type, color
     except Exception:
         logger.exception("plate recognizer request failed")
