@@ -153,8 +153,8 @@ function TenantCard({ t, onToggle, onDelete }) {
                 <div className="flex items-center gap-2 text-sm">
                   <ShieldCheck size={14} className="text-slate-400 shrink-0" />
                   <span className="text-slate-500 shrink-0">واسندر API:</span>
-                  <span className={`font-semibold text-xs ${t.wasnder_api_key ? 'text-emerald-700' : 'text-slate-400'}`}>
-                    {t.wasnder_api_key ? '✓ مفعّل' : 'غير مفعّل'}
+                  <span className={`font-semibold text-xs ${t.has_wasnder_api_key ? 'text-emerald-700' : 'text-slate-400'}`}>
+                    {t.has_wasnder_api_key ? '✓ مفعّل' : 'غير مفعّل'}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
@@ -167,8 +167,8 @@ function TenantCard({ t, onToggle, onDelete }) {
                 <div className="flex items-center gap-2 text-sm">
                   <ShieldCheck size={14} className="text-slate-400 shrink-0" />
                   <span className="text-slate-500 shrink-0">قراءة اللوحة:</span>
-                  <span className={`font-semibold text-xs ${t.plate_recognizer_token ? 'text-emerald-700' : 'text-slate-400'}`}>
-                    {t.plate_recognizer_token ? '✓ مفعّل' : 'غير مفعّل'}
+                  <span className={`font-semibold text-xs ${t.has_plate_recognizer_token ? 'text-emerald-700' : 'text-slate-400'}`}>
+                    {t.has_plate_recognizer_token ? '✓ مفعّل' : 'غير مفعّل'}
                   </span>
                 </div>
                 <InfoRow icon={Bell} label="التذكير" value={`${t.reminder_days || 30} يوم قبل`} />

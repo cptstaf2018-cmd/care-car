@@ -60,6 +60,8 @@ def list_tenants(db: Session = Depends(get_db), _=Depends(require_superadmin)):
     for t in tenants:
         manager = db.query(User).filter(User.tenant_id == t.id, User.role == Role.manager).first()
         d = TenantOut.model_validate(t).model_dump()
+        d['has_wasnder_api_key'] = bool(t.wasnder_api_key)
+        d['has_plate_recognizer_token'] = bool(t.plate_recognizer_token)
         d['manager_email'] = manager.email if manager else None
         d['manager_name'] = manager.full_name if manager else None
         result.append(d)

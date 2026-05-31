@@ -53,13 +53,13 @@ class TenantOut(BaseModel):
     ip_camera_url: str | None
     ip_camera_username: str | None
     whatsapp_number: str | None
-    wasnder_api_key: str | None
+    has_wasnder_api_key: bool = False
+    has_plate_recognizer_token: bool = False
     reminder_days: int
     reminder_message_template: str | None
     trial_ends_at: datetime | None
     subscription_request_plan: str | None
     subscription_request_ref: str | None
-    plate_recognizer_token: str | None
     created_at: datetime | None
     # populated by list endpoint (not ORM field)
     manager_email: str | None = None
