@@ -74,6 +74,22 @@ CAR_BRANDS = [
     'فولكسواغن','اودي','بيجو','رينو','فيات','دودج',
 ]
 
+ARABIC_DIGITS = str.maketrans('٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹', '01234567890123456789')
+OCR_DIGIT_FIXES = str.maketrans({
+    'O': '0',
+    'o': '0',
+    'Q': '0',
+    'I': '1',
+    'l': '1',
+    'L': '1',
+    '|': '1',
+    'Z': '2',
+    'z': '2',
+    'S': '5',
+    's': '5',
+    'B': '8',
+})
+
 
 def extract_car_brand(text: str) -> str:
     if not text:
@@ -84,6 +100,56 @@ def extract_car_brand(text: str) -> str:
             idx = lower.find(brand.lower())
             return text[idx:idx+len(brand)].strip()
     return ''
+
+
+def normalize_plate_text(text: str) -> str:
+    if not text:
+        return ''
+    text = text.translate(ARABIC_DIGITS)
+    text = text.replace('ـ', '').replace('-', ' ').replace('_', ' ')
+    text = re.sub(r'[^\w؀-ۿ]+', ' ', text, flags=re.UNICODE)
+    return re.sub(r'\s+', ' ', text).strip().upper()
+
+
+def normalize_plate_candidate(text: str) -> str:
+    text = normalize_plate_text(text)
+    if not text:
+        return ''
+    parts = []
+    for part in text.split():
+        has_digit = any(ch.isdigit() for ch in part)
+        if has_digit:
+            part = part.translate(OCR_DIGIT_FIXES)
+        parts.append(part)
+    text = ' '.join(parts)
+    text = re.sub(r'\s+', ' ', text).strip()
+    digits = re.sub(r'\D', '', text)
+    if text.isdigit() and not (3 <= len(text) <= 8):
+        return ''
+    if digits and not (3 <= len(digits) <= 8):
+        return ''
+    return text
+
+
+def extract_plate_candidates(text: str) -> list[str]:
+    text = normalize_plate_text(text)
+    if not text:
+        return []
+
+    candidates = []
+    patterns = [
+        r'[؀-ۿ]{1,8}\s*[0-9OQILl|ZSBo]{3,8}',
+        r'[0-9OQILl|ZSBo]{3,8}\s*[؀-ۿ]{1,8}',
+        r'[A-Z]{1,4}\s*[0-9OQILl|ZSBo]{3,8}',
+        r'[0-9OQILl|ZSBo]{3,8}\s*[A-Z]{1,4}',
+        r'[0-9OQILl|ZSBo]{4,8}',
+    ]
+    for pattern in patterns:
+        for match in re.finditer(pattern, text, re.IGNORECASE):
+            candidate = normalize_plate_candidate(match.group(0))
+            if candidate and candidate not in candidates:
+                candidates.append(candidate)
+    return candidates[:6]
 
 
 def _bytes_to_cv2(image_bytes: bytes):
@@ -355,25 +421,8 @@ def read_plate_from_image(image_bytes: bytes) -> str:
 
 
 def _extract_plate(text: str) -> str:
-    if not text:
-        return ''
-    text = re.sub(r'\s+', ' ', text.strip())
-    m = re.search(r'[؀-ۿ]{1,3}\s*\d{3,6}', text)
-    if m:
-        return m.group(0).strip()
-    m = re.search(r'\d{3,6}\s*[؀-ۿ]{1,3}', text)
-    if m:
-        return m.group(0).strip()
-    m = re.search(r'[A-Z]{1,3}\s*\d{3,6}', text, re.IGNORECASE)
-    if m:
-        return m.group(0).strip()
-    m = re.search(r'\d{4,8}', text)
-    if m:
-        return m.group(0)
-    m = re.search(r'[٠-٩]{4,8}', text)
-    if m:
-        return m.group(0)
-    return ''
+    candidates = extract_plate_candidates(text)
+    return candidates[0] if candidates else ''
 
 
 def parse_receipt_text(text: str) -> list:

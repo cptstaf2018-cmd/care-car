@@ -12,7 +12,7 @@ from app.core.security import decode_token
 from app.models.tenant import Tenant
 from app.models.car import Car
 from app.models.user import Role
-from app.services.vision_service import detect_plate_crop, _enhance_plate, _paddle_read_bytes, _extract_plate, _bytes_to_cv2, _cv2_to_bytes, estimate_vehicle_color
+from app.services.vision_service import detect_plate_crop, _enhance_plate, _paddle_read_bytes, _extract_plate, _bytes_to_cv2, _cv2_to_bytes, estimate_vehicle_color, normalize_plate_candidate
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -92,7 +92,7 @@ def _plate_recognizer_sync(image_bytes: bytes, token: str) -> dict:
                 if not car_type and vehicle_type and vehicle_type.lower() != 'unknown':
                     car_type = TYPE_AR.get(vehicle_type, vehicle_type)
                 return {
-                    "plate": r.get('plate', '').upper(),
+                    "plate": normalize_plate_candidate(r.get('plate', '').upper()),
                     "car_type": car_type,
                     "car_color": COLOR_AR.get(color_raw, color_raw) or estimate_vehicle_color(
                         image_bytes,

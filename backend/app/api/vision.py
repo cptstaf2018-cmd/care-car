@@ -7,7 +7,15 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.user import User, Role
 from app.models.tenant import Tenant
-from app.services.vision_service import read_plate_from_image, read_text_from_image, parse_receipt_text, extract_car_brand, estimate_vehicle_color
+from app.services.vision_service import (
+    read_plate_from_image,
+    read_text_from_image,
+    parse_receipt_text,
+    extract_car_brand,
+    estimate_vehicle_color,
+    normalize_plate_candidate,
+    extract_plate_candidates,
+)
 
 router = APIRouter(prefix="/vision", tags=["vision"])
 logger = logging.getLogger(__name__)
@@ -62,7 +70,7 @@ def _plate_recognizer(image_bytes: bytes, token: str) -> dict:
             logger.info("plate recognizer returned no plate")
             return {}
         r = results[0]
-        plate = r.get('plate', '').upper()
+        plate = normalize_plate_candidate(r.get('plate', '').upper())
         make_model = (r.get('model_make') or [{}])[0]
         make = make_model.get('make', '')
         model = make_model.get('model', '')
@@ -77,7 +85,7 @@ def _plate_recognizer(image_bytes: bytes, token: str) -> dict:
             car_type = TYPE_AR.get(vehicle_type, vehicle_type)
         candidates = []
         for item in r.get('candidates') or []:
-            candidate_plate = (item.get('plate') or '').upper()
+            candidate_plate = normalize_plate_candidate((item.get('plate') or '').upper())
             if candidate_plate and candidate_plate not in candidates:
                 candidates.append(candidate_plate)
         return {
@@ -127,6 +135,9 @@ async def read_plate(
         try:
             full_text = read_text_from_image(contents)
             local_plate = read_plate_from_image(contents)
+            for candidate in extract_plate_candidates(full_text):
+                if candidate not in candidates:
+                    candidates.append(candidate)
             if local_plate and (not plate or confidence < 0.68):
                 plate = local_plate
             if local_plate and local_plate not in candidates:
