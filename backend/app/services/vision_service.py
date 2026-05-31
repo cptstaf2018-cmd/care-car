@@ -1,5 +1,10 @@
 import io, os, re, base64, requests
-import numpy as np
+
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except ImportError:
+    NUMPY_AVAILABLE = False
 
 # ── Specialized License Plate Detection Model ─────────────────────────────────
 try:
