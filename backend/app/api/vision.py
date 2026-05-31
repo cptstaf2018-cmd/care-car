@@ -10,6 +10,7 @@ from app.services.vision_service import read_plate_from_image, read_text_from_im
 
 router = APIRouter(prefix="/vision", tags=["vision"])
 logger = logging.getLogger(__name__)
+PLATE_NOT_READ_MESSAGE = "لم نتمكن من قراءة رقم اللوحة من الصورة. أعد التصوير بإضاءة أوضح، أو أدخل رقم اللوحة يدوياً للمتابعة."
 
 
 def _plate_recognizer(image_bytes: bytes, token: str) -> tuple[str, str, str]:
@@ -76,7 +77,7 @@ async def read_plate(
         "plate_number": plate or "",
         "car_type": car_type or "",
         "car_color": car_color or "",
-        "message": "" if plate else "لم يتم التعرف على رقم اللوحة. جرّب صورة أوضح أو اربط Plate Recognizer من إعدادات السوبر أدمن.",
+        "message": "" if plate else PLATE_NOT_READ_MESSAGE,
     }
 
 

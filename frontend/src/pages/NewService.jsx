@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { BatteryCharging, Car, CircleDot, Droplets, Fan, Gauge, GaugeCircle, Package, Printer, PlusCircle, ShowerHead, Sparkles, SprayCan, Trash2, Wrench, Camera, CameraOff, CheckCircle2, Keyboard, ScanLine, Search, Smartphone, Zap } from 'lucide-react'
 import Layout from '../components/Layout'
@@ -26,7 +26,10 @@ const SERVICE_TYPES = [
 
 export default function NewService() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const qc = useQueryClient()
+  const arrivalPlate = searchParams.get('plate') || ''
+  const arrivalCarType = searchParams.get('car_type') || ''
   const [search, setSearch] = useState('')
   const [selectedCar, setSelectedCar] = useState(null)
   const [newCarForm, setNewCarForm] = useState(null) // { plate_number, car_type, car_color }
@@ -95,6 +98,27 @@ export default function NewService() {
     queryFn: () => getCars(search).then(r => r.data),
     enabled: search.length > 1,
   })
+
+  useEffect(() => {
+    if (!arrivalPlate) return
+    setSearch(arrivalPlate)
+    setNewCarForm(current => current || {
+      plate_number: arrivalPlate,
+      car_type: arrivalCarType,
+      car_color: '',
+      owner_name: '',
+      phone: '',
+    })
+  }, [arrivalPlate, arrivalCarType])
+
+  useEffect(() => {
+    if (!arrivalPlate || selectedCar || !cars.length) return
+    const exact = cars.find(car => car.plate_number?.toLowerCase() === arrivalPlate.toLowerCase())
+    if (exact) {
+      setSelectedCar(exact)
+      setNewCarForm(null)
+    }
+  }, [arrivalPlate, cars, selectedCar])
 
   const mutation = useMutation({
     mutationFn: createService,
@@ -197,10 +221,10 @@ export default function NewService() {
         stopCamera()
       } else {
         setScanResult(null)
-        setScanError(message || 'لم يتم التعرف على رقم اللوحة. حاول بصورة أوضح أو اكتب الرقم يدوياً.')
+        setScanError(message || 'لم نتمكن من قراءة رقم اللوحة من الصورة. أعد التصوير بإضاءة أوضح، أو أدخل رقم اللوحة يدوياً للمتابعة.')
       }
     } catch (err) {
-      setScanError(err.response?.data?.detail || 'تعذر قراءة اللوحة الآن. يمكنك إدخال رقم اللوحة يدوياً ومتابعة الخدمة.')
+      setScanError(err.response?.data?.detail || 'تعذرت القراءة الآن. أدخل رقم اللوحة يدوياً للمتابعة، ثم حاول استخدام الكاميرا لاحقاً.')
     } finally {
       setScanning(false)
     }
@@ -228,10 +252,10 @@ export default function NewService() {
           stopCamera()
         } else {
           setScanResult(null)
-          setScanError(message || 'لم يتم التعرف على رقم اللوحة. حاول مجدداً أو ابحث يدوياً.')
+          setScanError(message || 'لم نتمكن من قراءة رقم اللوحة من الصورة. أعد التصوير بإضاءة أوضح، أو أدخل رقم اللوحة يدوياً للمتابعة.')
         }
       } catch (err) {
-        setScanError(err.response?.data?.detail || 'تعذر قراءة اللوحة الآن. يمكنك إدخال رقم اللوحة يدوياً ومتابعة الخدمة.')
+        setScanError(err.response?.data?.detail || 'تعذرت القراءة الآن. أدخل رقم اللوحة يدوياً للمتابعة، ثم حاول استخدام الكاميرا لاحقاً.')
       } finally {
         setScanning(false)
       }
@@ -273,7 +297,11 @@ export default function NewService() {
         <div>
           <p className="text-sm font-semibold text-cyan-700">استقبال الخدمة</p>
           <h2 className="mt-1 text-2xl font-black text-slate-950">خدمة سريعة للسيارة</h2>
-          <p className="mt-2 text-sm text-slate-500">ابحث عن السيارة، أضف الخدمات إلى الفاتورة، ثم اعتمد الفاتورة النهائية. Ctrl+Enter للحفظ.</p>
+          <p className="mt-2 text-sm text-slate-500">
+            {arrivalPlate
+              ? `تم استقبال السيارة من كاميرا الباب: ${arrivalPlate}. أكمل بياناتها أو اخترها من النتائج ثم أضف الخدمات.`
+              : 'ابحث عن السيارة، أضف الخدمات إلى الفاتورة، ثم اعتمد الفاتورة النهائية. Ctrl+Enter للحفظ.'}
+          </p>
         </div>
         <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-600">
           <Keyboard size={17} /> Ctrl + Enter للحفظ · Esc للتغيير
@@ -329,7 +357,10 @@ export default function NewService() {
 
           {scanError && (
             <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-800">
-              {scanError}
+              <p>{scanError}</p>
+              <p className="mt-1 text-xs font-semibold text-amber-700">
+                نصيحة: اجعل اللوحة في منتصف الصورة، وتجنب الظل أو الانعكاس القوي.
+              </p>
             </div>
           )}
 
