@@ -89,6 +89,12 @@ OCR_DIGIT_FIXES = str.maketrans({
     's': '5',
     'B': '8',
 })
+IRAQ_PLATE_WORDS = {
+    'بغداد', 'البصرة', 'بصرة', 'نينوى', 'الموصل', 'موصل', 'اربيل', 'أربيل', 'دهوك',
+    'السليمانية', 'سليمانية', 'كركوك', 'ديالى', 'الانبار', 'الأنبار', 'بابل',
+    'كربلاء', 'النجف', 'نجف', 'واسط', 'ذيقار', 'ذي قار', 'ميسان', 'المثنى',
+    'الديوانية', 'ديوانية', 'صلاحالدين', 'صلاح الدين',
+}
 
 
 def extract_car_brand(text: str) -> str:
@@ -124,6 +130,10 @@ def normalize_plate_candidate(text: str) -> str:
     text = ' '.join(parts)
     text = re.sub(r'\s+', ' ', text).strip()
     digits = re.sub(r'\D', '', text)
+    arabic_words = re.findall(r'[؀-ۿ]+', text)
+    for word in arabic_words:
+        if len(word) > 1 and word not in IRAQ_PLATE_WORDS:
+            return ''
     if text.isdigit() and not (3 <= len(text) <= 8):
         return ''
     if digits and not (3 <= len(digits) <= 8):
