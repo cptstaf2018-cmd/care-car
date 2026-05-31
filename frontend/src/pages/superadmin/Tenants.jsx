@@ -66,8 +66,9 @@ function PlanBadge({ plan }) {
   )
 }
 
-function TenantCard({ t, onToggle, onDelete }) {
+function TenantCard({ t, onToggle, onDelete, onSavePlateToken }) {
   const [expanded, setExpanded] = useState(false)
+  const [plateToken, setPlateToken] = useState('')
   const days = remainingDays(t.subscription_ends_at)
   const price = PLAN_DETAILS[t.plan]?.adminPrice || 0
   const registrationLabel = t.registration_method === 'email' ? 'تسجيل بالإيميل' : t.registration_method === 'whatsapp' ? 'تسجيل بالواتساب' : 'تسجيل غير محدد'
@@ -207,6 +208,28 @@ function TenantCard({ t, onToggle, onDelete }) {
                 </div>
                 <InfoRow icon={Bell} label="التذكير" value={`${t.reminder_days || 30} يوم قبل`} />
               </div>
+              <div className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
+                <p className="mb-2 text-xs font-black text-slate-500">مفتاح Plate Recognizer</p>
+                <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+                  <input
+                    type="password"
+                    value={plateToken}
+                    onChange={(e) => setPlateToken(e.target.value)}
+                    placeholder={t.has_plate_recognizer_token ? 'يوجد مفتاح محفوظ — أدخل مفتاحاً جديداً للتحديث' : 'ألصق المفتاح لتفعيل قراءة اللوحات'}
+                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                  />
+                  <button
+                    onClick={() => {
+                      onSavePlateToken(t, plateToken)
+                      setPlateToken('')
+                    }}
+                    disabled={!plateToken.trim()}
+                    className="rounded-lg bg-slate-950 px-4 py-2 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    حفظ المفتاح
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -255,6 +278,11 @@ export default function AdminTenants() {
 
   const toggle = useMutation({
     mutationFn: (t) => updateTenant(t.id, { is_active: !t.is_active }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tenants'] }),
+  })
+
+  const savePlateToken = useMutation({
+    mutationFn: ({ tenant, token }) => updateTenant(tenant.id, { plate_recognizer_token: token.trim() }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tenants'] }),
   })
 
@@ -326,7 +354,13 @@ export default function AdminTenants() {
 
       <div className="space-y-3">
         {sorted.map(t => (
-          <TenantCard key={t.id} t={t} onToggle={toggle.mutate} onDelete={handleDelete} />
+          <TenantCard
+            key={t.id}
+            t={t}
+            onToggle={toggle.mutate}
+            onDelete={handleDelete}
+            onSavePlateToken={(tenant, token) => savePlateToken.mutate({ tenant, token })}
+          />
         ))}
         {!tenants.length && (
           <div className="surface rounded-xl py-16 text-center text-slate-400 text-sm font-semibold">
