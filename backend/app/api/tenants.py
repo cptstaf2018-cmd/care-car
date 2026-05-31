@@ -53,9 +53,17 @@ class TenantWithManagerCreate(BaseModel):
     manager_name: str | None = None
 
 
-@router.get("/", response_model=list[TenantOut])
+@router.get("/")
 def list_tenants(db: Session = Depends(get_db), _=Depends(require_superadmin)):
-    return db.query(Tenant).all()
+    tenants = db.query(Tenant).all()
+    result = []
+    for t in tenants:
+        manager = db.query(User).filter(User.tenant_id == t.id, User.role == Role.manager).first()
+        d = TenantOut.model_validate(t).model_dump()
+        d['manager_email'] = manager.email if manager else None
+        d['manager_name'] = manager.full_name if manager else None
+        result.append(d)
+    return result
 
 
 @router.post("/", status_code=201)
@@ -95,9 +103,13 @@ def create_tenant(body: TenantWithManagerCreate, db: Session = Depends(get_db), 
     }
 
 
+# IMPORTANT: subscription_request_plan and subscription_request_ref MUST stay in this set
+# so approvePayment() in Subscriptions.jsx can clear them by sending null values.
+# Also: use exclude_unset=True (not exclude_none) in update_tenant to allow null clearing.
 SUPERADMIN_ALLOWED_FIELDS = {
     'name', 'plan', 'is_active', 'contact_phone',
     'subscription_starts_at', 'subscription_ends_at', 'subscription_notes',
+    'subscription_request_plan', 'subscription_request_ref',
 }
 
 
@@ -106,7 +118,7 @@ def update_tenant(tenant_id: int, body: TenantUpdate, db: Session = Depends(get_
     tenant = db.get(Tenant, tenant_id)
     if not tenant:
         raise HTTPException(status_code=404, detail="Tenant not found")
-    updates = {k: v for k, v in body.model_dump(exclude_none=True).items() if k in SUPERADMIN_ALLOWED_FIELDS}
+    updates = {k: v for k, v in body.model_dump(exclude_unset=True).items() if k in SUPERADMIN_ALLOWED_FIELDS}
     for k, v in updates.items():
         setattr(tenant, k, v)
     db.commit()

@@ -17,6 +17,8 @@ class TenantCreate(BaseModel):
     whatsapp_number: str | None = None
     reminder_days: int = 30
     reminder_message_template: str | None = None
+    subscription_request_plan: str | None = None
+    subscription_request_ref: str | None = None
 
 class TenantUpdate(BaseModel):
     name: str | None = None
@@ -34,6 +36,8 @@ class TenantUpdate(BaseModel):
     whatsapp_number: str | None = None
     reminder_days: int | None = None
     reminder_message_template: str | None = None
+    subscription_request_plan: str | None = None
+    subscription_request_ref: str | None = None
 
 class TenantOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -49,8 +53,14 @@ class TenantOut(BaseModel):
     ip_camera_url: str | None
     ip_camera_username: str | None
     whatsapp_number: str | None
+    wasnder_api_key: str | None
     reminder_days: int
     reminder_message_template: str | None
     trial_ends_at: datetime | None
     subscription_request_plan: str | None
     subscription_request_ref: str | None
+    plate_recognizer_token: str | None
+    created_at: datetime | None
+    # populated by list endpoint (not ORM field)
+    manager_email: str | None = None
+    manager_name: str | None = None

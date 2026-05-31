@@ -5,7 +5,7 @@ import { Building2, CalendarClock, CreditCard, Image, MessageCircle, ShieldAlert
 import Layout from '../../components/Layout'
 import StatCard from '../../components/StatCard'
 import { getTenants } from '../../api/tenants'
-import { PLAN_DETAILS, PLAN_ORDER, planShortName } from '../../constants/plans'
+import { PLAN_DETAILS, PLAN_ORDER, planShortName, IQD } from '../../constants/plans'
 
 const planPrice = {
   basic: PLAN_DETAILS.basic.adminPrice,
@@ -51,7 +51,7 @@ export default function AdminOverview() {
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg border border-white/10 bg-white/10 p-4">
               <p className="text-xs text-slate-300">MRR</p>
-              <p className="mt-1 text-3xl font-black">{(mrr/1000).toFixed(0)}K IQD</p>
+              <p className="mt-1 text-3xl font-black">{IQD(mrr)}</p>
             </div>
             <div className="rounded-lg border border-white/10 bg-white/10 p-4">
               <p className="text-xs text-slate-300">Active Centers</p>
@@ -63,7 +63,7 @@ export default function AdminOverview() {
 
       <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
         <StatCard icon={Building2} label="المراكز المشتركة" value={tenants.length} color="blue" trend={`${active} نشط`} loading={isLoading} />
-        <StatCard icon={CreditCard} label="الاشتراكات" value={`${(mrr/1000).toFixed(0)}K IQD`} color="green" trend="MRR" loading={isLoading} />
+        <StatCard icon={CreditCard} label="الاشتراكات" value={IQD(mrr)} color="green" trend="MRR" loading={isLoading} />
         <StatCard icon={MessageCircle} label="واتساب مفعل" value={connectedWhatsapp} color="purple" trend={`من ${tenants.length}`} loading={isLoading} />
         <StatCard icon={ShieldAlert} label="مراكز موقوفة" value={suspended} color="orange" trend={suspended ? 'تحتاج متابعة' : 'كلها فعالة'} loading={isLoading} />
       </div>
@@ -92,7 +92,7 @@ export default function AdminOverview() {
                 <div key={plan} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <p className="text-xs font-bold text-slate-500">{planShortName(plan)}</p>
                   <p className="mt-2 text-2xl font-black text-slate-950">{count}</p>
-                  <p className="mt-1 text-xs text-slate-500">{activeCount} نشط · {(planPrice[plan]/1000).toFixed(0)}K IQD/شهر</p>
+                  <p className="mt-1 text-xs text-slate-500">{activeCount} نشط · {IQD(planPrice[plan])}/شهر</p>
                 </div>
               )
             })}
