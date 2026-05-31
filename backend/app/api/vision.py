@@ -16,17 +16,24 @@ PLATE_NOT_READ_MESSAGE = "لم نتمكن من قراءة رقم اللوحة م
 def _plate_recognizer(image_bytes: bytes, token: str) -> tuple[str, str, str]:
     """Call Plate Recognizer API. Returns (plate, car_type, car_color)."""
     try:
+        regions = ['iq', 'sa', 'ae', 'kw', 'bh', 'qa', 'om', 'jo', 'sy', 'lb', 'eg']
         resp = http_requests.post(
             'https://api.platerecognizer.com/v1/plate-reader/',
-            data={'regions': ['iq', 'sa', 'ae', 'kw', 'bh', 'qa', 'om', 'jo', 'sy', 'lb', 'eg']},
+            data=[('regions', region) for region in regions],
             files={'upload': ('plate.jpg', image_bytes, 'image/jpeg')},
             headers={'Authorization': f'Token {token}'},
             timeout=15,
         )
         if not resp.ok:
+            logger.warning(
+                "plate recognizer failed status=%s body=%s",
+                resp.status_code,
+                resp.text[:300],
+            )
             return '', '', ''
         results = resp.json().get('results', [])
         if not results:
+            logger.info("plate recognizer returned no plate")
             return '', '', ''
         r = results[0]
         plate = r.get('plate', '').upper()
@@ -37,6 +44,7 @@ def _plate_recognizer(image_bytes: bytes, token: str) -> tuple[str, str, str]:
         car_type = f"{make} {model}".strip()
         return plate, car_type, color
     except Exception:
+        logger.exception("plate recognizer request failed")
         return '', '', ''
 
 

@@ -152,6 +152,40 @@ def detect_plate_crop(image_bytes: bytes):
         except Exception:
             pass
 
+    # Method 3: OpenCV contour fallback for production installs without YOLO.
+    try:
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        gray = cv2.bilateralFilter(gray, 11, 17, 17)
+        edged = cv2.Canny(gray, 30, 200)
+        contours, _ = cv2.findContours(edged, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        h, w = img.shape[:2]
+        candidates = []
+        for contour in contours:
+            x, y, cw, ch = cv2.boundingRect(contour)
+            if cw <= 0 or ch <= 0:
+                continue
+            area = cw * ch
+            ratio = cw / ch
+            if area < (w * h * 0.002) or area > (w * h * 0.35):
+                continue
+            if 1.8 <= ratio <= 7.5:
+                y_center = y + ch / 2
+                score = area * (1.3 if y_center > h * 0.35 else 1.0)
+                candidates.append((score, x, y, cw, ch))
+        if candidates:
+            _, x, y, cw, ch = max(candidates, key=lambda item: item[0])
+            pad_x = max(8, int(cw * 0.08))
+            pad_y = max(6, int(ch * 0.20))
+            x1 = max(0, x - pad_x)
+            y1 = max(0, y - pad_y)
+            x2 = min(w, x + cw + pad_x)
+            y2 = min(h, y + ch + pad_y)
+            crop = img[y1:y2, x1:x2]
+            if crop.size > 100:
+                return _cv2_to_bytes(crop)
+    except Exception:
+        pass
+
     return None
 
 
@@ -229,33 +263,46 @@ def read_plate_from_image(image_bytes: bytes) -> str:
     if plate_bytes:
         plate_bytes = _enhance_plate(plate_bytes)
 
-    target = plate_bytes if plate_bytes else image_bytes
+    targets = []
+    if plate_bytes:
+        targets.append(plate_bytes)
+    targets.append(image_bytes)
 
     # PaddleOCR on cropped plate
     if PADDLE_AVAILABLE:
-        text = _paddle_read_bytes(target)
-        plate = _extract_plate(text)
-        if plate:
-            return plate
-        # Try full image if crop gave nothing
-        if plate_bytes:
-            text2 = _paddle_read_bytes(image_bytes)
-            plate2 = _extract_plate(text2)
-            if plate2:
-                return plate2
+        for target in targets:
+            text = _paddle_read_bytes(target)
+            plate = _extract_plate(text)
+            if plate:
+                return plate
 
     # Tesseract fallback
     if TESSERACT_AVAILABLE:
-        try:
-            pil_img = Image.open(io.BytesIO(target)).convert('L')
-            w, h = pil_img.size
-            pil_img = pil_img.resize((w*3, h*3), Image.LANCZOS)
-            pil_img = ImageEnhance.Contrast(pil_img).enhance(2.5)
-            pil_img = pil_img.filter(ImageFilter.SHARPEN)
-            text = pytesseract.image_to_string(pil_img, lang='ara+eng', config='--psm 7 --oem 1')
-            return _extract_plate(text)
-        except Exception:
-            pass
+        configs = [
+            '--psm 7 --oem 1',
+            '--psm 8 --oem 1',
+            '--psm 11 --oem 1',
+            '--psm 6 --oem 1',
+        ]
+        for target in targets:
+            for mode in ('gray', 'threshold', 'sharp'):
+                try:
+                    pil_img = Image.open(io.BytesIO(target)).convert('L')
+                    w, h = pil_img.size
+                    scale = 3 if max(w, h) < 1200 else 2
+                    pil_img = pil_img.resize((w * scale, h * scale), Image.LANCZOS)
+                    pil_img = ImageEnhance.Contrast(pil_img).enhance(2.8)
+                    if mode == 'threshold':
+                        pil_img = pil_img.point(lambda p: 255 if p > 145 else 0)
+                    elif mode == 'sharp':
+                        pil_img = pil_img.filter(ImageFilter.SHARPEN)
+                    for config in configs:
+                        text = pytesseract.image_to_string(pil_img, lang='ara+eng', config=config)
+                        plate = _extract_plate(text)
+                        if plate:
+                            return plate
+                except Exception:
+                    pass
 
     return ''
 
