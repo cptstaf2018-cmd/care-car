@@ -1,7 +1,9 @@
 import secrets
 import string
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from app.core.database import get_db
@@ -76,6 +78,125 @@ def list_tenants(db: Session = Depends(get_db), _=Depends(require_superadmin)):
             d['registration_contact'] = t.whatsapp_number or t.contact_phone
         result.append(d)
     return result
+
+
+def _iso(value):
+    return value.isoformat() if value else None
+
+
+def _money(value) -> float:
+    if value is None:
+        return 0.0
+    if isinstance(value, Decimal):
+        return float(value)
+    return float(value)
+
+
+@router.get("/monitoring")
+def monitor_tenants(db: Session = Depends(get_db), _=Depends(require_superadmin)):
+    now = datetime.now(timezone.utc).replace(tzinfo=None)
+    since_30 = now - timedelta(days=30)
+    tenants = db.query(Tenant).order_by(Tenant.name).all()
+    rows = []
+
+    for tenant in tenants:
+        manager = db.query(User).filter(User.tenant_id == tenant.id, User.role == Role.manager).first()
+        invoice_count = db.query(func.count(Invoice.id)).filter(Invoice.tenant_id == tenant.id).scalar() or 0
+        service_count = db.query(func.count(Service.id)).filter(Service.tenant_id == tenant.id).scalar() or 0
+        car_count = db.query(func.count(Car.id)).filter(Car.tenant_id == tenant.id).scalar() or 0
+        user_count = db.query(func.count(User.id)).filter(User.tenant_id == tenant.id).scalar() or 0
+        debt_total = db.query(func.coalesce(func.sum(Debt.amount), 0)).filter(Debt.tenant_id == tenant.id).scalar()
+        revenue_30 = db.query(func.coalesce(func.sum(Invoice.amount - func.coalesce(Invoice.discount, 0)), 0)).filter(
+            Invoice.tenant_id == tenant.id,
+            Invoice.created_at >= since_30,
+        ).scalar()
+        failed_messages_30 = db.query(func.count(MessageLog.id)).filter(
+            MessageLog.tenant_id == tenant.id,
+            MessageLog.created_at >= since_30,
+            MessageLog.status != "sent",
+        ).scalar() or 0
+        low_inventory = db.query(func.count(InventoryItem.id)).filter(
+            InventoryItem.tenant_id == tenant.id,
+            InventoryItem.quantity <= InventoryItem.min_threshold,
+        ).scalar() or 0
+
+        latest_activity = max(
+            [
+                tenant.updated_at,
+                db.query(func.max(Invoice.created_at)).filter(Invoice.tenant_id == tenant.id).scalar(),
+                db.query(func.max(Service.created_at)).filter(Service.tenant_id == tenant.id).scalar(),
+                db.query(func.max(Car.created_at)).filter(Car.tenant_id == tenant.id).scalar(),
+                db.query(func.max(MessageLog.created_at)).filter(MessageLog.tenant_id == tenant.id).scalar(),
+            ],
+            key=lambda value: value or datetime.min,
+        )
+
+        days_to_expiry = None
+        if tenant.subscription_ends_at:
+            days_to_expiry = (tenant.subscription_ends_at - now.date()).days
+
+        issues = []
+        if not tenant.is_active:
+            issues.append("الحساب موقوف")
+        if days_to_expiry is None:
+            issues.append("لا يوجد تاريخ انتهاء اشتراك")
+        elif days_to_expiry < 0:
+            issues.append("الاشتراك منتهي")
+        elif days_to_expiry <= 7:
+            issues.append("الاشتراك قريب الانتهاء")
+        if not manager:
+            issues.append("لا يوجد مدير للمركز")
+        if not tenant.contact_phone and not tenant.whatsapp_number:
+            issues.append("لا يوجد رقم تواصل")
+        if failed_messages_30:
+            issues.append(f"{failed_messages_30} رسائل واتساب فاشلة")
+        if low_inventory:
+            issues.append(f"{low_inventory} عناصر مخزون منخفضة")
+
+        if not tenant.is_active or (days_to_expiry is not None and days_to_expiry < 0):
+            health = "critical"
+        elif issues:
+            health = "warning"
+        else:
+            health = "healthy"
+
+        rows.append({
+            "tenant_id": tenant.id,
+            "name": tenant.name,
+            "plan": tenant.plan,
+            "is_active": tenant.is_active,
+            "health": health,
+            "issues": issues,
+            "manager_name": manager.full_name if manager else None,
+            "manager_email": manager.email if manager else None,
+            "contact_phone": tenant.contact_phone,
+            "whatsapp_number": tenant.whatsapp_number,
+            "subscription_ends_at": _iso(tenant.subscription_ends_at),
+            "days_to_expiry": days_to_expiry,
+            "last_activity_at": _iso(latest_activity),
+            "invoice_count": invoice_count,
+            "service_count": service_count,
+            "car_count": car_count,
+            "user_count": user_count,
+            "revenue_30_days": _money(revenue_30),
+            "debt_total": _money(debt_total),
+            "failed_messages_30_days": failed_messages_30,
+            "low_inventory_count": low_inventory,
+        })
+
+    summary = {
+        "total": len(rows),
+        "healthy": sum(1 for row in rows if row["health"] == "healthy"),
+        "warning": sum(1 for row in rows if row["health"] == "warning"),
+        "critical": sum(1 for row in rows if row["health"] == "critical"),
+        "active": sum(1 for row in rows if row["is_active"]),
+        "revenue_30_days": sum(row["revenue_30_days"] for row in rows),
+        "debt_total": sum(row["debt_total"] for row in rows),
+        "failed_messages_30_days": sum(row["failed_messages_30_days"] for row in rows),
+        "low_inventory_count": sum(row["low_inventory_count"] for row in rows),
+    }
+    rows.sort(key=lambda row: {"critical": 0, "warning": 1, "healthy": 2}[row["health"]])
+    return {"summary": summary, "tenants": rows}
 
 
 @router.post("/", status_code=201)

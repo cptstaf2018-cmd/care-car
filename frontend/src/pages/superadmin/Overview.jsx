@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { Building2, CalendarClock, CreditCard, Image, MessageCircle, ShieldAlert, Sparkles } from 'lucide-react'
+import { Activity, Building2, CalendarClock, CreditCard, Image, MessageCircle, ShieldAlert, Sparkles } from 'lucide-react'
 import Layout from '../../components/Layout'
 import StatCard from '../../components/StatCard'
-import { getTenants } from '../../api/tenants'
+import { getTenantMonitoring, getTenants } from '../../api/tenants'
 import { PLAN_DETAILS, PLAN_ORDER, planShortName, IQD } from '../../constants/plans'
 
 const planPrice = {
@@ -24,6 +24,11 @@ export default function AdminOverview() {
   const { data: tenants = [], isLoading } = useQuery({
     queryKey: ['tenants'],
     queryFn: () => getTenants().then(r => r.data),
+  })
+  const { data: monitoring } = useQuery({
+    queryKey: ['tenant-monitoring', 'overview'],
+    queryFn: () => getTenantMonitoring().then(r => r.data),
+    refetchInterval: 60000,
   })
   const active = tenants.filter(t => t.is_active).length
   const suspended = tenants.length - active
@@ -67,6 +72,31 @@ export default function AdminOverview() {
         <StatCard icon={MessageCircle} label="واتساب مفعل" value={connectedWhatsapp} color="purple" trend={`من ${tenants.length}`} loading={isLoading} />
         <StatCard icon={ShieldAlert} label="مراكز موقوفة" value={suspended} color="orange" trend={suspended ? 'تحتاج متابعة' : 'كلها فعالة'} loading={isLoading} />
       </div>
+
+      {monitoring?.summary && (
+        <section className="mb-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-950 text-white">
+                <Activity size={18} />
+              </div>
+              <div>
+                <h3 className="font-black text-slate-950">نبض المراكز الآن</h3>
+                <p className="text-xs text-slate-500">مراقبة تلقائية تتحدث كل دقيقة</p>
+              </div>
+            </div>
+            <Link to="/admin/monitoring" className="rounded-lg bg-cyan-400 px-4 py-2 text-sm font-black text-slate-950 hover:bg-cyan-300">
+              فتح غرفة المراقبة
+            </Link>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-4">
+            <Pulse label="مستقرة" value={monitoring.summary.healthy} tone="green" />
+            <Pulse label="تحتاج متابعة" value={monitoring.summary.warning} tone="amber" />
+            <Pulse label="خطر" value={monitoring.summary.critical} tone="red" />
+            <Pulse label="مشاكل واتساب/مخزون" value={(monitoring.summary.failed_messages_30_days || 0) + (monitoring.summary.low_inventory_count || 0)} tone="slate" />
+          </div>
+        </section>
+      )}
 
       <section className="mb-5 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <div className="premium-card rounded-lg p-5">
@@ -232,4 +262,19 @@ function AdminPanel({ title, icon: Icon, children }) {
 
 function Alert({ text }) {
   return <div className="rounded-lg border border-cyan-100 bg-cyan-50 px-3 py-2 text-sm font-bold text-cyan-800">{text}</div>
+}
+
+function Pulse({ label, value, tone }) {
+  const tones = {
+    green: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+    amber: 'bg-amber-50 text-amber-700 border-amber-100',
+    red: 'bg-rose-50 text-rose-700 border-rose-100',
+    slate: 'bg-slate-50 text-slate-700 border-slate-100',
+  }
+  return (
+    <div className={`rounded-lg border p-4 ${tones[tone]}`}>
+      <p className="text-2xl font-black">{value || 0}</p>
+      <p className="mt-1 text-xs font-black">{label}</p>
+    </div>
+  )
 }

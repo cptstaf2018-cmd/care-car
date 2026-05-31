@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { NavLink } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
-  BarChart3, Building2, Car, ChevronLeft, ChevronRight, CreditCard,
+  Activity, BarChart3, Building2, Car, ChevronLeft, ChevronRight, CreditCard,
   Gauge, LogOut, Package, PlusCircle, Receipt, Settings, ShieldCheck
 } from 'lucide-react'
 import { useAuthStore } from '../store/auth'
@@ -34,6 +34,7 @@ const adminGroups = [
     title: 'المنصة',
     links: [
       { to: '/admin', label: 'الرئيسية', icon: ShieldCheck },
+      { to: '/admin/monitoring', label: 'مراقبة المراكز', icon: Activity },
       { to: '/admin/tenants', label: 'الشركات والمراكز', icon: Building2 },
       { to: '/admin/subscriptions', label: 'الاشتراكات', icon: CreditCard },
     ],

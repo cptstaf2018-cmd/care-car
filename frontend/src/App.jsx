@@ -11,6 +11,7 @@ import Reports from './pages/Reports'
 import CenterSettings from './pages/CenterSettings'
 import InvoicePrint from './pages/InvoicePrint'
 import AdminOverview from './pages/superadmin/Overview'
+import AdminMonitoring from './pages/superadmin/Monitoring'
 import AdminTenants from './pages/superadmin/Tenants'
 import Subscriptions from './pages/superadmin/Subscriptions'
 import PlatformAds from './pages/superadmin/PlatformAds'
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="/inventory" element={<Navigate to="/center/inventory" replace />} />
           <Route path="/reports" element={<Navigate to="/center/reports" replace />} />
           <Route path="/admin" element={<ProtectedRoute requiredRole="superadmin"><AdminOverview /></ProtectedRoute>} />
+          <Route path="/admin/monitoring" element={<ProtectedRoute requiredRole="superadmin"><AdminMonitoring /></ProtectedRoute>} />
           <Route path="/admin/tenants" element={<ProtectedRoute requiredRole="superadmin"><AdminTenants /></ProtectedRoute>} />
           <Route path="/admin/subscriptions" element={<ProtectedRoute requiredRole="superadmin"><Subscriptions /></ProtectedRoute>} />
           <Route path="/admin/ads" element={<ProtectedRoute requiredRole="superadmin"><PlatformAds /></ProtectedRoute>} />
