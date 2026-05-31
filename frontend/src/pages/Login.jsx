@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, BarChart3, Camera, Car, CheckCircle2, Clock3, MessageCircle, ShieldCheck, Sparkles, Zap, Phone, Mail } from 'lucide-react'
-import { activate, login, register } from '../api/auth'
+import { activate, confirmPasswordReset, login, register, requestPasswordReset } from '../api/auth'
 import { useAuthStore } from '../store/auth'
 import centerHero from '../assets/center-template-red.png'
 import loginCar from '../assets/login-car-real.png'
@@ -41,7 +41,13 @@ export default function Login({ initialMode = 'login' }) {
   const [loginId, setLoginId] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loginNotice, setLoginNotice] = useState('')
   const [launching, setLaunching] = useState(false)
+  const [resetId, setResetId] = useState('')
+  const [resetSent, setResetSent] = useState(false)
+  const [resetForm, setResetForm] = useState({ code: '', new_password: '', confirm_password: '' })
+  const [resetError, setResetError] = useState('')
+  const [resetLoading, setResetLoading] = useState(false)
 
   // Register state
   const [centerName, setCenterName] = useState('')
@@ -71,14 +77,27 @@ export default function Login({ initialMode = 'login' }) {
     setDir(newMode === 'register' ? 1 : -1)
     setMode(newMode)
     setError('')
+    setLoginNotice('')
     setRegError('')
     setCodeError('')
+    setResetError('')
     navigate(newMode === 'register' ? '/register' : '/login')
+  }
+
+  const openForgotPassword = () => {
+    setDir(-1)
+    setMode('forgot')
+    setResetId(loginId)
+    setError('')
+    setLoginNotice('')
+    setResetError('')
+    setResetSent(false)
   }
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault()
     setLaunching(true)
+    setLoginNotice('')
     try {
       const res = await login(loginId, password)
       window.setTimeout(() => {
@@ -112,6 +131,43 @@ export default function Login({ initialMode = 'login' }) {
       setRegError(detail || 'تعذر إرسال كود التفعيل، حاول مجددًا')
     } finally {
       setRegLoading(false)
+    }
+  }
+
+  const handleResetRequest = async (e) => {
+    e.preventDefault()
+    setResetLoading(true)
+    setResetError('')
+    try {
+      await requestPasswordReset(resetId)
+      setResetSent(true)
+    } catch (err) {
+      setResetError(err.response?.data?.detail || 'تعذر إرسال الكود، حاول مجددًا')
+    } finally {
+      setResetLoading(false)
+    }
+  }
+
+  const handleResetConfirm = async (e) => {
+    e.preventDefault()
+    setResetError('')
+    if (resetForm.new_password !== resetForm.confirm_password) {
+      setResetError('كلمتا المرور غير متطابقتين')
+      return
+    }
+    setResetLoading(true)
+    try {
+      await confirmPasswordReset(resetId, resetForm.code, resetForm.new_password)
+      setPassword(resetForm.new_password)
+      setLoginId(resetId)
+      setResetForm({ code: '', new_password: '', confirm_password: '' })
+      setResetSent(false)
+      setMode('login')
+      setLoginNotice('تم تغيير كلمة المرور. يمكنك الدخول الآن.')
+    } catch (err) {
+      setResetError(err.response?.data?.detail || 'كود إعادة التعيين غير صحيح أو منتهي')
+    } finally {
+      setResetLoading(false)
     }
   }
 
@@ -268,13 +324,68 @@ export default function Login({ initialMode = 'login' }) {
                             onChange={(e) => setPassword(e.target.value)} required
                             className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
                         </label>
+                        {loginNotice && <p className="rounded-lg border border-emerald-300/20 bg-emerald-300/10 px-3 py-2 text-sm font-bold text-emerald-100">{loginNotice}</p>}
                         {error && <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-200">{error}</p>}
                         <LaunchButton launching={launching} label="دخول النظام" />
                       </form>
+                      <button onClick={openForgotPassword} className="mt-4 w-full text-center text-sm font-bold text-cyan-300 transition-colors hover:text-cyan-200">
+                        نسيت كلمة المرور؟ إرسال كود جديد
+                      </button>
                       <p className="mt-4 text-center text-sm text-slate-400">
                         ليس لديك حساب؟{' '}
                         <button onClick={() => switchMode('register')} className="font-bold text-cyan-300 hover:text-cyan-200 transition-colors">
                           سجل مجاناً — 3 أيام تجريبية
+                        </button>
+                      </p>
+                    </motion.div>
+                  ) : mode === 'forgot' ? (
+                    <motion.div key="forgot" custom={dir} variants={formVariants} initial="enter" animate="center" exit="exit">
+                      <h2 className="mb-1 text-2xl font-extrabold leading-tight">استعادة كلمة المرور</h2>
+                      <p className="mb-5 text-sm leading-6 text-slate-300">
+                        أدخل الإيميل أو رقم الواتساب المرتبط بحسابك وسنرسل لك كود إعادة التعيين.
+                      </p>
+                      {!resetSent ? (
+                        <form onSubmit={handleResetRequest} className="space-y-4">
+                          <label className="block">
+                            <span className="mb-2 block text-sm font-bold text-slate-200">الإيميل أو رقم الواتساب</span>
+                            <input type="text" inputMode="email" placeholder="admin@oil.com أو 07xxxxxxxxx" value={resetId}
+                              onChange={(e) => setResetId(e.target.value)} required
+                              className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                          </label>
+                          {resetError && <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-200">{resetError}</p>}
+                          <LaunchButton launching={resetLoading} label={resetLoading ? 'جاري إرسال الكود...' : 'إرسال كود إعادة التعيين'} />
+                        </form>
+                      ) : (
+                        <form onSubmit={handleResetConfirm} className="space-y-4">
+                          <div className="rounded-lg border border-emerald-300/20 bg-emerald-300/10 px-4 py-3 text-sm font-bold leading-6 text-emerald-100">
+                            تم إرسال الكود. أدخله مع كلمة المرور الجديدة.
+                          </div>
+                          <label className="block">
+                            <span className="mb-2 block text-sm font-bold text-slate-200">كود إعادة التعيين</span>
+                            <input type="text" inputMode="numeric" maxLength={6} placeholder="000000" value={resetForm.code}
+                              onChange={(e) => setResetForm({ ...resetForm, code: e.target.value.replace(/\D/g, '') })} required
+                              className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-center font-mono text-2xl tracking-[0.45em] text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                          </label>
+                          <label className="block">
+                            <span className="mb-2 block text-sm font-bold text-slate-200">كلمة المرور الجديدة</span>
+                            <input type="password" placeholder="أدخل كلمة مرور قوية" value={resetForm.new_password}
+                              onChange={(e) => setResetForm({ ...resetForm, new_password: e.target.value })} required
+                              className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                          </label>
+                          <label className="block">
+                            <span className="mb-2 block text-sm font-bold text-slate-200">تأكيد كلمة المرور</span>
+                            <input type="password" placeholder="أعد إدخال كلمة المرور" value={resetForm.confirm_password}
+                              onChange={(e) => setResetForm({ ...resetForm, confirm_password: e.target.value })} required
+                              className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                          </label>
+                          {resetError && <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-200">{resetError}</p>}
+                          <LaunchButton launching={resetLoading} label={resetLoading ? 'جاري التغيير...' : 'تغيير كلمة المرور'} />
+                        </form>
+                      )}
+                      <p className="mt-4 text-center text-sm text-slate-400">
+                        تذكرت كلمة المرور؟{' '}
+                        <button onClick={() => switchMode('login')} className="font-bold text-cyan-300 hover:text-cyan-200 transition-colors">
+                          تسجيل الدخول
                         </button>
                       </p>
                     </motion.div>

@@ -13,3 +13,6 @@ export const login = (email, password) => client.post('/auth/login', { email: lo
 export const getMe = () => client.get('/auth/me')
 export const activate = (email, code, new_password) => client.post('/auth/activate', { email, code, new_password })
 export const register = (data) => client.post('/auth/register', data)
+export const requestPasswordReset = (identifier) => client.post('/auth/password-reset/request', { identifier })
+export const confirmPasswordReset = (identifier, code, new_password) =>
+  client.post('/auth/password-reset/confirm', { identifier, code, new_password })

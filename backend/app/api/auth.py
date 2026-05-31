@@ -21,6 +21,8 @@ from app.schemas.auth import LoginRequest, TokenResponse, UserOut
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 ACTIVATION_CODE_EXPIRE_MINUTES = 30
+PASSWORD_RESET_CODE_EXPIRE_MINUTES = 15
+MAX_PASSWORD_RESET_ATTEMPTS = 10
 
 
 class RegisterRequest(BaseModel):
@@ -37,6 +39,27 @@ class ActivateRequest(BaseModel):
     email: str | None = None
     code: str
     new_password: str
+
+
+class PasswordResetRequest(BaseModel):
+    identifier: str
+
+
+class PasswordResetConfirmRequest(BaseModel):
+    identifier: str
+    code: str
+    new_password: str
+
+
+def _normalize_login_identifier(identifier: str) -> str:
+    normalized = identifier.strip()
+    if "@" not in normalized:
+        return normalized + "@carecar.app"
+    return normalized
+
+
+def _generate_numeric_code() -> str:
+    return "".join(secrets.choice(string.digits) for _ in range(6))
 
 
 def _send_activation_whatsapp(phone: str, code: str, center_name: str) -> str:
@@ -132,11 +155,94 @@ def _send_activation_email(email: str, code: str, center_name: str) -> str:
         return "failed"
 
 
+def _send_password_reset_whatsapp(phone: str, code: str) -> str:
+    if not settings.PLATFORM_WASNDER_API_KEY or not settings.PLATFORM_WHATSAPP_NUMBER:
+        return "not_configured"
+    recipient = phone.strip()
+    if recipient.startswith("0"):
+        recipient = "+964" + recipient[1:]
+    message = "\n".join([
+        "طلب تغيير كلمة المرور في منصة Care Car",
+        f"كود إعادة التعيين الخاص بك: *{code}*",
+        f"الكود صالح لمدة {PASSWORD_RESET_CODE_EXPIRE_MINUTES} دقيقة فقط.",
+        "إذا لم تطلب تغيير كلمة المرور، تجاهل هذه الرسالة.",
+    ])
+    try:
+        resp = httpx.post(
+            settings.WASNDER_API_URL,
+            json={"to": recipient, "text": message},
+            headers={"Authorization": f"Bearer {settings.PLATFORM_WASNDER_API_KEY}"},
+            timeout=10,
+        )
+        return "sent" if resp.is_success else "failed"
+    except Exception:
+        return "failed"
+
+
+def _send_password_reset_email(email: str, code: str) -> str:
+    if not settings.SMTP_HOST or not settings.SMTP_USER or not settings.SMTP_PASSWORD:
+        return "not_configured"
+
+    message = EmailMessage()
+    message["Subject"] = "كود تغيير كلمة المرور في Care Car"
+    message["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM_EMAIL or settings.SMTP_USER}>"
+    message["To"] = email
+    message.set_content("\n".join([
+        "تم استلام طلب تغيير كلمة المرور لحسابك في Care Car.",
+        f"كود إعادة التعيين: {code}",
+        f"الكود صالح لمدة {PASSWORD_RESET_CODE_EXPIRE_MINUTES} دقيقة فقط.",
+        "إذا لم تطلب تغيير كلمة المرور، يمكنك تجاهل هذه الرسالة.",
+    ]))
+    message.add_alternative(f"""
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <body style="margin:0;background:#f4f7fb;font-family:Arial,Tahoma,sans-serif;color:#0f172a;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f7fb;padding:28px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border:1px solid #e2e8f0;border-radius:18px;overflow:hidden;box-shadow:0 18px 50px rgba(15,23,42,.08);">
+            <tr>
+              <td style="background:#07111f;padding:24px 28px;text-align:right;">
+                <div style="display:inline-block;background:#22d3ee;color:#07111f;border-radius:12px;padding:10px 13px;font-weight:900;font-size:18px;">CC</div>
+                <h1 style="margin:16px 0 4px;color:#ffffff;font-size:24px;line-height:1.5;">تغيير كلمة المرور</h1>
+                <p style="margin:0;color:#a5f3fc;font-size:13px;font-weight:700;">Care Car SaaS</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:28px;">
+                <p style="margin:0 0 18px;font-size:15px;line-height:1.9;color:#334155;">
+                  استخدم الكود التالي لتعيين كلمة مرور جديدة لحسابك.
+                </p>
+                <div style="margin:22px 0;padding:20px;border-radius:16px;background:#ecfeff;border:1px solid #a5f3fc;text-align:center;">
+                  <div style="font-size:13px;color:#0f766e;font-weight:800;margin-bottom:8px;">كود إعادة التعيين</div>
+                  <div style="direction:ltr;letter-spacing:10px;font-size:34px;font-weight:900;color:#07111f;font-family:'Courier New',monospace;">{code}</div>
+                </div>
+                <p style="margin:0;font-size:14px;line-height:1.8;color:#475569;">
+                  هذا الكود صالح لمدة <strong>{PASSWORD_RESET_CODE_EXPIRE_MINUTES} دقيقة فقط</strong>.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+""", subtype="html")
+
+    try:
+        with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as smtp:
+            smtp.starttls()
+            smtp.login(settings.SMTP_USER, settings.SMTP_PASSWORD)
+            smtp.send_message(message)
+        return "sent"
+    except Exception:
+        return "failed"
+
+
 @router.post("/login", response_model=TokenResponse)
 def login(body: LoginRequest, db: Session = Depends(get_db)):
-    identifier = body.email.strip()
-    if "@" not in identifier:
-        identifier = identifier + "@carecar.app"
+    identifier = _normalize_login_identifier(body.email)
     user = db.query(User).filter(User.email == identifier).first()
     if not user or not verify_password(body.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
@@ -251,7 +357,7 @@ def _register_with_activation_code(body: RegisterRequest, db: Session, center_na
     db.add(tenant)
     db.flush()
 
-    code = "".join(secrets.choice(string.digits) for _ in range(6))
+    code = _generate_numeric_code()
     manager = User(
         tenant_id=tenant.id,
         email=manager_email,
@@ -306,3 +412,71 @@ def activate(body: ActivateRequest, db: Session = Depends(get_db)):
     db.commit()
     token = create_access_token({"sub": str(user.id), "role": user.role, "tenant_id": user.tenant_id})
     return TokenResponse(access_token=token, role=user.role, tenant_id=user.tenant_id)
+
+
+@router.post("/password-reset/request")
+def request_password_reset(body: PasswordResetRequest, db: Session = Depends(get_db)):
+    identifier = body.identifier.strip()
+    if not identifier:
+        raise HTTPException(status_code=400, detail="الإيميل أو رقم الواتساب مطلوب")
+
+    user = db.query(User).filter(User.email == _normalize_login_identifier(identifier)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="لا يوجد حساب بهذه البيانات")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="الحساب غير نشط")
+
+    code = _generate_numeric_code()
+    user.activation_code = code
+    user.activation_expires_at = datetime.now(timezone.utc) + timedelta(minutes=PASSWORD_RESET_CODE_EXPIRE_MINUTES)
+    user.activation_attempts = 0
+
+    delivery_status = "failed"
+    if "@" in identifier and not user.email.endswith("@carecar.app"):
+        delivery_status = _send_password_reset_email(user.email, code)
+    else:
+        phone = identifier if "@" not in identifier else None
+        if not phone and user.tenant_id:
+            tenant = db.get(Tenant, user.tenant_id)
+            phone = tenant.whatsapp_number or tenant.contact_phone if tenant else None
+        if phone:
+            delivery_status = _send_password_reset_whatsapp(phone, code)
+        elif not user.email.endswith("@carecar.app"):
+            delivery_status = _send_password_reset_email(user.email, code)
+
+    if delivery_status != "sent":
+        db.rollback()
+        raise HTTPException(status_code=502, detail="تعذر إرسال كود إعادة التعيين، حاول لاحقاً أو استخدم طريقة أخرى")
+
+    db.commit()
+    return {"delivery_status": delivery_status}
+
+
+@router.post("/password-reset/confirm")
+def confirm_password_reset(body: PasswordResetConfirmRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == _normalize_login_identifier(body.identifier)).first()
+    if not user or not user.activation_code:
+        raise HTTPException(status_code=400, detail="لا يوجد كود إعادة تعيين لهذا الحساب")
+    if (user.activation_attempts or 0) >= MAX_PASSWORD_RESET_ATTEMPTS:
+        raise HTTPException(status_code=429, detail="تم تجاوز عدد المحاولات المسموح بها، تواصل مع الإدارة")
+    if not user.activation_expires_at:
+        raise HTTPException(status_code=400, detail="لا يوجد كود إعادة تعيين")
+
+    expires = user.activation_expires_at
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) > expires:
+        raise HTTPException(status_code=400, detail="انتهت صلاحية الكود، اطلب كوداً جديداً")
+    if user.activation_code != body.code:
+        user.activation_attempts = (user.activation_attempts or 0) + 1
+        db.commit()
+        remaining = MAX_PASSWORD_RESET_ATTEMPTS - user.activation_attempts
+        raise HTTPException(status_code=400, detail=f"كود إعادة التعيين غير صحيح ({remaining} محاولة متبقية)")
+
+    user.hashed_password = hash_password(body.new_password)
+    user.is_verified = True
+    user.activation_code = None
+    user.activation_expires_at = None
+    user.activation_attempts = 0
+    db.commit()
+    return {"message": "تم تغيير كلمة المرور بنجاح"}
