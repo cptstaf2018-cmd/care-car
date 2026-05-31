@@ -100,6 +100,53 @@ def _cv2_to_bytes(img, quality=95) -> bytes:
     return buf.tobytes()
 
 
+def estimate_vehicle_color(image_bytes: bytes, box: dict | None = None) -> str:
+    """Estimate a broad vehicle color from the image when MMC color is not available."""
+    img = _bytes_to_cv2(image_bytes)
+    if img is None:
+        return ''
+    try:
+        if box:
+            h, w = img.shape[:2]
+            x1 = max(0, min(w - 1, int(box.get('xmin', 0))))
+            y1 = max(0, min(h - 1, int(box.get('ymin', 0))))
+            x2 = max(x1 + 1, min(w, int(box.get('xmax', w))))
+            y2 = max(y1 + 1, min(h, int(box.get('ymax', h))))
+            img = img[y1:y2, x1:x2]
+
+        h, w = img.shape[:2]
+        if h < 20 or w < 20:
+            return ''
+        sample = img[int(h * 0.18):int(h * 0.78), int(w * 0.12):int(w * 0.88)]
+        hsv = cv2.cvtColor(sample, cv2.COLOR_BGR2HSV)
+        pixels = hsv.reshape(-1, 3)
+        pixels = pixels[pixels[:, 2] > 35]
+        if len(pixels) < 50:
+            return ''
+
+        hue = pixels[:, 0]
+        sat = pixels[:, 1]
+        val = pixels[:, 2]
+        if float(np.mean(val)) > 205 and float(np.mean(sat)) < 45:
+            return 'أبيض'
+        if float(np.mean(val)) < 70:
+            return 'أسود'
+        if float(np.mean(sat)) < 45:
+            return 'فضي'
+
+        counts = {
+            'أحمر': int(np.sum((hue < 10) | (hue > 165))),
+            'أصفر': int(np.sum((hue >= 18) & (hue <= 38))),
+            'أخضر': int(np.sum((hue >= 39) & (hue <= 85))),
+            'أزرق': int(np.sum((hue >= 86) & (hue <= 135))),
+            'بني': int(np.sum((hue >= 8) & (hue < 18) & (sat > 70))),
+        }
+        color, count = max(counts.items(), key=lambda item: item[1])
+        return color if count / max(len(pixels), 1) > 0.12 else ''
+    except Exception:
+        return ''
+
+
 def detect_plate_crop(image_bytes: bytes):
     """Detect and crop plate region. Returns bytes or None."""
     img = _bytes_to_cv2(image_bytes)

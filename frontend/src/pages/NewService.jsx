@@ -214,9 +214,9 @@ export default function NewService() {
     setScanError('')
     try {
       const res = await readPlate(file)
-      const { plate_number: plate, car_type, car_color, message } = res.data
+      const { plate_number: plate, car_type, car_color, confidence, candidates = [], message } = res.data
       if (plate) {
-        setScanResult({ plate, car_type, car_color })
+        setScanResult({ plate, car_type, car_color, confidence, candidates })
         setSearch(plate)
         setNewCarForm({ plate_number: plate, car_type: car_type || '', car_color: car_color || '', owner_name: '', phone: '' })
         stopCamera()
@@ -245,9 +245,9 @@ export default function NewService() {
       try {
         const file = new File([blob], 'plate.jpg', { type: 'image/jpeg' })
         const res = await readPlate(file)
-        const { plate_number: plate, car_type, car_color, message } = res.data
+        const { plate_number: plate, car_type, car_color, confidence, candidates = [], message } = res.data
         if (plate) {
-          setScanResult({ plate, car_type, car_color })
+          setScanResult({ plate, car_type, car_color, confidence, candidates })
           setSearch(plate)
           setNewCarForm({ plate_number: plate, car_type: car_type || '', car_color: car_color || '', owner_name: '', phone: '' })
           stopCamera()
@@ -347,11 +347,31 @@ export default function NewService() {
             <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 space-y-1">
               <p className="text-xs font-bold text-emerald-600">✓ تم قراءة اللوحة</p>
               <p className="font-mono text-lg font-black text-emerald-800">{scanResult.plate}</p>
+              {scanResult.confidence > 0 && scanResult.confidence < 0.82 && (
+                <p className="text-xs font-bold text-amber-700">تأكد من الرقم قبل الحفظ — جودة القراءة متوسطة</p>
+              )}
               {scanResult.car_type && (
                 <p className="text-xs font-bold text-slate-600">النوع: {scanResult.car_type}</p>
               )}
               {scanResult.car_color && (
-                <p className="text-xs font-bold text-slate-600">اللون: {scanResult.car_color}</p>
+                <p className="text-xs font-bold text-slate-600">اللون التقريبي: {scanResult.car_color}</p>
+              )}
+              {scanResult.candidates?.filter(p => p !== scanResult.plate).length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {scanResult.candidates.filter(p => p !== scanResult.plate).map(candidate => (
+                    <button
+                      key={candidate}
+                      onClick={() => {
+                        setSearch(candidate)
+                        setScanResult(prev => ({ ...prev, plate: candidate }))
+                        setNewCarForm(prev => ({ ...prev, plate_number: candidate }))
+                      }}
+                      className="rounded-md border border-emerald-200 bg-white px-2 py-1 text-xs font-black text-emerald-700"
+                    >
+                      {candidate}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
           )}

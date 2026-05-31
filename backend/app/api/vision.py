@@ -1,4 +1,5 @@
 import logging
+import json
 import requests as http_requests
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
@@ -6,7 +7,7 @@ from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.user import User, Role
 from app.models.tenant import Tenant
-from app.services.vision_service import read_plate_from_image, read_text_from_image, parse_receipt_text, extract_car_brand
+from app.services.vision_service import read_plate_from_image, read_text_from_image, parse_receipt_text, extract_car_brand, estimate_vehicle_color
 
 router = APIRouter(prefix="/vision", tags=["vision"])
 logger = logging.getLogger(__name__)
@@ -24,13 +25,27 @@ COLOR_AR = {
     "unknown": "",
 }
 
+TYPE_AR = {
+    "Big Truck": "شاحنة",
+    "Bus": "باص",
+    "Motorcycle": "دراجة",
+    "Pickup Truck": "بيك أب",
+    "Sedan": "سيدان",
+    "SUV": "SUV",
+    "Van": "فان",
+    "Unknown": "",
+}
 
-def _plate_recognizer(image_bytes: bytes, token: str) -> tuple[str, str, str]:
-    """Call Plate Recognizer API. Returns (plate, car_type, car_color)."""
+
+def _plate_recognizer(image_bytes: bytes, token: str) -> dict:
+    """Call Plate Recognizer API and include confidence/candidates for review."""
     try:
         resp = http_requests.post(
             'https://api.platerecognizer.com/v1/plate-reader/',
-            data={'mmc': 'true'},
+            data={
+                'mmc': 'true',
+                'config': json.dumps({'threshold_d': 0.15, 'threshold_o': 0.35}),
+            },
             files={'upload': ('plate.jpg', image_bytes, 'image/jpeg')},
             headers={'Authorization': f'Token {token}'},
             timeout=15,
@@ -41,11 +56,11 @@ def _plate_recognizer(image_bytes: bytes, token: str) -> tuple[str, str, str]:
                 resp.status_code,
                 resp.text[:300],
             )
-            return '', '', ''
+            return {}
         results = resp.json().get('results', [])
         if not results:
             logger.info("plate recognizer returned no plate")
-            return '', '', ''
+            return {}
         r = results[0]
         plate = r.get('plate', '').upper()
         make_model = (r.get('model_make') or [{}])[0]
@@ -53,14 +68,28 @@ def _plate_recognizer(image_bytes: bytes, token: str) -> tuple[str, str, str]:
         model = make_model.get('model', '')
         vehicle_type = (r.get('vehicle') or {}).get('type', '')
         color_raw = ((r.get('color') or [{}])[0].get('color') or '').lower()
-        color = COLOR_AR.get(color_raw, color_raw)
+        color = COLOR_AR.get(color_raw, color_raw) or estimate_vehicle_color(
+            image_bytes,
+            (r.get('vehicle') or {}).get('box'),
+        )
         car_type = f"{make} {model}".strip()
         if not car_type and vehicle_type and vehicle_type.lower() != 'unknown':
-            car_type = vehicle_type
-        return plate, car_type, color
+            car_type = TYPE_AR.get(vehicle_type, vehicle_type)
+        candidates = []
+        for item in r.get('candidates') or []:
+            candidate_plate = (item.get('plate') or '').upper()
+            if candidate_plate and candidate_plate not in candidates:
+                candidates.append(candidate_plate)
+        return {
+            "plate": plate,
+            "car_type": car_type,
+            "car_color": color,
+            "score": float(r.get('score') or 0),
+            "candidates": candidates[:4],
+        }
     except Exception:
         logger.exception("plate recognizer request failed")
-        return '', '', ''
+        return {}
 
 
 @router.post("/read-plate")
@@ -81,25 +110,40 @@ async def read_plate(
     pr_token = getattr(tenant, 'plate_recognizer_token', None) if tenant else None
 
     plate, car_type, car_color = '', '', ''
+    confidence = 0
+    candidates = []
 
     if pr_token:
         # Use Plate Recognizer API (most accurate)
-        plate, car_type, car_color = _plate_recognizer(contents, pr_token)
+        pr_result = _plate_recognizer(contents, pr_token)
+        plate = pr_result.get("plate", "")
+        car_type = pr_result.get("car_type", "")
+        car_color = pr_result.get("car_color", "")
+        confidence = pr_result.get("score", 0)
+        candidates = pr_result.get("candidates", [])
 
-    if not plate:
+    if not plate or confidence < 0.72:
         # Fallback: local OCR / Google Vision if configured.
         try:
             full_text = read_text_from_image(contents)
-            plate = read_plate_from_image(contents)
+            local_plate = read_plate_from_image(contents)
+            if local_plate and (not plate or confidence < 0.68):
+                plate = local_plate
+            if local_plate and local_plate not in candidates:
+                candidates.insert(0, local_plate)
             car_type = car_type or (extract_car_brand(full_text) if full_text else '')
+            car_color = car_color or estimate_vehicle_color(contents)
         except Exception:
             logger.exception("plate read failed tenant_id=%s user_id=%s", user.tenant_id, user.id)
-            plate = ''
+            if not plate:
+                plate = ''
 
     return {
         "plate_number": plate or "",
         "car_type": car_type or "",
         "car_color": car_color or "",
+        "confidence": confidence,
+        "candidates": candidates[:4],
         "message": "" if plate else PLATE_NOT_READ_MESSAGE,
     }
 

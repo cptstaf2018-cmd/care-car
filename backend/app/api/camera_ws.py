@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import json
 import logging
 import time
 import cv2
@@ -11,7 +12,7 @@ from app.core.security import decode_token
 from app.models.tenant import Tenant
 from app.models.car import Car
 from app.models.user import Role
-from app.services.vision_service import detect_plate_crop, _enhance_plate, _paddle_read_bytes, _extract_plate, _bytes_to_cv2, _cv2_to_bytes
+from app.services.vision_service import detect_plate_crop, _enhance_plate, _paddle_read_bytes, _extract_plate, _bytes_to_cv2, _cv2_to_bytes, estimate_vehicle_color
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -52,6 +53,17 @@ COLOR_AR = {
     "unknown": "",
 }
 
+TYPE_AR = {
+    "Big Truck": "شاحنة",
+    "Bus": "باص",
+    "Motorcycle": "دراجة",
+    "Pickup Truck": "بيك أب",
+    "Sedan": "سيدان",
+    "SUV": "SUV",
+    "Van": "فان",
+    "Unknown": "",
+}
+
 
 def _plate_recognizer_sync(image_bytes: bytes, token: str) -> dict:
     """Call Plate Recognizer API synchronously."""
@@ -59,7 +71,10 @@ def _plate_recognizer_sync(image_bytes: bytes, token: str) -> dict:
         import requests
         resp = requests.post(
             'https://api.platerecognizer.com/v1/plate-reader/',
-            data={'mmc': 'true'},
+            data={
+                'mmc': 'true',
+                'config': json.dumps({'threshold_d': 0.15, 'threshold_o': 0.35}),
+            },
             files={'upload': ('plate.jpg', image_bytes, 'image/jpeg')},
             headers={'Authorization': f'Token {token}'},
             timeout=10,
@@ -75,11 +90,14 @@ def _plate_recognizer_sync(image_bytes: bytes, token: str) -> dict:
                 color_raw = ((r.get('color') or [{}])[0].get('color') or '').lower()
                 car_type = f"{make} {model}".strip()
                 if not car_type and vehicle_type and vehicle_type.lower() != 'unknown':
-                    car_type = vehicle_type
+                    car_type = TYPE_AR.get(vehicle_type, vehicle_type)
                 return {
                     "plate": r.get('plate', '').upper(),
                     "car_type": car_type,
-                    "car_color": COLOR_AR.get(color_raw, color_raw),
+                    "car_color": COLOR_AR.get(color_raw, color_raw) or estimate_vehicle_color(
+                        image_bytes,
+                        (r.get('vehicle') or {}).get('box'),
+                    ),
                 }
     except Exception:
         pass
