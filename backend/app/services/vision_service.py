@@ -6,10 +6,15 @@ try:
 except ImportError:
     NUMPY_AVAILABLE = False
 
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except Exception:
+    CV2_AVAILABLE = False
+
 # ── Specialized License Plate Detection Model ─────────────────────────────────
 try:
     from ultralytics import YOLO
-    import cv2
     # Try specialized plate model first
     _plate_detector = None
     _car_detector = None
@@ -82,11 +87,15 @@ def extract_car_brand(text: str) -> str:
 
 
 def _bytes_to_cv2(image_bytes: bytes):
+    if not NUMPY_AVAILABLE or not CV2_AVAILABLE:
+        return None
     arr = np.frombuffer(image_bytes, dtype=np.uint8)
     return cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
 
 def _cv2_to_bytes(img, quality=95) -> bytes:
+    if not CV2_AVAILABLE:
+        return b""
     _, buf = cv2.imencode('.jpg', img, [cv2.IMWRITE_JPEG_QUALITY, quality])
     return buf.tobytes()
 
@@ -148,6 +157,8 @@ def detect_plate_crop(image_bytes: bytes):
 
 def _enhance_plate(crop_bytes: bytes) -> bytes:
     """Enhance plate image for better OCR."""
+    if not NUMPY_AVAILABLE or not CV2_AVAILABLE:
+        return crop_bytes
     try:
         arr = np.frombuffer(crop_bytes, dtype=np.uint8)
         img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
@@ -168,6 +179,8 @@ def _enhance_plate(crop_bytes: bytes) -> bytes:
 
 
 def _paddle_read_bytes(image_bytes: bytes) -> str:
+    if not NUMPY_AVAILABLE or not CV2_AVAILABLE:
+        return ''
     paddle = _get_paddle()
     if not paddle:
         return ''

@@ -88,6 +88,7 @@ export default function NewService() {
   const [cameraActive, setCameraActive] = useState(false)
   const [scanning, setScanning] = useState(false)
   const [scanResult, setScanResult] = useState(null)
+  const [scanError, setScanError] = useState('')
 
   const { data: cars = [] } = useQuery({
     queryKey: ['cars', search],
@@ -185,19 +186,21 @@ export default function NewService() {
     if (!file) return
     e.target.value = ''
     setScanning(true)
+    setScanError('')
     try {
       const res = await readPlate(file)
-      const { plate_number: plate, car_type, car_color } = res.data
-      setScanResult({ plate, car_type, car_color })
+      const { plate_number: plate, car_type, car_color, message } = res.data
       if (plate) {
+        setScanResult({ plate, car_type, car_color })
         setSearch(plate)
         setNewCarForm({ plate_number: plate, car_type: car_type || '', car_color: car_color || '', owner_name: '', phone: '' })
         stopCamera()
       } else {
-        alert('لم يتم التعرف على رقم اللوحة. حاول مجدداً.')
+        setScanResult(null)
+        setScanError(message || 'لم يتم التعرف على رقم اللوحة. حاول بصورة أوضح أو اكتب الرقم يدوياً.')
       }
-    } catch {
-      alert('حدث خطأ أثناء القراءة.')
+    } catch (err) {
+      setScanError(err.response?.data?.detail || 'تعذر قراءة اللوحة الآن. يمكنك إدخال رقم اللوحة يدوياً ومتابعة الخدمة.')
     } finally {
       setScanning(false)
     }
@@ -213,20 +216,22 @@ export default function NewService() {
     canvas.toBlob(async (blob) => {
       if (!blob) return
       setScanning(true)
+      setScanError('')
       try {
         const file = new File([blob], 'plate.jpg', { type: 'image/jpeg' })
         const res = await readPlate(file)
-        const { plate_number: plate, car_type, car_color } = res.data
-        setScanResult({ plate, car_type, car_color })
+        const { plate_number: plate, car_type, car_color, message } = res.data
         if (plate) {
+          setScanResult({ plate, car_type, car_color })
           setSearch(plate)
           setNewCarForm({ plate_number: plate, car_type: car_type || '', car_color: car_color || '', owner_name: '', phone: '' })
           stopCamera()
         } else {
-          alert('لم يتم التعرف على رقم اللوحة. حاول مجدداً أو ابحث يدوياً.')
+          setScanResult(null)
+          setScanError(message || 'لم يتم التعرف على رقم اللوحة. حاول مجدداً أو ابحث يدوياً.')
         }
-      } catch {
-        alert('حدث خطأ أثناء القراءة. تأكد من إعداد GOOGLE_VISION_API_KEY في البيئة.')
+      } catch (err) {
+        setScanError(err.response?.data?.detail || 'تعذر قراءة اللوحة الآن. يمكنك إدخال رقم اللوحة يدوياً ومتابعة الخدمة.')
       } finally {
         setScanning(false)
       }
@@ -319,6 +324,12 @@ export default function NewService() {
               {scanResult.car_color && (
                 <p className="text-xs font-bold text-slate-600">اللون: {scanResult.car_color}</p>
               )}
+            </div>
+          )}
+
+          {scanError && (
+            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-800">
+              {scanError}
             </div>
           )}
 

@@ -1,3 +1,4 @@
+import logging
 import requests as http_requests
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
@@ -8,6 +9,7 @@ from app.models.tenant import Tenant
 from app.services.vision_service import read_plate_from_image, read_text_from_image, parse_receipt_text, extract_car_brand
 
 router = APIRouter(prefix="/vision", tags=["vision"])
+logger = logging.getLogger(__name__)
 
 
 def _plate_recognizer(image_bytes: bytes, token: str) -> tuple[str, str, str]:
@@ -61,15 +63,20 @@ async def read_plate(
         plate, car_type, car_color = _plate_recognizer(contents, pr_token)
 
     if not plate:
-        # Fallback: local YOLOv8 + PaddleOCR
-        full_text = read_text_from_image(contents)
-        plate = read_plate_from_image(contents)
-        car_type = car_type or (extract_car_brand(full_text) if full_text else '')
+        # Fallback: local OCR / Google Vision if configured.
+        try:
+            full_text = read_text_from_image(contents)
+            plate = read_plate_from_image(contents)
+            car_type = car_type or (extract_car_brand(full_text) if full_text else '')
+        except Exception:
+            logger.exception("plate read failed tenant_id=%s user_id=%s", user.tenant_id, user.id)
+            plate = ''
 
     return {
         "plate_number": plate or "",
         "car_type": car_type or "",
         "car_color": car_color or "",
+        "message": "" if plate else "لم يتم التعرف على رقم اللوحة. جرّب صورة أوضح أو اربط Plate Recognizer من إعدادات السوبر أدمن.",
     }
 
 
