@@ -69,7 +69,7 @@ def _get_fast_alpr():
         try:
             _fast_alpr = ALPR(
                 detector_model='yolo-v9-t-384-license-plate-end2end',
-                ocr_model='cct-xs-v1-global-model',
+                ocr_model='cct-xs-v2-global-model',
             )
         except Exception:
             return None
