@@ -11,18 +11,98 @@ import { readPlate } from '../api/vision'
 
 const OIL_GRADES = ['15W40', '10W30', '5W30', '5W20', '0W20']
 const SERVICE_TYPES = [
-  { label: 'تبديل زيت', icon: Droplets },
-  { label: 'فلتر زيت', icon: CircleDot },
-  { label: 'فلتر هواء', icon: Fan },
-  { label: 'فلتر مكيف', icon: SprayCan },
-  { label: 'تبديل ماء رديتر', icon: Droplets },
-  { label: 'فحص بطارية', icon: BatteryCharging },
-  { label: 'تبديل بواجي', icon: Sparkles },
-  { label: 'تعبئة نيتروجين', icon: GaugeCircle },
-  { label: 'غسيل', icon: ShowerHead },
-  { label: 'ميزان', icon: Gauge },
-  { label: 'ترصيص', icon: Wrench },
+  { label: 'تبديل زيت', icon: Droplets, tone: 'cyan', hint: 'الأكثر طلباً' },
+  { label: 'فلتر زيت', icon: CircleDot, tone: 'amber', hint: 'فلترة المحرك' },
+  { label: 'فلتر هواء', icon: Fan, tone: 'sky', hint: 'تنفس أنظف' },
+  { label: 'فلتر مكيف', icon: SprayCan, tone: 'violet', hint: 'هواء المقصورة' },
+  { label: 'تبديل ماء رديتر', icon: Droplets, tone: 'blue', hint: 'تبريد المحرك' },
+  { label: 'فحص بطارية', icon: BatteryCharging, tone: 'emerald', hint: 'فولتية وشحن' },
+  { label: 'تبديل بواجي', icon: Sparkles, tone: 'fuchsia', hint: 'تشغيل أنعم' },
+  { label: 'تعبئة نيتروجين', icon: GaugeCircle, tone: 'teal', hint: 'ضغط مستقر' },
+  { label: 'غسيل', icon: ShowerHead, tone: 'indigo', hint: 'تنظيف سريع' },
+  { label: 'ميزان', icon: Gauge, tone: 'rose', hint: 'ثبات الطريق' },
+  { label: 'ترصيص', icon: Wrench, tone: 'slate', hint: 'اهتزاز أقل' },
 ]
+
+const SERVICE_TONES = {
+  amber: {
+    icon: 'bg-gradient-to-br from-amber-50 via-orange-100 to-amber-200 text-orange-600 ring-orange-200 shadow-orange-200/70',
+    card: 'from-orange-50/80 via-white to-white border-orange-200 hover:border-orange-300',
+    active: 'border-orange-300 bg-gradient-to-l from-orange-50 via-white to-white text-slate-950 shadow-orange-100/80',
+    check: 'bg-orange-500 text-white shadow-orange-200',
+    oil: 'from-orange-50 via-white to-white border-orange-200 text-orange-700 shadow-orange-100/80',
+  },
+  blue: {
+    icon: 'bg-gradient-to-br from-sky-50 via-blue-100 to-blue-200 text-blue-600 ring-blue-200 shadow-blue-200/70',
+    card: 'from-blue-50/80 via-white to-white border-blue-200 hover:border-blue-300',
+    active: 'border-blue-300 bg-gradient-to-l from-blue-50 via-white to-white text-slate-950 shadow-blue-100/80',
+    check: 'bg-blue-500 text-white shadow-blue-200',
+    oil: 'from-blue-50 via-white to-white border-blue-200 text-blue-700 shadow-blue-100/80',
+  },
+  cyan: {
+    icon: 'bg-gradient-to-br from-cyan-50 via-sky-100 to-cyan-200 text-cyan-600 ring-cyan-200 shadow-cyan-200/70',
+    card: 'from-cyan-50/80 via-white to-white border-cyan-200 hover:border-cyan-300',
+    active: 'border-cyan-400 bg-gradient-to-l from-cyan-50 via-white to-white text-slate-950 shadow-cyan-100/90',
+    check: 'bg-blue-500 text-white shadow-blue-200',
+    oil: 'from-cyan-50 via-white to-white border-cyan-300 text-cyan-700 shadow-cyan-100/80',
+  },
+  emerald: {
+    icon: 'bg-gradient-to-br from-emerald-50 via-teal-100 to-emerald-200 text-emerald-600 ring-emerald-200 shadow-emerald-200/70',
+    card: 'from-emerald-50/80 via-white to-white border-emerald-200 hover:border-emerald-300',
+    active: 'border-emerald-300 bg-gradient-to-l from-emerald-50 via-white to-white text-slate-950 shadow-emerald-100/80',
+    check: 'bg-emerald-500 text-white shadow-emerald-200',
+    oil: 'from-emerald-50 via-white to-white border-emerald-200 text-emerald-700 shadow-emerald-100/80',
+  },
+  fuchsia: {
+    icon: 'bg-gradient-to-br from-fuchsia-50 via-purple-100 to-fuchsia-200 text-fuchsia-600 ring-fuchsia-200 shadow-fuchsia-200/70',
+    card: 'from-fuchsia-50/80 via-white to-white border-fuchsia-200 hover:border-fuchsia-300',
+    active: 'border-fuchsia-300 bg-gradient-to-l from-fuchsia-50 via-white to-white text-slate-950 shadow-fuchsia-100/80',
+    check: 'bg-fuchsia-500 text-white shadow-fuchsia-200',
+    oil: 'from-fuchsia-50 via-white to-white border-fuchsia-200 text-fuchsia-700 shadow-fuchsia-100/80',
+  },
+  indigo: {
+    icon: 'bg-gradient-to-br from-indigo-50 via-blue-100 to-indigo-200 text-indigo-600 ring-indigo-200 shadow-indigo-200/70',
+    card: 'from-blue-50/80 via-white to-white border-blue-200 hover:border-blue-300',
+    active: 'border-blue-300 bg-gradient-to-l from-blue-50 via-white to-white text-slate-950 shadow-blue-100/80',
+    check: 'bg-blue-500 text-white shadow-blue-200',
+    oil: 'from-indigo-50 via-white to-white border-indigo-200 text-indigo-700 shadow-indigo-100/80',
+  },
+  rose: {
+    icon: 'bg-gradient-to-br from-rose-50 via-pink-100 to-rose-200 text-rose-600 ring-rose-200 shadow-rose-200/70',
+    card: 'from-rose-50/80 via-white to-white border-rose-200 hover:border-rose-300',
+    active: 'border-rose-300 bg-gradient-to-l from-rose-50 via-white to-white text-slate-950 shadow-rose-100/80',
+    check: 'bg-rose-500 text-white shadow-rose-200',
+    oil: 'from-rose-50 via-white to-white border-rose-200 text-rose-700 shadow-rose-100/80',
+  },
+  sky: {
+    icon: 'bg-gradient-to-br from-sky-50 via-cyan-100 to-sky-200 text-sky-600 ring-sky-200 shadow-sky-200/70',
+    card: 'from-sky-50/80 via-white to-white border-sky-200 hover:border-sky-300',
+    active: 'border-sky-300 bg-gradient-to-l from-sky-50 via-white to-white text-slate-950 shadow-sky-100/80',
+    check: 'bg-sky-500 text-white shadow-sky-200',
+    oil: 'from-sky-50 via-white to-white border-sky-200 text-sky-700 shadow-sky-100/80',
+  },
+  slate: {
+    icon: 'bg-gradient-to-br from-slate-50 via-slate-100 to-slate-200 text-slate-700 ring-slate-200 shadow-slate-200/70',
+    card: 'from-slate-50/80 via-white to-white border-slate-200 hover:border-slate-300',
+    active: 'border-slate-300 bg-gradient-to-l from-slate-100 via-white to-white text-slate-950 shadow-slate-100/80',
+    check: 'bg-slate-700 text-white shadow-slate-200',
+    oil: 'from-slate-50 via-white to-white border-slate-200 text-slate-700 shadow-slate-100/80',
+  },
+  teal: {
+    icon: 'bg-gradient-to-br from-teal-50 via-emerald-100 to-teal-200 text-teal-600 ring-teal-200 shadow-teal-200/70',
+    card: 'from-teal-50/80 via-white to-white border-teal-200 hover:border-teal-300',
+    active: 'border-teal-300 bg-gradient-to-l from-teal-50 via-white to-white text-slate-950 shadow-teal-100/80',
+    check: 'bg-teal-500 text-white shadow-teal-200',
+    oil: 'from-teal-50 via-white to-white border-teal-200 text-teal-700 shadow-teal-100/80',
+  },
+  violet: {
+    icon: 'bg-gradient-to-br from-violet-50 via-purple-100 to-violet-200 text-violet-600 ring-violet-200 shadow-violet-200/70',
+    card: 'from-violet-50/80 via-white to-white border-violet-200 hover:border-violet-300',
+    active: 'border-violet-300 bg-gradient-to-l from-violet-50 via-white to-white text-slate-950 shadow-violet-100/80',
+    check: 'bg-violet-500 text-white shadow-violet-200',
+    oil: 'from-violet-50 via-white to-white border-violet-200 text-violet-700 shadow-violet-100/80',
+  },
+}
 
 export default function NewService() {
   const navigate = useNavigate()
@@ -563,31 +643,105 @@ export default function NewService() {
 }
 
 function ServiceTypePicker({ serviceType, setServiceType, oilGrade, setOilGrade }) {
+  const selectedService = SERVICE_TYPES.find(item => item.label === serviceType) || SERVICE_TYPES[0]
+  const SelectedIcon = selectedService.icon
+  const selectedTone = SERVICE_TONES[selectedService.tone] || SERVICE_TONES.cyan
+
   return (
-    <div className="surface rounded-lg p-5">
-      <div className="mb-3 flex items-center gap-2">
-        <Car size={18} className="text-cyan-700" />
-        <h3 className="font-black text-slate-950">نوع الخدمة</h3>
+    <div className="surface overflow-hidden rounded-lg">
+      <div className="flex flex-col gap-4 border-b border-slate-100 bg-gradient-to-l from-slate-50 via-white to-white p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ring-1 shadow-lg ${selectedTone.icon}`}>
+            <SelectedIcon size={25} strokeWidth={2.6} />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <Car size={17} className="text-cyan-700" />
+              <h3 className="font-black text-slate-950">نوع الخدمة</h3>
+            </div>
+            <p className="mt-1 text-sm font-bold text-slate-500">{selectedService.label} · {selectedService.hint}</p>
+          </div>
+        </div>
+        <div className="flex h-10 items-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 shadow-sm">
+          {serviceType === 'تبديل زيت' ? oilGrade : 'خدمة مباشرة'}
+        </div>
       </div>
-      <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
-        {SERVICE_TYPES.map(({ label, icon: Icon }) => (
-          <button key={label} onClick={() => setServiceType(label)}
-            className={`flex min-h-[76px] flex-col items-center justify-center gap-2 rounded-lg border px-3 py-3 text-sm font-black transition ${serviceType === label ? 'border-cyan-400 bg-cyan-50 text-cyan-800 shadow-sm' : 'border-slate-200 bg-white text-slate-700 hover:border-cyan-200 hover:bg-cyan-50/50'}`}>
-            <Icon size={18} />
-            {label}
-          </button>
-        ))}
+      <div className="p-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+          {SERVICE_TYPES.map(({ label, icon: Icon, hint, tone }) => {
+            const isActive = serviceType === label
+            const toneClasses = SERVICE_TONES[tone] || SERVICE_TONES.cyan
+
+            return (
+              <motion.button
+                key={label}
+                type="button"
+                onClick={() => setServiceType(label)}
+                whileTap={{ scale: 0.98 }}
+                className={`group relative min-h-[86px] overflow-hidden rounded-lg border bg-gradient-to-l px-4 py-3 text-right transition duration-200 focus:outline-none focus:ring-4 focus:ring-cyan-100 ${
+                  isActive
+                    ? `${toneClasses.active} shadow-lg`
+                    : `${toneClasses.card} text-slate-700 shadow-sm hover:-translate-y-0.5 hover:shadow-md`
+                }`}
+              >
+                <span className="flex h-full items-center justify-between gap-3">
+                  <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ring-1 shadow-lg transition ${toneClasses.icon}`}>
+                    <Icon size={28} strokeWidth={2.65} />
+                  </span>
+                  {isActive && (
+                    <span className={`absolute left-3 top-3 flex h-7 w-7 items-center justify-center rounded-full shadow-md ${toneClasses.check}`}>
+                      <CheckCircle2 size={18} strokeWidth={3} />
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1 pr-1">
+                    <span className="block text-base font-black leading-6 text-slate-950">{label}</span>
+                    <span className="mt-1 block text-xs font-bold leading-5 text-slate-500">{hint}</span>
+                  </span>
+                </span>
+              </motion.button>
+            )
+          })}
+        </div>
       </div>
       {serviceType === 'تبديل زيت' && (
-        <div className="mt-4">
-          <p className="mb-2 text-sm font-black text-slate-700">نوع الزيت</p>
-          <div className="grid grid-cols-5 gap-2">
-            {OIL_GRADES.map(t => (
-              <button key={t} onClick={() => setOilGrade(t)}
-                className={`rounded-lg border px-3 py-4 text-sm font-black ${oilGrade === t ? 'border-cyan-400 bg-cyan-50 text-cyan-700' : 'border-slate-200 bg-white text-slate-700'}`}>
-                {t}
-              </button>
-            ))}
+        <div className="border-t border-slate-100 bg-slate-50/70 p-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <p className="flex items-center gap-2 text-sm font-black text-slate-800">
+              <Droplets size={19} className="text-blue-500" />
+              نوع الزيت
+            </p>
+            <p className="text-xs font-bold text-slate-500">درجة اللزوجة</p>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+            {OIL_GRADES.map((t, index) => {
+              const oilTone = [
+                SERVICE_TONES.cyan,
+                SERVICE_TONES.amber,
+                SERVICE_TONES.fuchsia,
+                SERVICE_TONES.emerald,
+                SERVICE_TONES.amber,
+              ][index]
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setOilGrade(t)}
+                  className={`relative flex min-h-[54px] items-center justify-between gap-2 rounded-lg border bg-gradient-to-l px-3 py-2 text-sm font-black transition focus:outline-none focus:ring-4 focus:ring-cyan-100 ${
+                    oilGrade === t
+                      ? `${oilTone.oil} shadow-lg`
+                      : 'border-slate-200 bg-white text-slate-700 shadow-sm hover:border-cyan-200 hover:bg-cyan-50'
+                  }`}
+                >
+                  <span className={`flex h-8 w-8 items-center justify-center rounded-full ring-1 shadow-md ${oilTone.icon}`}>
+                    <Droplets size={19} strokeWidth={2.7} />
+                  </span>
+                  <span className="text-slate-950">{t}</span>
+                  {oilGrade === t && (
+                    <CheckCircle2 size={20} className="text-blue-500" strokeWidth={3} />
+                  )}
+                </button>
+              )
+            })}
           </div>
         </div>
       )}
