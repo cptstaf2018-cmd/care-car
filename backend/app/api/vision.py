@@ -167,31 +167,6 @@ async def read_plate(
     }
 
 
-@router.post("/analyze-car")
-async def analyze_car(
-    file: UploadFile = File(...),
-    user: User = Depends(get_current_user),
-):
-    if user.role == Role.superadmin:
-        raise HTTPException(403, detail="Superadmin cannot use vision endpoint")
-
-    contents = await file.read()
-    if len(contents) > 8 * 1024 * 1024:
-        raise HTTPException(400, detail="Image too large (max 8 MB)")
-
-    full_text = read_text_from_image(contents)
-    brand = extract_car_brand(full_text)
-    color = estimate_vehicle_color(contents)
-
-    return {
-        "car_type": brand or "",
-        "car_color": color or "",
-        "brand": brand or "",
-        "raw_text": full_text or "",
-        "message": "" if (brand or color) else "لم نتمكن من تحليل السيارة من الصورة. جرّب صورة أمامية أوضح للسيارة.",
-    }
-
-
 @router.post("/parse-receipt")
 async def parse_receipt(
     file: UploadFile = File(...),

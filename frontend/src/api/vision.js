@@ -15,11 +15,3 @@ export const parseReceipt = (file) => {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
 }
-
-export const analyzeCar = (file) => {
-  const form = new FormData()
-  form.append('file', file)
-  return client.post('/vision/analyze-car', form, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  })
-}
