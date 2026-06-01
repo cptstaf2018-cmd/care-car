@@ -23,7 +23,6 @@ class Tenant(Base, TimestampMixin):
     ip_camera_password = Column(String(200))
     wasnder_api_key = Column(String(300))
     whatsapp_number = Column(String(30))
-    plate_recognizer_token = Column(String(200), nullable=True)
     reminder_days = Column(Integer, default=30, nullable=False)
     reminder_message_template = Column(String(1000))
     trial_ends_at = Column(DateTime, nullable=True)

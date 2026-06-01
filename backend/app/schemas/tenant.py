@@ -15,7 +15,6 @@ class TenantCreate(BaseModel):
     ip_camera_password: str | None = None
     wasnder_api_key: str | None = None
     whatsapp_number: str | None = None
-    plate_recognizer_token: str | None = None
     reminder_days: int = 30
     reminder_message_template: str | None = None
     subscription_request_plan: str | None = None
@@ -35,7 +34,6 @@ class TenantUpdate(BaseModel):
     ip_camera_password: str | None = None
     wasnder_api_key: str | None = None
     whatsapp_number: str | None = None
-    plate_recognizer_token: str | None = None
     reminder_days: int | None = None
     reminder_message_template: str | None = None
     subscription_request_plan: str | None = None
@@ -56,7 +54,6 @@ class TenantOut(BaseModel):
     ip_camera_username: str | None
     whatsapp_number: str | None
     has_wasnder_api_key: bool = False
-    has_plate_recognizer_token: bool = False
     reminder_days: int
     reminder_message_template: str | None
     trial_ends_at: datetime | None

@@ -12,6 +12,15 @@ try:
 except Exception:
     CV2_AVAILABLE = False
 
+# ── FastALPR optional plate engine ────────────────────────────────────────────
+try:
+    from fast_alpr import ALPR
+    FAST_ALPR_AVAILABLE = True
+    _fast_alpr = None
+except Exception:
+    FAST_ALPR_AVAILABLE = False
+    _fast_alpr = None
+
 # ── Specialized License Plate Detection Model ─────────────────────────────────
 try:
     from ultralytics import YOLO
@@ -52,6 +61,19 @@ def _get_paddle():
         except Exception:
             pass
     return _paddle
+
+
+def _get_fast_alpr():
+    global _fast_alpr
+    if _fast_alpr is None and FAST_ALPR_AVAILABLE:
+        try:
+            _fast_alpr = ALPR(
+                detector_model='yolo-v9-t-384-license-plate-end2end',
+                ocr_model='cct-xs-v1-global-model',
+            )
+        except Exception:
+            return None
+    return _fast_alpr
 
 # ── Tesseract fallback ────────────────────────────────────────────────────────
 try:
@@ -167,6 +189,31 @@ def _bytes_to_cv2(image_bytes: bytes):
         return None
     arr = np.frombuffer(image_bytes, dtype=np.uint8)
     return cv2.imdecode(arr, cv2.IMREAD_COLOR)
+
+
+def fast_alpr_plate_candidates(image_bytes: bytes) -> list[str]:
+    """Read Latin plate candidates with FastALPR when available."""
+    if not NUMPY_AVAILABLE or not CV2_AVAILABLE or not FAST_ALPR_AVAILABLE:
+        return []
+    alpr = _get_fast_alpr()
+    if not alpr:
+        return []
+    img = _bytes_to_cv2(image_bytes)
+    if img is None:
+        return []
+    try:
+        results = alpr.predict(img)
+    except Exception:
+        return []
+
+    candidates = []
+    for result in results or []:
+        ocr = getattr(result, 'ocr', None)
+        text = getattr(ocr, 'text', '') if ocr else ''
+        candidate = normalize_plate_candidate(text)
+        if candidate and candidate not in candidates:
+            candidates.append(candidate)
+    return candidates[:4]
 
 
 def _cv2_to_bytes(img, quality=95) -> bytes:

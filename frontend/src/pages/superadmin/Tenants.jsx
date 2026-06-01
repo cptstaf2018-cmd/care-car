@@ -66,9 +66,8 @@ function PlanBadge({ plan }) {
   )
 }
 
-function TenantCard({ t, onToggle, onDelete, onSavePlateToken }) {
+function TenantCard({ t, onToggle, onDelete }) {
   const [expanded, setExpanded] = useState(false)
-  const [plateToken, setPlateToken] = useState('')
   const days = remainingDays(t.subscription_ends_at)
   const price = PLAN_DETAILS[t.plan]?.adminPrice || 0
   const registrationLabel = t.registration_method === 'email' ? 'تسجيل بالإيميل' : t.registration_method === 'whatsapp' ? 'تسجيل بالواتساب' : 'تسجيل غير محدد'
@@ -199,36 +198,7 @@ function TenantCard({ t, onToggle, onDelete, onSavePlateToken }) {
                     {t.ip_camera_url ? '✓ مربوطة' : 'غير مربوطة'}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <ShieldCheck size={14} className="text-slate-400 shrink-0" />
-                  <span className="text-slate-500 shrink-0">قراءة اللوحة:</span>
-                  <span className={`font-semibold text-xs ${t.has_plate_recognizer_token ? 'text-emerald-700' : 'text-slate-400'}`}>
-                    {t.has_plate_recognizer_token ? '✓ مفعّل' : 'غير مفعّل'}
-                  </span>
-                </div>
                 <InfoRow icon={Bell} label="التذكير" value={`${t.reminder_days || 30} يوم قبل`} />
-              </div>
-              <div className="mt-4 rounded-lg border border-slate-200 bg-white p-3">
-                <p className="mb-2 text-xs font-black text-slate-500">مفتاح Plate Recognizer</p>
-                <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-                  <input
-                    type="password"
-                    value={plateToken}
-                    onChange={(e) => setPlateToken(e.target.value)}
-                    placeholder={t.has_plate_recognizer_token ? 'يوجد مفتاح محفوظ — أدخل مفتاحاً جديداً للتحديث' : 'ألصق المفتاح لتفعيل قراءة اللوحات'}
-                    className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
-                  />
-                  <button
-                    onClick={() => {
-                      onSavePlateToken(t, plateToken)
-                      setPlateToken('')
-                    }}
-                    disabled={!plateToken.trim()}
-                    className="rounded-lg bg-slate-950 px-4 py-2 text-sm font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-40"
-                  >
-                    حفظ المفتاح
-                  </button>
-                </div>
               </div>
             </div>
           </div>
@@ -278,11 +248,6 @@ export default function AdminTenants() {
 
   const toggle = useMutation({
     mutationFn: (t) => updateTenant(t.id, { is_active: !t.is_active }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tenants'] }),
-  })
-
-  const savePlateToken = useMutation({
-    mutationFn: ({ tenant, token }) => updateTenant(tenant.id, { plate_recognizer_token: token.trim() }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tenants'] }),
   })
 
@@ -359,7 +324,6 @@ export default function AdminTenants() {
             t={t}
             onToggle={toggle.mutate}
             onDelete={handleDelete}
-            onSavePlateToken={(tenant, token) => savePlateToken.mutate({ tenant, token })}
           />
         ))}
         {!tenants.length && (

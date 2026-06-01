@@ -1,6 +1,5 @@
 import asyncio
 import base64
-import json
 import logging
 import time
 import cv2
@@ -12,7 +11,7 @@ from app.core.security import decode_token
 from app.models.tenant import Tenant
 from app.models.car import Car
 from app.models.user import Role
-from app.services.vision_service import detect_plate_crop, _enhance_plate, _paddle_read_bytes, _extract_plate, _bytes_to_cv2, _cv2_to_bytes, estimate_vehicle_color, normalize_plate_candidate
+from app.services.vision_service import detect_plate_crop, _enhance_plate, _paddle_read_bytes, _extract_plate, _cv2_to_bytes, fast_alpr_plate_candidates
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -41,75 +40,8 @@ def _frame_to_b64(frame) -> str:
     return base64.b64encode(buf.tobytes()).decode()
 
 
-COLOR_AR = {
-    "black": "أسود",
-    "blue": "أزرق",
-    "brown": "بني",
-    "green": "أخضر",
-    "red": "أحمر",
-    "silver": "فضي",
-    "white": "أبيض",
-    "yellow": "أصفر",
-    "unknown": "",
-}
-
-TYPE_AR = {
-    "Big Truck": "شاحنة",
-    "Bus": "باص",
-    "Motorcycle": "دراجة",
-    "Pickup Truck": "بيك أب",
-    "Sedan": "سيدان",
-    "SUV": "SUV",
-    "Van": "فان",
-    "Unknown": "",
-}
-
-
-def _plate_recognizer_sync(image_bytes: bytes, token: str) -> dict:
-    """Call Plate Recognizer API synchronously."""
-    try:
-        import requests
-        resp = requests.post(
-            'https://api.platerecognizer.com/v1/plate-reader/',
-            data={
-                'mmc': 'true',
-                'config': json.dumps({'threshold_d': 0.15, 'threshold_o': 0.35}),
-            },
-            files={'upload': ('plate.jpg', image_bytes, 'image/jpeg')},
-            headers={'Authorization': f'Token {token}'},
-            timeout=10,
-        )
-        if resp.ok:
-            results = resp.json().get('results', [])
-            if results:
-                r = results[0]
-                make_model = (r.get('model_make') or [{}])[0]
-                make = make_model.get('make', '')
-                model = make_model.get('model', '')
-                vehicle_type = (r.get('vehicle') or {}).get('type', '')
-                color_raw = ((r.get('color') or [{}])[0].get('color') or '').lower()
-                car_type = f"{make} {model}".strip()
-                if not car_type and vehicle_type and vehicle_type.lower() != 'unknown':
-                    car_type = TYPE_AR.get(vehicle_type, vehicle_type)
-                return {
-                    "plate": normalize_plate_candidate(r.get('plate', '').upper()),
-                    "car_type": car_type,
-                    "car_color": COLOR_AR.get(color_raw, color_raw) or estimate_vehicle_color(
-                        image_bytes,
-                        (r.get('vehicle') or {}).get('box'),
-                    ),
-                }
-    except Exception:
-        pass
-    return {"plate": "", "car_type": "", "car_color": ""}
-
-
-async def _read_plate_async(frame_bytes: bytes, pr_token: str = None) -> dict:
+async def _read_plate_async(frame_bytes: bytes) -> dict:
     loop = asyncio.get_event_loop()
-    if pr_token:
-        result = await loop.run_in_executor(None, _plate_recognizer_sync, frame_bytes, pr_token)
-        if result.get("plate"):
-            return result
     # Local fallback
     crop = detect_plate_crop(frame_bytes)
     if crop:
@@ -119,7 +51,11 @@ async def _read_plate_async(frame_bytes: bytes, pr_token: str = None) -> dict:
         if plate:
             return {"plate": plate, "car_type": "", "car_color": ""}
     text = await loop.run_in_executor(None, _paddle_read_bytes, frame_bytes)
-    return {"plate": _extract_plate(text), "car_type": "", "car_color": ""}
+    plate = _extract_plate(text)
+    if not plate:
+        candidates = await loop.run_in_executor(None, fast_alpr_plate_candidates, frame_bytes)
+        plate = candidates[0] if candidates else ""
+    return {"plate": plate, "car_type": "", "car_color": ""}
 
 
 @router.websocket("/ws/camera/{tenant_id}")
@@ -150,8 +86,6 @@ async def camera_stream(websocket: WebSocket, tenant_id: int, db: Session = Depe
     if tenant.ip_camera_username and tenant.ip_camera_password:
         if cam_url.startswith("rtsp://") and "@" not in cam_url:
             cam_url = cam_url.replace("rtsp://", f"rtsp://{tenant.ip_camera_username}:{tenant.ip_camera_password}@")
-
-    pr_token = getattr(tenant, 'plate_recognizer_token', None)
 
     cap = cv2.VideoCapture(cam_url)
     if not cap.isOpened():
@@ -206,7 +140,7 @@ async def camera_stream(websocket: WebSocket, tenant_id: int, db: Session = Depe
                                 crop_bytes = _cv2_to_bytes(crop)
                                 crop_bytes = _enhance_plate(crop_bytes)
 
-                                plate_result = await _read_plate_async(crop_bytes, pr_token)
+                                plate_result = await _read_plate_async(crop_bytes)
                                 plate = plate_result.get("plate", "")
                                 if plate and len(plate) >= 4:
                                     last_time = seen_plates.get(plate, 0)
@@ -219,7 +153,7 @@ async def camera_stream(websocket: WebSocket, tenant_id: int, db: Session = Depe
                         pass
                 else:
                     # Simple fallback without tracking
-                    plate_result = await _read_plate_async(frame_bytes, pr_token)
+                    plate_result = await _read_plate_async(frame_bytes)
                     plate = plate_result.get("plate", "")
                     if plate and len(plate) >= 4:
                         last_time = seen_plates.get(plate, 0)
