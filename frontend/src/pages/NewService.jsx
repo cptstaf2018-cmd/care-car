@@ -7,7 +7,7 @@ import Layout from '../components/Layout'
 import { getCars, createCar } from '../api/cars'
 import { createService } from '../api/services'
 import { getInventory } from '../api/inventory'
-import { readPlate } from '../api/vision'
+import { analyzeCar, readPlate } from '../api/vision'
 
 const OIL_GRADES = ['15W40', '10W30', '5W30', '5W20', '0W20']
 const SERVICE_TYPES = [
@@ -88,11 +88,15 @@ export default function NewService() {
 
   const videoRef = useRef(null)
   const fileInputRef = useRef(null)
+  const carAnalyzeInputRef = useRef(null)
   const [stream, setStream] = useState(null)
   const [cameraActive, setCameraActive] = useState(false)
   const [scanning, setScanning] = useState(false)
   const [scanResult, setScanResult] = useState(null)
   const [scanError, setScanError] = useState('')
+  const [analyzingCar, setAnalyzingCar] = useState(false)
+  const [carAnalysis, setCarAnalysis] = useState(null)
+  const [carAnalysisError, setCarAnalysisError] = useState('')
 
   const { data: cars = [] } = useQuery({
     queryKey: ['cars', search],
@@ -263,6 +267,33 @@ export default function NewService() {
     }, 'image/jpeg', 0.9)
   }
 
+  const analyzeCarPhoto = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    e.target.value = ''
+    setAnalyzingCar(true)
+    setCarAnalysisError('')
+    try {
+      const res = await analyzeCar(file)
+      const { car_type, car_color, brand, message } = res.data
+      if (car_type || car_color || brand) {
+        setCarAnalysis({ car_type, car_color, brand })
+        setNewCarForm(prev => ({
+          ...(prev || { plate_number: search || '', owner_name: '', phone: '' }),
+          car_type: car_type || prev?.car_type || '',
+          car_color: car_color || prev?.car_color || '',
+        }))
+      } else {
+        setCarAnalysis(null)
+        setCarAnalysisError(message || 'لم نتمكن من تحليل السيارة من الصورة.')
+      }
+    } catch (err) {
+      setCarAnalysisError(err.response?.data?.detail || 'تعذر تحليل السيارة الآن.')
+    } finally {
+      setAnalyzingCar(false)
+    }
+  }
+
   if (result) return (
     <Layout>
       <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} className="surface mx-auto max-w-lg rounded-2xl p-8 text-center shadow-xl">
@@ -402,6 +433,33 @@ export default function NewService() {
               {scanning ? 'جاري القراءة...' : 'صوّر اللوحة من الهاتف أو الجهاز'}
             </button>
             <p className="mt-2 text-center text-xs text-slate-400">يفتح الكاميرا مباشرة على الهاتف</p>
+          </div>
+
+          <div className="mt-3 border-t border-slate-100 pt-3">
+            <input
+              ref={carAnalyzeInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={analyzeCarPhoto}
+            />
+            <button
+              onClick={() => carAnalyzeInputRef.current?.click()}
+              disabled={analyzingCar}
+              className="w-full flex items-center justify-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 transition">
+              <Sparkles size={15} />
+              {analyzingCar ? 'جاري تحليل السيارة...' : 'تحليل لون وماركة السيارة'}
+            </button>
+            {carAnalysis && (
+              <div className="mt-3 rounded-lg border border-emerald-200 bg-white px-4 py-3 text-xs font-bold text-slate-700">
+                {carAnalysis.car_type && <p>الماركة/النوع: {carAnalysis.car_type}</p>}
+                {carAnalysis.car_color && <p>اللون التقريبي: {carAnalysis.car_color}</p>}
+              </div>
+            )}
+            {carAnalysisError && (
+              <p className="mt-2 text-xs font-bold text-amber-700">{carAnalysisError}</p>
+            )}
           </div>
         </div>
 
