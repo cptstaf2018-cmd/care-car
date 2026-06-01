@@ -3,13 +3,10 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from app.core.deps import get_current_user
 from app.models.user import User, Role
 from app.services.vision_service import (
-    read_plate_from_image,
     read_text_from_image,
     parse_receipt_text,
-    extract_car_brand,
     estimate_vehicle_color,
     fast_alpr_plate_candidates,
-    extract_plate_candidates,
 )
 
 router = APIRouter(prefix="/vision", tags=["vision"])
@@ -32,36 +29,15 @@ async def read_plate(
     plate, car_type, car_color = '', '', ''
     confidence = 0
     candidates = []
-    local_plate = ''
-    local_candidates = []
 
-    # For Iraqi plates, local OCR is often more useful than global plate APIs.
     try:
-        full_text = read_text_from_image(contents)
-        local_plate = read_plate_from_image(contents)
-        local_candidates = extract_plate_candidates(full_text)
-        fast_candidates = fast_alpr_plate_candidates(contents)
-        for candidate in fast_candidates:
-            if candidate not in local_candidates:
-                local_candidates.append(candidate)
-        if not local_plate and fast_candidates:
-            local_plate = fast_candidates[0]
-        if local_plate and local_plate not in local_candidates:
-            local_candidates.insert(0, local_plate)
-        car_type = extract_car_brand(full_text) if full_text else ''
+        candidates = fast_alpr_plate_candidates(contents)
+        if candidates:
+            plate = candidates[0]
+            confidence = 0.82
         car_color = estimate_vehicle_color(contents)
     except Exception:
-        logger.exception("local plate read failed tenant_id=%s user_id=%s", user.tenant_id, user.id)
-
-    if local_plate:
-        plate = local_plate
-        confidence = min(confidence or 0.82, 0.82)
-
-    merged_candidates = []
-    for candidate in local_candidates + candidates:
-        if candidate and candidate not in merged_candidates:
-            merged_candidates.append(candidate)
-    candidates = merged_candidates
+        logger.exception("fast alpr plate read failed tenant_id=%s user_id=%s", user.tenant_id, user.id)
 
     return {
         "plate_number": plate or "",

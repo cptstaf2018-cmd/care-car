@@ -11,7 +11,7 @@ from app.core.security import decode_token
 from app.models.tenant import Tenant
 from app.models.car import Car
 from app.models.user import Role
-from app.services.vision_service import detect_plate_crop, _enhance_plate, _paddle_read_bytes, _extract_plate, _cv2_to_bytes, fast_alpr_plate_candidates
+from app.services.vision_service import _cv2_to_bytes, fast_alpr_plate_candidates
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -42,19 +42,8 @@ def _frame_to_b64(frame) -> str:
 
 async def _read_plate_async(frame_bytes: bytes) -> dict:
     loop = asyncio.get_event_loop()
-    # Local fallback
-    crop = detect_plate_crop(frame_bytes)
-    if crop:
-        crop = _enhance_plate(crop)
-        text = await loop.run_in_executor(None, _paddle_read_bytes, crop)
-        plate = _extract_plate(text)
-        if plate:
-            return {"plate": plate, "car_type": "", "car_color": ""}
-    text = await loop.run_in_executor(None, _paddle_read_bytes, frame_bytes)
-    plate = _extract_plate(text)
-    if not plate:
-        candidates = await loop.run_in_executor(None, fast_alpr_plate_candidates, frame_bytes)
-        plate = candidates[0] if candidates else ""
+    candidates = await loop.run_in_executor(None, fast_alpr_plate_candidates, frame_bytes)
+    plate = candidates[0] if candidates else ""
     return {"plate": plate, "car_type": "", "car_color": ""}
 
 
@@ -137,10 +126,7 @@ async def camera_stream(websocket: WebSocket, tenant_id: int, db: Session = Depe
                                 crop = frame[max(0, y1-pad):y2+pad, max(0, x1-pad):x2+pad]
                                 if crop.size < 100:
                                     continue
-                                crop_bytes = _cv2_to_bytes(crop)
-                                crop_bytes = _enhance_plate(crop_bytes)
-
-                                plate_result = await _read_plate_async(crop_bytes)
+                                plate_result = await _read_plate_async(_cv2_to_bytes(crop))
                                 plate = plate_result.get("plate", "")
                                 if plate and len(plate) >= 4:
                                     last_time = seen_plates.get(plate, 0)
