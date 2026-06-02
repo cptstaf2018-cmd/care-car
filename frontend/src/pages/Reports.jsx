@@ -111,7 +111,7 @@ export default function Reports() {
             <h3 className="font-black text-slate-950">ملاحظات تشغيلية ذكية</h3>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
-            {['هبوط مبيعات غير معتاد يحتاج مقارنة بالأسبوع السابق', 'الديون تحت السيطرة إذا تم تحصيل أعلى 3 فواتير', 'زيوت 15W40 و5W30 تحتاج مراقبة حركة أسبوعية'].map(text => (
+            {['هبوط مبيعات غير معتاد يحتاج مقارنة بالأسبوع السابق', 'الديون تحت السيطرة إذا تم تحصيل أعلى 3 فواتير', 'الخدمات والمواد الأكثر طلبا تحتاج مراقبة حركة أسبوعية'].map(text => (
               <div key={text} className="rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm font-bold leading-6 text-slate-700">{text}</div>
             ))}
           </div>

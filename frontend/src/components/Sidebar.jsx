@@ -67,7 +67,7 @@ function SidebarContent({ collapsed, setCollapsed, onClose }) {
             {!collapsed && (
               <div>
                 <h2 className="max-w-[170px] truncate font-black text-white">{isAdmin ? 'care-car-saas' : centerName}</h2>
-                <p className="mt-1 text-xs text-slate-400">{isAdmin ? 'لوحة السوبر أدمن' : 'ERP مركز الزيت'}</p>
+                <p className="mt-1 text-xs text-slate-400">{isAdmin ? 'لوحة السوبر أدمن' : 'ERP خدمات السيارات'}</p>
               </div>
             )}
           </div>

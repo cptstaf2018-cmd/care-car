@@ -225,7 +225,7 @@ export default function Login({ initialMode = 'login' }) {
             <motion.div variants={cardVariants} initial="hidden" animate="show" className="max-w-2xl pb-10">
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-200/20 bg-white/10 px-4 py-2 text-sm font-bold shadow-lg shadow-cyan-950/20 backdrop-blur-xl">
                 <Sparkles size={16} className="text-cyan-200" />
-                منصة احترافية لإدارة مراكز السيارات والزيوت
+                منصة احترافية لإدارة مراكز خدمات السيارات
               </div>
               <h1 className="max-w-3xl text-5xl font-extrabold leading-[1.14] tracking-normal xl:text-[62px]">
                 كل مركز سيارات يحتاج نظاما يبدو مثل شركته
@@ -425,7 +425,7 @@ export default function Login({ initialMode = 'login' }) {
                         <form onSubmit={handleRegisterSubmit} className="space-y-4">
                           <label className="block">
                             <span className="mb-2 block text-sm font-bold text-slate-200">اسم المركز</span>
-                            <input type="text" placeholder="مركز الخليج لتبديل الزيت" value={centerName}
+                            <input type="text" placeholder="مركز الخليج لخدمات السيارات" value={centerName}
                               onChange={(e) => setCenterName(e.target.value)} required
                               className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
                           </label>

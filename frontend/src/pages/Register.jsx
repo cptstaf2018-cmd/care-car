@@ -128,7 +128,7 @@ export default function Register() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               label="اسم المركز"
-              placeholder="مركز الخليج لتبديل الزيت"
+              placeholder="مركز الخليج لخدمات السيارات"
               value={form.center_name}
               onChange={(value) => update('center_name', value)}
               required

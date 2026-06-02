@@ -10,7 +10,7 @@ from app.models.tenant import Tenant
 PRE_REMINDER_TEMPLATE = (
     "مرحباً أستاذ {customer_name} 👋\n"
     "سيارتك {car_type} رقم {plate_number}\n"
-    "موعد تبديل الزيت بعد يومين فقط 🔧\n"
+    "موعد خدمة سيارتك بعد يومين فقط 🔧\n"
     "مركز {center_name} جاهز لاستقبالك\n"
     "للحجز: {center_phone}"
 )
