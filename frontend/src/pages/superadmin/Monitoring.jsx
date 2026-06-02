@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
   AlertTriangle, Building2, CheckCircle2, Clock3, CreditCard, MessageCircle,
   Package, Phone, Receipt, RefreshCw, Search, Settings, ShieldAlert, User, Wrench
 } from 'lucide-react'
 import Layout from '../../components/Layout'
-import { getTenantMonitoring } from '../../api/tenants'
+import { getTenantMonitoring, updateTenant } from '../../api/tenants'
 import { IQD, planShortName } from '../../constants/plans'
 
 const healthMeta = {
@@ -54,6 +54,7 @@ function expiryText(days) {
 }
 
 export default function Monitoring() {
+  const qc = useQueryClient()
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('all')
   const [lastCheckedAt, setLastCheckedAt] = useState(new Date())
@@ -65,9 +66,31 @@ export default function Monitoring() {
 
   const rows = data?.tenants || []
   const summary = data?.summary || {}
+  const quickFix = useMutation({
+    mutationFn: ({ id, data }) => updateTenant(id, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tenant-monitoring'] })
+      qc.invalidateQueries({ queryKey: ['tenants'] })
+    },
+  })
+
   useEffect(() => {
     if (data) setLastCheckedAt(new Date())
   }, [data])
+
+  function renewTenant(row) {
+    const today = new Date()
+    const base = row.subscription_ends_at && row.days_to_expiry > 0 ? new Date(row.subscription_ends_at) : today
+    base.setDate(base.getDate() + 30)
+    quickFix.mutate({
+      id: row.tenant_id,
+      data: {
+        is_active: true,
+        subscription_starts_at: today.toISOString().split('T')[0],
+        subscription_ends_at: base.toISOString().split('T')[0],
+      },
+    })
+  }
 
   const filtered = useMemo(() => {
     return rows.filter(row => {
@@ -166,7 +189,14 @@ export default function Monitoring() {
             <div className="p-8 text-center text-sm font-bold text-slate-500">جاري تحميل المراقبة...</div>
           )}
 
-          {!isLoading && filtered.map(row => <MonitorRow key={row.tenant_id} row={row} />)}
+          {!isLoading && filtered.map(row => (
+            <MonitorRow
+              key={row.tenant_id}
+              row={row}
+              onRenew={() => renewTenant(row)}
+              fixing={quickFix.isPending}
+            />
+          ))}
 
           {!isLoading && !filtered.length && (
             <div className="p-10 text-center text-sm font-bold text-slate-400">
@@ -194,7 +224,7 @@ function Metric({ icon: Icon, label, value, detail, danger = false }) {
   )
 }
 
-function MonitorRow({ row }) {
+function MonitorRow({ row, onRenew, fixing }) {
   const meta = healthMeta[row.health] || healthMeta.warning
   const Icon = meta.icon
   const issues = row.issues?.length ? row.issues : ['لا توجد مشاكل واضحة']
@@ -263,13 +293,13 @@ function MonitorRow({ row }) {
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2 xl:mt-0 xl:justify-end">
-        <RowActions row={row} />
+        <RowActions row={row} onRenew={onRenew} fixing={fixing} />
       </div>
     </article>
   )
 }
 
-function RowActions({ row }) {
+function RowActions({ row, onRenew, fixing }) {
   const issueText = (row.issues || []).join(' ')
   const needsSubscription = !row.is_active || issueText.includes('اشتراك') || row.days_to_expiry === null || row.days_to_expiry <= 7
   const needsData = issueText.includes('مدير') || issueText.includes('تواصل')
@@ -287,16 +317,23 @@ function RowActions({ row }) {
   return (
     <>
       {needsSubscription && (
-        <ActionLink to="/admin/subscriptions" icon={CreditCard} label="إصلاح الاشتراك" tone="dark" />
+        <button
+          onClick={onRenew}
+          disabled={fixing}
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-slate-950 px-3 text-xs font-black text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <CreditCard size={14} />
+          {fixing ? 'جاري الإصلاح' : 'فعّل +30 يوم'}
+        </button>
       )}
       {needsData && (
-        <ActionLink to="/admin/tenants" icon={Settings} label="إصلاح البيانات" tone="slate" />
+        <ActionLink to={`/admin/tenants?tenant=${row.tenant_id}`} icon={Settings} label="إصلاح البيانات" tone="slate" />
       )}
       {needsAlerts && (
-        <ActionLink to="/admin/monitoring" icon={Wrench} label="تابع التنبيه" tone="amber" />
+        <ActionLink to={`/admin/tenants?tenant=${row.tenant_id}`} icon={Wrench} label="فتح المركز" tone="amber" />
       )}
       {!needsSubscription && !needsData && !needsAlerts && (
-        <ActionLink to="/admin/tenants" icon={Wrench} label="مراجعة المركز" tone="slate" />
+        <ActionLink to={`/admin/tenants?tenant=${row.tenant_id}`} icon={Wrench} label="مراجعة المركز" tone="slate" />
       )}
     </>
   )

@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import {
   Building2, Phone, Mail, User, Calendar, CreditCard,
   Camera, MessageCircle, Bell, ShieldCheck, ChevronDown,
@@ -66,15 +67,24 @@ function PlanBadge({ plan }) {
   )
 }
 
-function TenantCard({ t, onToggle, onDelete }) {
-  const [expanded, setExpanded] = useState(false)
+function TenantCard({ t, onToggle, onDelete, highlighted }) {
+  const [expanded, setExpanded] = useState(highlighted)
   const days = remainingDays(t.subscription_ends_at)
   const price = PLAN_DETAILS[t.plan]?.adminPrice || 0
   const registrationLabel = t.registration_method === 'email' ? 'تسجيل بالإيميل' : t.registration_method === 'whatsapp' ? 'تسجيل بالواتساب' : 'تسجيل غير محدد'
   const primaryPhone = t.manager_phone || t.whatsapp_number || t.contact_phone
 
+  useEffect(() => {
+    if (highlighted) setExpanded(true)
+  }, [highlighted])
+
   return (
-    <div className={`surface rounded-xl overflow-hidden transition-all ${!t.is_active ? 'border-rose-200 bg-rose-50/30' : ''}`}>
+    <div
+      id={`tenant-${t.id}`}
+      className={`surface rounded-xl overflow-hidden transition-all ${
+        highlighted ? 'ring-4 ring-cyan-100 border-cyan-300' : ''
+      } ${!t.is_active ? 'border-rose-200 bg-rose-50/30' : ''}`}
+    >
       {/* ── Header ── */}
       <div
         className="flex items-center gap-4 px-5 py-4 cursor-pointer hover:bg-slate-50/70 transition-colors"
@@ -228,6 +238,8 @@ function TenantCard({ t, onToggle, onDelete }) {
 
 export default function AdminTenants() {
   const qc = useQueryClient()
+  const [searchParams] = useSearchParams()
+  const highlightedId = Number(searchParams.get('tenant') || 0)
   const { data: tenants = [] } = useQuery({
     queryKey: ['tenants'],
     queryFn: () => getTenants().then(r => r.data),
@@ -262,6 +274,13 @@ export default function AdminTenants() {
   }
 
   const sorted = [...tenants].sort((a, b) => Number(a.is_active) - Number(b.is_active) || a.name.localeCompare(b.name, 'ar'))
+
+  useEffect(() => {
+    if (!highlightedId) return
+    window.setTimeout(() => {
+      document.getElementById(`tenant-${highlightedId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 250)
+  }, [highlightedId, tenants.length])
 
   return (
     <Layout>
@@ -324,6 +343,7 @@ export default function AdminTenants() {
             t={t}
             onToggle={toggle.mutate}
             onDelete={handleDelete}
+            highlighted={t.id === highlightedId}
           />
         ))}
         {!tenants.length && (

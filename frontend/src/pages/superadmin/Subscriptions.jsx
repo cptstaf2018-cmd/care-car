@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { AlertTriangle, BadgeCheck, Bell, CheckCircle2, ChevronDown, ChevronUp, Clock, Lock, Unlock, X } from 'lucide-react'
 import Layout from '../../components/Layout'
@@ -41,11 +42,21 @@ function statusBadge(t) {
 
 export default function Subscriptions() {
   const qc = useQueryClient()
+  const [searchParams] = useSearchParams()
+  const highlightedId = Number(searchParams.get('tenant') || 0)
   const { data: tenants = [], isLoading } = useQuery({
     queryKey: ['tenants'],
     queryFn: () => getTenants().then(r => r.data),
   })
   const [expanded, setExpanded] = useState(null)
+
+  useEffect(() => {
+    if (!highlightedId) return
+    setExpanded(highlightedId)
+    window.setTimeout(() => {
+      document.getElementById(`subscription-${highlightedId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 250)
+  }, [highlightedId, tenants.length])
 
   const update = useMutation({
     mutationFn: ({ id, data }) => updateTenant(id, data),
@@ -143,7 +154,13 @@ export default function Subscriptions() {
             const trial = trialDaysLeft(t.trial_ends_at)
             const hasPending = !!t.subscription_request_ref
             return (
-              <div key={t.id} className={`overflow-hidden rounded-xl border bg-white transition-shadow ${hasPending ? 'border-amber-300' : !t.is_active ? 'border-rose-200' : 'border-slate-200'}`}>
+              <div
+                key={t.id}
+                id={`subscription-${t.id}`}
+                className={`overflow-hidden rounded-xl border bg-white transition-shadow ${
+                  highlightedId === t.id ? 'ring-4 ring-cyan-100 border-cyan-300' : hasPending ? 'border-amber-300' : !t.is_active ? 'border-rose-200' : 'border-slate-200'
+                }`}
+              >
                 {/* Row header */}
                 <div className="flex cursor-pointer items-center justify-between gap-3 px-5 py-4"
                   onClick={() => setExpanded(isOpen ? null : t.id)}>
