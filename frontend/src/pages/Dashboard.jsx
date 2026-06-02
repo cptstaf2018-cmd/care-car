@@ -95,11 +95,12 @@ export default function Dashboard() {
   const activeAd = platformAds[promoIndex % platformAds.length]
 
   useEffect(() => {
+    setPromoIndex(0)
     const timer = window.setInterval(() => {
       setPromoIndex(index => (index + 1) % promoItems.length)
     }, 6500)
     return () => window.clearInterval(timer)
-  }, [])
+  }, [promoItems.length])
 
   return (
     <Layout hideHeader compact>

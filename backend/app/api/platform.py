@@ -45,7 +45,25 @@ def get_ads(db: Session = Depends(get_db)):
            .filter(PlatformAd.is_active == True)
            .order_by(PlatformAd.sort_order)
            .all())
-    return [{"id": a.id, "url": f"/uploads/ads/{a.filename}", "title": a.title} for a in ads]
+    return [_serialize_ad(a) for a in ads]
+
+
+def _serialize_ad(ad: PlatformAd) -> dict:
+    return {
+        "id": ad.id,
+        "url": f"/uploads/ads/{ad.filename}",
+        "title": ad.title,
+        "is_active": ad.is_active,
+        "sort_order": ad.sort_order,
+    }
+
+
+@router.get("/ads/manage", dependencies=[Depends(require_superadmin)])
+def get_ads_for_admin(db: Session = Depends(get_db)):
+    ads = (db.query(PlatformAd)
+           .order_by(PlatformAd.sort_order, PlatformAd.id.desc())
+           .all())
+    return [_serialize_ad(a) for a in ads]
 
 
 @router.post("/ads", dependencies=[Depends(require_superadmin)])
@@ -74,7 +92,7 @@ async def upload_ad(file: UploadFile = File(...), db: Session = Depends(get_db))
     db.add(ad)
     db.commit()
     db.refresh(ad)
-    return {"id": ad.id, "url": f"/uploads/ads/{filename}", "title": ad.title}
+    return _serialize_ad(ad)
 
 
 @router.patch("/ads/{ad_id}", dependencies=[Depends(require_superadmin)])

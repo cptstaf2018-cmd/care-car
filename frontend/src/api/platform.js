@@ -1,6 +1,7 @@
 import client from './client'
 
 export const getPlatformAds = () => client.get('/platform/ads')
+export const getPlatformAdsAdmin = () => client.get('/platform/ads/manage')
 export const uploadPlatformAd = (formData) => client.post('/platform/ads', formData, {
   headers: { 'Content-Type': 'multipart/form-data' }
 })

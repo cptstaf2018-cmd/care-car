@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Image, Plus, Trash2, Eye, EyeOff, Upload, X } from 'lucide-react'
-import { getPlatformAds, uploadPlatformAd, updatePlatformAd, deletePlatformAd } from '../../api/platform'
+import { getPlatformAdsAdmin, uploadPlatformAd, updatePlatformAd, deletePlatformAd } from '../../api/platform'
 import Layout from '../../components/Layout'
 
 export default function PlatformAds() {
@@ -14,17 +14,17 @@ export default function PlatformAds() {
 
   const { data: ads = [], isLoading } = useQuery({
     queryKey: ['platform-ads'],
-    queryFn: () => getPlatformAds().then(r => r.data),
+    queryFn: () => getPlatformAdsAdmin().then(r => r.data),
   })
 
   const removeMutation = useMutation({
     mutationFn: (id) => deletePlatformAd(id),
-    onSuccess: () => qc.invalidateQueries(['platform-ads']),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['platform-ads'] }),
   })
 
   const toggleMutation = useMutation({
     mutationFn: ({ id, is_active }) => updatePlatformAd(id, { is_active }),
-    onSuccess: () => qc.invalidateQueries(['platform-ads']),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['platform-ads'] }),
   })
 
   async function handleFileChange(e) {
@@ -37,7 +37,7 @@ export default function PlatformAds() {
       const fd = new FormData()
       fd.append('file', file)
       await uploadPlatformAd(fd)
-      qc.invalidateQueries(['platform-ads'])
+      qc.invalidateQueries({ queryKey: ['platform-ads'] })
       setPreview(null)
     } catch (err) {
       setError(err.response?.data?.detail || 'فشل رفع الصورة')
