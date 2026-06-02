@@ -3,11 +3,12 @@ import os
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.models.invoice import Invoice
+from app.models.invoice import Invoice, InvoiceStatus
 from app.models.service import Service
 from app.models.car import Car
 from app.models.tenant import Tenant
 from app.models.user import User, Role
+from app.models.debt import Debt
 from app.schemas.invoice import InvoiceOut, InvoiceUpdate
 
 router = APIRouter(prefix="/invoices", tags=["invoices"])
@@ -19,6 +20,37 @@ def _logo_url(tenant: Tenant | None) -> str:
     if tenant.logo_url.startswith("/uploads/logos/") and os.path.exists(os.path.join("/app", tenant.logo_url.lstrip("/"))):
         return tenant.logo_url
     return ""
+
+
+def _invoice_amounts(db: Session, inv: Invoice) -> tuple[float, float, float]:
+    total = max(float(inv.amount or 0) - float(inv.discount or 0), 0)
+    debt = db.query(Debt).filter(Debt.invoice_id == inv.id).first()
+    remaining = min(float(debt.amount or 0), total) if debt else (0 if inv.status == InvoiceStatus.paid else total)
+    paid = max(total - remaining, 0)
+    return total, paid, remaining
+
+
+def _sync_invoice_debt(db: Session, inv: Invoice):
+    service = db.get(Service, inv.service_id)
+    if not service:
+        return
+    total = max(float(inv.amount or 0) - float(inv.discount or 0), 0)
+    debt = db.query(Debt).filter(Debt.invoice_id == inv.id).first()
+    if inv.status == InvoiceStatus.paid or total <= 0:
+        if debt:
+            db.delete(debt)
+        return
+    remaining = total
+    if debt:
+        debt.amount = remaining
+    else:
+        db.add(Debt(
+            tenant_id=inv.tenant_id,
+            invoice_id=inv.id,
+            car_id=service.car_id,
+            amount=remaining,
+            notes="دين من تعديل حالة الفاتورة",
+        ))
 
 @router.get("/", response_model=list[InvoiceOut])
 def list_invoices(status: str | None = None, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
@@ -32,8 +64,7 @@ def list_invoices(status: str | None = None, db: Session = Depends(get_db), user
     for inv in invoices:
       service = db.get(Service, inv.service_id)
       car = db.get(Car, service.car_id) if service else None
-      total = float(inv.amount or 0) - float(inv.discount or 0)
-      paid = total if inv.status == "paid" else 0
+      total, paid, remaining = _invoice_amounts(db, inv)
       result.append({
           "id": inv.id,
           "tenant_id": inv.tenant_id,
@@ -47,7 +78,7 @@ def list_invoices(status: str | None = None, db: Session = Depends(get_db), user
           "car_type": car.car_type if car else None,
           "service_name": service.oil_type if service else None,
           "paid_amount": paid,
-          "remaining_amount": max(total - paid, 0),
+          "remaining_amount": remaining,
       })
     return result
 
@@ -59,8 +90,7 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db), user: User = Dep
     service = db.get(Service, inv.service_id)
     car = db.get(Car, service.car_id) if service else None
     tenant = db.get(Tenant, inv.tenant_id)
-    total = float(inv.amount or 0) - float(inv.discount or 0)
-    paid = total if inv.status == "paid" else float(inv.paid_amount or 0) if hasattr(inv, 'paid_amount') else 0
+    total, paid, remaining = _invoice_amounts(db, inv)
     return {
         "id": inv.id,
         "invoice_date": str(inv.invoice_date),
@@ -68,6 +98,8 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db), user: User = Dep
         "amount": float(inv.amount or 0),
         "discount": float(inv.discount or 0),
         "net": total,
+        "paid_amount": paid,
+        "remaining_amount": remaining,
         "service_lines": (service.oil_type or "").split(" + ") if service else [],
         "notes": service.notes if service else None,
         "mileage": service.mileage if service else None,
@@ -87,6 +119,7 @@ def update_invoice(invoice_id: int, body: InvoiceUpdate, db: Session = Depends(g
         raise HTTPException(status_code=404, detail="Invoice not found")
     for k, v in body.model_dump(exclude_none=True).items():
         setattr(inv, k, v)
+    _sync_invoice_debt(db, inv)
     db.commit()
     db.refresh(inv)
     return inv

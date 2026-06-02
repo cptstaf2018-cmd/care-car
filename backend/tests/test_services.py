@@ -2,6 +2,7 @@ from datetime import date
 from app.models.tenant import Tenant
 from app.models.user import User, Role
 from app.models.car import Car
+from app.models.debt import Debt
 from app.core.security import hash_password
 
 def setup_tenant_with_car(db):
@@ -35,6 +36,37 @@ def test_full_discount_marks_paid(client, db):
                     headers={"Authorization": f"Bearer {token}"})
     assert r.status_code == 201
     assert r.json()["status"] == "paid"
+
+def test_unpaid_service_creates_full_debt(client, db):
+    _, _, car = setup_tenant_with_car(db)
+    token = login(client, "emp@test.com", "pass")
+    r = client.post(
+        "/services/",
+        json={"car_id": car.id, "oil_type": "15W40", "amount": 50000, "payment_status": "unpaid"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 201
+    assert r.json()["status"] == "unpaid"
+    assert r.json()["remaining_amount"] == 50000.0
+    debt = db.query(Debt).filter(Debt.invoice_id == r.json()["invoice_id"]).first()
+    assert debt
+    assert float(debt.amount) == 50000.0
+
+def test_partial_service_creates_remaining_debt(client, db):
+    _, _, car = setup_tenant_with_car(db)
+    token = login(client, "emp@test.com", "pass")
+    r = client.post(
+        "/services/",
+        json={"car_id": car.id, "oil_type": "15W40", "amount": 50000, "payment_status": "partial", "paid_amount": 15000},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 201
+    assert r.json()["status"] == "partial"
+    assert r.json()["paid_amount"] == 15000.0
+    assert r.json()["remaining_amount"] == 35000.0
+    debt = db.query(Debt).filter(Debt.invoice_id == r.json()["invoice_id"]).first()
+    assert debt
+    assert float(debt.amount) == 35000.0
 
 def test_service_for_other_tenant_car_rejected(client, db):
     t1 = Tenant(name="T1", plan="basic")

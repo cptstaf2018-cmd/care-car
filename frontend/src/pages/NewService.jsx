@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Car, Droplets, Package, Printer, PlusCircle, Trash2, Camera, CameraOff, CheckCircle2, Keyboard, ScanLine, Search, Smartphone, Zap } from 'lucide-react'
+import { Car, Droplets, Package, Printer, PlusCircle, Trash2, Camera, CameraOff, CheckCircle2, Keyboard, ScanLine, Search, Smartphone, Wallet, Zap } from 'lucide-react'
 import Layout from '../components/Layout'
 import { getCars, createCar } from '../api/cars'
 import { createService } from '../api/services'
@@ -120,6 +120,8 @@ export default function NewService() {
   const [lineInventoryId, setLineInventoryId] = useState('')
   const [lineInventoryQty, setLineInventoryQty] = useState('1')
   const [invoiceLines, setInvoiceLines] = useState([])
+  const [paymentMode, setPaymentMode] = useState('paid')
+  const [paidAmount, setPaidAmount] = useState('')
   const [result, setResult] = useState(null)
 
   const { data: inventoryItems = [] } = useQuery({
@@ -217,6 +219,13 @@ export default function NewService() {
 
   const invoiceTotal = invoiceLines.reduce((sum, line) => sum + Number(line.amount || 0), 0)
   const netAmount = invoiceTotal - (parseFloat(form.discount) || 0)
+  const normalizedNet = Math.max(netAmount, 0)
+  const effectivePaidAmount = paymentMode === 'paid'
+    ? normalizedNet
+    : paymentMode === 'unpaid'
+      ? 0
+      : Math.min(Math.max(parseFloat(paidAmount) || 0, 0), normalizedNet)
+  const remainingAmount = Math.max(normalizedNet - effectivePaidAmount, 0)
   const canSubmit = selectedCar && invoiceLines.length > 0 && !mutation.isPending
   const serviceName = serviceType === 'تبديل زيت' ? `${serviceType} ${oilGrade}` : serviceType
   const addLineToInvoice = () => {
@@ -247,6 +256,8 @@ export default function NewService() {
       mileage: form.mileage ? parseFloat(form.mileage) : null,
       notes: invoiceLines.map(line => line.notes ? `${line.name}: ${line.notes}` : line.name).join(' | '),
       inventory_deductions: deductions,
+      payment_status: paymentMode,
+      paid_amount: effectivePaidAmount,
     })
   }
 
@@ -352,7 +363,9 @@ export default function NewService() {
         <div className="mb-6 space-y-2 rounded-xl bg-slate-50 p-4 text-right border border-slate-200">
           <div className="flex justify-between"><span className="text-slate-500">رقم الفاتورة</span><span className="font-black text-slate-950">#{result.invoice_id}</span></div>
           <div className="flex justify-between"><span className="text-slate-500">المبلغ</span><span className="font-black text-emerald-700">{result.amount?.toLocaleString()} IQD</span></div>
-          <div className="flex justify-between"><span className="text-slate-500">الحالة</span><span className={`font-black ${result.status === 'paid' ? 'text-emerald-700' : 'text-amber-700'}`}>{result.status === 'paid' ? 'مدفوعة' : 'غير مدفوعة'}</span></div>
+          <div className="flex justify-between"><span className="text-slate-500">المدفوع</span><span className="font-black text-slate-950">{Number(result.paid_amount || 0).toLocaleString()} IQD</span></div>
+          <div className="flex justify-between"><span className="text-slate-500">الدين</span><span className={`font-black ${result.remaining_amount > 0 ? 'text-rose-700' : 'text-emerald-700'}`}>{Number(result.remaining_amount || 0).toLocaleString()} IQD</span></div>
+          <div className="flex justify-between"><span className="text-slate-500">الحالة</span><span className={`font-black ${result.status === 'paid' ? 'text-emerald-700' : result.status === 'partial' ? 'text-amber-700' : 'text-rose-700'}`}>{result.status === 'paid' ? 'مدفوعة' : result.status === 'partial' ? 'جزئية' : 'دين'}</span></div>
         </div>
         <div className="flex flex-col gap-3">
           <button onClick={() => navigate(`/center/invoices/${result.invoice_id}/print`)}
@@ -363,7 +376,7 @@ export default function NewService() {
             className="flex items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-8 py-3 text-sm font-black text-cyan-700 hover:bg-cyan-100">
             تعديل أو حذف الفاتورة
           </button>
-          <button onClick={() => { setResult(null); setSelectedCar(null); setSearch(''); setServiceType('تبديل زيت'); setOilGrade('15W40'); setInvoiceLines([]); setForm({ amount: '', discount: '0', mileage: '', notes: '' }) }}
+          <button onClick={() => { setResult(null); setSelectedCar(null); setSearch(''); setServiceType('تبديل زيت'); setOilGrade('15W40'); setInvoiceLines([]); setPaymentMode('paid'); setPaidAmount(''); setForm({ amount: '', discount: '0', mileage: '', notes: '' }) }}
             className="rounded-xl border border-slate-200 px-8 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
             خدمة جديدة
           </button>
@@ -626,6 +639,51 @@ export default function NewService() {
                   <div className="border-t border-white/10 pt-3">
                     <p className="text-xs text-slate-400">الصافي</p>
                     <p className="mt-1 text-3xl font-black">{netAmount.toLocaleString()} IQD</p>
+                  </div>
+                  <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+                    <div className="mb-3 flex items-center gap-2 text-cyan-300">
+                      <Wallet size={16} />
+                      <span className="text-sm font-black">طريقة الدفع</span>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        ['paid', 'دفع كامل'],
+                        ['partial', 'دفع جزء'],
+                        ['unpaid', 'لم يدفع'],
+                      ].map(([key, label]) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setPaymentMode(key)}
+                          className={`rounded-lg px-2 py-2 text-xs font-black transition ${
+                            paymentMode === key ? 'bg-cyan-400 text-slate-950' : 'bg-white/10 text-slate-300 hover:bg-white/15'
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    {paymentMode === 'partial' && (
+                      <input
+                        type="number"
+                        min="0"
+                        max={normalizedNet}
+                        placeholder="كم دفع الزبون؟"
+                        value={paidAmount}
+                        onChange={e => setPaidAmount(e.target.value)}
+                        className="mt-3 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-white outline-none focus:border-cyan-300"
+                      />
+                    )}
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                      <div className="rounded-md bg-emerald-500/10 px-2 py-2">
+                        <p className="text-emerald-200">المدفوع</p>
+                        <p className="mt-1 font-black text-white">{effectivePaidAmount.toLocaleString()} IQD</p>
+                      </div>
+                      <div className="rounded-md bg-rose-500/10 px-2 py-2">
+                        <p className="text-rose-200">الدين</p>
+                        <p className="mt-1 font-black text-white">{remainingAmount.toLocaleString()} IQD</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <button onClick={submitService}

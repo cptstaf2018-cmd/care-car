@@ -10,6 +10,8 @@ class ServiceCreate(BaseModel):
     oil_type: str
     amount: float
     discount: float = 0.0
+    payment_status: str | None = None
+    paid_amount: float | None = None
     mileage: int | None = None
     notes: str | None = None
     service_date: date | None = None
