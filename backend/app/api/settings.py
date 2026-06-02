@@ -16,11 +16,25 @@ LOGO_DIR = "/app/uploads/logos"
 os.makedirs(LOGO_DIR, exist_ok=True)
 
 _LOGO_EXT = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
-_LOGO_MAGIC = {
-    "image/jpeg": b"\xff\xd8\xff",
-    "image/png": b"\x89PNG\r\n\x1a\n",
-    "image/webp": b"RIFF",
-}
+_MAX_LOGO_BYTES = 8 * 1024 * 1024
+
+
+def _detect_logo_ext(content: bytes, content_type: str | None) -> str | None:
+    if content.startswith(b"\xff\xd8\xff"):
+        return "jpg"
+    if content.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if content[:4] == b"RIFF" and content[8:12] == b"WEBP":
+        return "webp"
+    return _LOGO_EXT.get(content_type or "")
+
+
+def _logo_exists(logo_url: str | None) -> bool:
+    return bool(
+        logo_url
+        and logo_url.startswith("/uploads/logos/")
+        and os.path.exists(os.path.join("/app", logo_url.lstrip("/")))
+    )
 
 
 @router.get("/center", response_model=TenantOut)
@@ -28,6 +42,10 @@ def get_center_settings(db: Session = Depends(get_db), user: User = Depends(requ
     tenant = db.get(Tenant, user.tenant_id)
     if not tenant:
         raise HTTPException(status_code=404, detail="Center not found")
+    if tenant.logo_url and not _logo_exists(tenant.logo_url):
+        tenant.logo_url = None
+        db.commit()
+        db.refresh(tenant)
     return tenant
 
 
@@ -64,18 +82,14 @@ async def upload_logo(
     db: Session = Depends(get_db),
     user: User = Depends(require_manager_or_above),
 ):
-    ext = _LOGO_EXT.get(file.content_type)
-    if not ext:
-        raise HTTPException(status_code=400, detail="استخدم JPG أو PNG أو WebP")
     content = await file.read()
-    if len(content) > 3 * 1024 * 1024:
-        raise HTTPException(status_code=400, detail="الحجم أكبر من 3 ميغابايت")
-    magic = _LOGO_MAGIC[file.content_type]
-    if file.content_type == "image/webp":
-        if not (content[:4] == b"RIFF" and content[8:12] == b"WEBP"):
-            raise HTTPException(status_code=400, detail="ملف غير صالح")
-    elif content[:len(magic)] != magic:
-        raise HTTPException(status_code=400, detail="ملف غير صالح")
+    if not content:
+        raise HTTPException(status_code=400, detail="اختر صورة أولاً")
+    if len(content) > _MAX_LOGO_BYTES:
+        raise HTTPException(status_code=400, detail="الحجم أكبر من 8 ميغابايت")
+    ext = _detect_logo_ext(content, file.content_type)
+    if not ext:
+        raise HTTPException(status_code=400, detail="استخدم صورة JPG أو PNG أو WebP")
     filename = f"{uuid.uuid4().hex}.{ext}"
     path = os.path.join(LOGO_DIR, filename)
     with open(path, "wb") as f:

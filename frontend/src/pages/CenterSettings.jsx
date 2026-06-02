@@ -270,9 +270,13 @@ function LogoUpload({ currentUrl, onUploaded }) {
         onChange={e => { if (e.target.files?.[0]) logoMutation.mutate(e.target.files[0]) }} />
       <button onClick={() => ref.current?.click()} disabled={logoMutation.isPending}
         className="w-full rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-100 disabled:opacity-50 transition">
-        {logoMutation.isPending ? 'جاري الرفع...' : '📷 رفع شعار جديد (JPG/PNG)'}
+        {logoMutation.isPending ? 'جاري الرفع...' : '📷 رفع شعار جديد (JPG/PNG/WebP)'}
       </button>
-      {logoMutation.isError && <p className="mt-1 text-xs text-rose-600">فشل الرفع</p>}
+      {logoMutation.isError && (
+        <p className="mt-1 text-xs text-rose-600">
+          {logoMutation.error?.response?.data?.detail || 'فشل الرفع'}
+        </p>
+      )}
     </div>
   )
 }
@@ -336,7 +340,11 @@ export default function CenterSettings() {
               className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
             <LogoUpload
               currentUrl={form.logo_url}
-              onUploaded={(url) => { update('logo_url', url); qc.invalidateQueries({ queryKey: ['center-settings'] }) }}
+              onUploaded={(url) => {
+                update('logo_url', url)
+                qc.invalidateQueries({ queryKey: ['center-settings'] })
+                qc.invalidateQueries({ queryKey: ['center-settings', 'layout'] })
+              }}
             />
           </div>
         </section>

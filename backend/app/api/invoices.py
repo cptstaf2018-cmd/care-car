@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+import os
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.deps import get_current_user
@@ -10,6 +11,14 @@ from app.models.user import User, Role
 from app.schemas.invoice import InvoiceOut, InvoiceUpdate
 
 router = APIRouter(prefix="/invoices", tags=["invoices"])
+
+
+def _logo_url(tenant: Tenant | None) -> str:
+    if not tenant or not tenant.logo_url:
+        return ""
+    if tenant.logo_url.startswith("/uploads/logos/") and os.path.exists(os.path.join("/app", tenant.logo_url.lstrip("/"))):
+        return tenant.logo_url
+    return ""
 
 @router.get("/", response_model=list[InvoiceOut])
 def list_invoices(status: str | None = None, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
@@ -67,7 +76,7 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db), user: User = Dep
         "car_type": car.car_type if car else None,
         "center_name": tenant.name if tenant else "",
         "center_phone": tenant.contact_phone if tenant else "",
-        "center_logo": tenant.logo_url if tenant else "",
+        "center_logo": _logo_url(tenant),
         "center_whatsapp": tenant.whatsapp_number if tenant else "",
     }
 
