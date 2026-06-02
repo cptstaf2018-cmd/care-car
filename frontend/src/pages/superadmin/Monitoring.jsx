@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import {
   AlertTriangle, Building2, CheckCircle2, Clock3, CreditCard, MessageCircle,
-  Package, Phone, Receipt, Search, ShieldAlert, User
+  Package, Phone, Receipt, RefreshCw, Search, Settings, ShieldAlert, User, Wrench
 } from 'lucide-react'
 import Layout from '../../components/Layout'
 import { getTenantMonitoring } from '../../api/tenants'
@@ -37,6 +38,7 @@ const filters = [
   ['critical', 'خطر'],
   ['warning', 'متابعة'],
   ['healthy', 'مستقر'],
+  ['issues', 'مشاكل'],
 ]
 
 function formatDate(value) {
@@ -54,7 +56,8 @@ function expiryText(days) {
 export default function Monitoring() {
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('all')
-  const { data, isLoading } = useQuery({
+  const [lastCheckedAt, setLastCheckedAt] = useState(new Date())
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ['tenant-monitoring'],
     queryFn: () => getTenantMonitoring().then(r => r.data),
     refetchInterval: 60000,
@@ -62,9 +65,13 @@ export default function Monitoring() {
 
   const rows = data?.tenants || []
   const summary = data?.summary || {}
+  useEffect(() => {
+    if (data) setLastCheckedAt(new Date())
+  }, [data])
+
   const filtered = useMemo(() => {
     return rows.filter(row => {
-      const matchesFilter = filter === 'all' || row.health === filter
+      const matchesFilter = filter === 'all' || (filter === 'issues' ? row.health !== 'healthy' : row.health === filter)
       const needle = query.trim().toLowerCase()
       const matchesQuery = !needle || [row.name, row.manager_name, row.manager_email, row.contact_phone, row.whatsapp_number]
         .filter(Boolean)
@@ -84,15 +91,34 @@ export default function Monitoring() {
               </div>
               <div>
                 <h2 className="text-xl font-black text-slate-950">مراقبة المراكز</h2>
-                <p className="mt-1 text-xs font-bold text-slate-500">آخر تحديث تلقائي كل دقيقة</p>
+                <p className="mt-1 text-xs font-bold text-slate-500">
+                  آخر فحص: {lastCheckedAt.toLocaleTimeString('ar-IQ', { hour: '2-digit', minute: '2-digit' })}
+                </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:w-[620px]">
-              <Metric icon={Building2} label="المراكز" value={summary.total || 0} detail={`${summary.active || 0} نشط`} />
-              <Metric icon={Receipt} label="إيراد 30 يوم" value={IQD(summary.revenue_30_days || 0)} detail="فواتير" />
-              <Metric icon={CreditCard} label="الديون" value={IQD(summary.debt_total || 0)} detail="تحصيل" danger={summary.debt_total > 0} />
-              <Metric icon={MessageCircle} label="تنبيهات" value={(summary.failed_messages_30_days || 0) + (summary.low_inventory_count || 0)} detail="واتساب/مخزون" danger />
+            <div className="flex flex-col gap-3 xl:flex-row xl:items-center">
+              <button
+                onClick={() => refetch()}
+                disabled={isFetching}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-cyan-400 px-4 text-sm font-black text-slate-950 shadow-sm transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                <RefreshCw size={17} className={isFetching ? 'animate-spin' : ''} />
+                {isFetching ? 'جاري الفحص' : 'فحص الآن'}
+              </button>
+              <button
+                onClick={() => setFilter(filter === 'issues' ? 'all' : 'issues')}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 text-sm font-black text-amber-700 transition hover:bg-amber-100"
+              >
+                <Wrench size={17} />
+                المشاكل فقط
+              </button>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 xl:w-[620px]">
+                <Metric icon={Building2} label="المراكز" value={summary.total || 0} detail={`${summary.active || 0} نشط`} />
+                <Metric icon={Receipt} label="إيراد 30 يوم" value={IQD(summary.revenue_30_days || 0)} detail="فواتير" />
+                <Metric icon={CreditCard} label="الديون" value={IQD(summary.debt_total || 0)} detail="تحصيل" danger={summary.debt_total > 0} />
+                <Metric icon={MessageCircle} label="تنبيهات" value={(summary.failed_messages_30_days || 0) + (summary.low_inventory_count || 0)} detail="واتساب/مخزون" danger />
+              </div>
             </div>
           </div>
         </section>
@@ -108,7 +134,7 @@ export default function Monitoring() {
                 className="h-11 w-full rounded-lg border border-slate-200 bg-slate-50 pl-4 pr-10 text-sm font-bold text-slate-800 outline-none transition focus:border-cyan-400 focus:bg-white focus:ring-4 focus:ring-cyan-100"
               />
             </div>
-            <div className="grid grid-cols-4 gap-2 lg:w-[430px]">
+            <div className="grid grid-cols-5 gap-2 lg:w-[520px]">
               {filters.map(([key, label]) => (
                 <button
                   key={key}
@@ -127,12 +153,13 @@ export default function Monitoring() {
         </section>
 
         <section className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="hidden grid-cols-[1.3fr_1fr_1.45fr_1fr_1.15fr] border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-black text-slate-500 xl:grid">
+          <div className="hidden grid-cols-[1.25fr_0.95fr_1.25fr_0.9fr_1fr_0.95fr] border-b border-slate-200 bg-slate-50 px-4 py-3 text-xs font-black text-slate-500 xl:grid">
             <span>المركز</span>
             <span>الحالة والاشتراك</span>
             <span>الأرقام</span>
             <span>النشاط</span>
             <span>التنبيهات</span>
+            <span>الإجراء</span>
           </div>
 
           {isLoading && (
@@ -173,7 +200,7 @@ function MonitorRow({ row }) {
   const issues = row.issues?.length ? row.issues : ['لا توجد مشاكل واضحة']
 
   return (
-    <article className={`relative border-b border-slate-100 bg-white px-4 py-3 last:border-b-0 hover:bg-slate-50/80 xl:grid xl:grid-cols-[1.3fr_1fr_1.45fr_1fr_1.15fr] xl:items-center xl:gap-4 ${meta.row}`}>
+    <article className={`relative border-b border-slate-100 bg-white px-4 py-3 last:border-b-0 hover:bg-slate-50/80 xl:grid xl:grid-cols-[1.25fr_0.95fr_1.25fr_0.9fr_1fr_0.95fr] xl:items-center xl:gap-4 ${meta.row}`}>
       <span className={`absolute right-0 top-0 h-full w-1 ${meta.mark}`} />
 
       <div className="min-w-0 pr-3">
@@ -234,7 +261,58 @@ function MonitorRow({ row }) {
           </span>
         )}
       </div>
+
+      <div className="mt-3 flex flex-wrap gap-2 xl:mt-0 xl:justify-end">
+        <RowActions row={row} />
+      </div>
     </article>
+  )
+}
+
+function RowActions({ row }) {
+  const issueText = (row.issues || []).join(' ')
+  const needsSubscription = !row.is_active || issueText.includes('اشتراك') || row.days_to_expiry === null || row.days_to_expiry <= 7
+  const needsData = issueText.includes('مدير') || issueText.includes('تواصل')
+  const needsAlerts = row.failed_messages_30_days > 0 || row.low_inventory_count > 0
+
+  if (row.health === 'healthy') {
+    return (
+      <span className="inline-flex h-9 items-center gap-1 rounded-lg bg-emerald-50 px-3 text-xs font-black text-emerald-700 ring-1 ring-emerald-100">
+        <CheckCircle2 size={14} />
+        لا يحتاج إصلاح
+      </span>
+    )
+  }
+
+  return (
+    <>
+      {needsSubscription && (
+        <ActionLink to="/admin/subscriptions" icon={CreditCard} label="إصلاح الاشتراك" tone="dark" />
+      )}
+      {needsData && (
+        <ActionLink to="/admin/tenants" icon={Settings} label="إصلاح البيانات" tone="slate" />
+      )}
+      {needsAlerts && (
+        <ActionLink to="/admin/monitoring" icon={Wrench} label="تابع التنبيه" tone="amber" />
+      )}
+      {!needsSubscription && !needsData && !needsAlerts && (
+        <ActionLink to="/admin/tenants" icon={Wrench} label="مراجعة المركز" tone="slate" />
+      )}
+    </>
+  )
+}
+
+function ActionLink({ to, icon: Icon, label, tone }) {
+  const tones = {
+    dark: 'bg-slate-950 text-white hover:bg-slate-800',
+    slate: 'bg-slate-100 text-slate-700 hover:bg-slate-200',
+    amber: 'bg-amber-50 text-amber-700 ring-1 ring-amber-100 hover:bg-amber-100',
+  }
+  return (
+    <Link to={to} className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-lg px-3 text-xs font-black transition ${tones[tone]}`}>
+      <Icon size={14} />
+      {label}
+    </Link>
   )
 }
 
