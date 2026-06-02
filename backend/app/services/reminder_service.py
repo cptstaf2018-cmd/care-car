@@ -77,6 +77,10 @@ def _can_send_every_interval(db: Session, tenant_id: int, car_id: int, reminder_
     return (today - sent_date).days >= REMINDER_INTERVAL_DAYS
 
 
+def _already_sent(db: Session, tenant_id: int, car_id: int, reminder_type: str) -> bool:
+    return _last_sent_at(db, tenant_id, car_id, reminder_type) is not None
+
+
 def get_due_reminders(db: Session, tenant: Tenant) -> list[dict]:
     reminder_days = tenant.reminder_days or REMINDER_INTERVAL_DAYS
     today = date.today()
@@ -112,7 +116,8 @@ def get_due_reminders(db: Session, tenant: Tenant) -> list[dict]:
             "last_service_date": last_service_date,
             "due_date": due_date,
             "days_left": days_left,
-            "is_service_due": days_left is not None and days_left <= 0,
+            "is_pre_due": days_left == 2,
+            "is_due_today": days_left == 0,
         })
     return reminders
 
@@ -149,10 +154,10 @@ def get_debt_reminders(db: Session, tenant: Tenant) -> list[dict]:
 def get_cars_to_notify(db: Session, tenant: Tenant) -> list[dict]:
     """
     Returns cars that need a message today:
-    - due_reminder: every 20 days after the last service date
+    - pre_reminder: two days before the oil/service due date
+    - due_reminder: on the oil/service due date
     - debt_reminder: every 20 days while the car still has debt
     """
-    today = date.today()
     reminders = get_due_reminders(db, tenant)
     result = []
 
@@ -164,7 +169,10 @@ def get_cars_to_notify(db: Session, tenant: Tenant) -> list[dict]:
         if not car:
             continue
 
-        if r["is_service_due"] and _can_send_every_interval(db, tenant.id, car.id, "due_reminder", today):
+        if r["is_pre_due"] and not _already_sent(db, tenant.id, car.id, "pre_reminder"):
+            result.append({**r, "reminder_type": "pre_reminder", "car": car})
+
+        if r["is_due_today"] and not _already_sent(db, tenant.id, car.id, "due_reminder"):
             result.append({**r, "reminder_type": "due_reminder", "car": car})
 
     result.extend(get_debt_reminders(db, tenant))

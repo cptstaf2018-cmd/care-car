@@ -33,7 +33,15 @@ def _center_car_service(db, service_days_ago=20):
     return tenant, car, service
 
 
-def test_service_reminder_due_every_20_days(db):
+def test_oil_pre_reminder_sent_two_days_before_due_date(db):
+    tenant, car, _ = _center_car_service(db, 18)
+
+    reminders = get_cars_to_notify(db, tenant)
+
+    assert any(r["car_id"] == car.id and r["reminder_type"] == "pre_reminder" for r in reminders)
+
+
+def test_oil_due_reminder_sent_on_due_date(db):
     tenant, car, _ = _center_car_service(db, 20)
 
     reminders = get_cars_to_notify(db, tenant)
@@ -41,8 +49,8 @@ def test_service_reminder_due_every_20_days(db):
     assert any(r["car_id"] == car.id and r["reminder_type"] == "due_reminder" for r in reminders)
 
 
-def test_service_reminder_not_repeated_before_20_days(db):
-    tenant, car, _ = _center_car_service(db, 25)
+def test_oil_due_reminder_not_repeated_after_it_was_sent(db):
+    tenant, car, _ = _center_car_service(db, 20)
     db.add(MessageLog(
         tenant_id=tenant.id,
         car_id=car.id,
@@ -50,7 +58,7 @@ def test_service_reminder_not_repeated_before_20_days(db):
         message="sent",
         reminder_type="due_reminder",
         status="sent",
-        sent_at=datetime.now() - timedelta(days=19),
+        sent_at=datetime.now(),
     ))
     db.commit()
 
