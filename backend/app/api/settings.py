@@ -1,5 +1,6 @@
 import os
 import uuid
+from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -105,6 +106,11 @@ def request_subscription(
     tenant = db.get(Tenant, user.tenant_id)
     if not tenant:
         raise HTTPException(status_code=404, detail="Center not found")
+    if tenant.subscription_ends_at and tenant.subscription_ends_at > date.today():
+        tenant.subscription_request_plan = None
+        tenant.subscription_request_ref = None
+        db.commit()
+        return {"status": "active", "message": "اشتراكك نشط بالفعل"}
     tenant.subscription_request_plan = body.plan
     tenant.subscription_request_ref = body.payment_ref
     db.commit()

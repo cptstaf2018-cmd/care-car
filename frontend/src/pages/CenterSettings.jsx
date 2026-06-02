@@ -77,6 +77,13 @@ function TrialBanner({ trialEndsAt, subscriptionEndsAt }) {
   )
 }
 
+function isSubscriptionActive(subscriptionEndsAt) {
+  if (!subscriptionEndsAt) return false
+  const end = new Date(subscriptionEndsAt)
+  const today = new Date()
+  return Math.ceil((end - today) / 86400000) > 0
+}
+
 function SubscriptionSection({ center }) {
   const [selectedPlan, setSelectedPlan] = useState('pro')
   const [paymentRef, setPaymentRef] = useState('')
@@ -86,6 +93,8 @@ function SubscriptionSection({ center }) {
     mutationFn: () => requestSubscription(selectedPlan, paymentRef),
     onSuccess: () => setSubmitted(true),
   })
+
+  if (isSubscriptionActive(center?.subscription_ends_at)) return null
 
   const planPrice = PLANS.find(p => p.id === selectedPlan)?.price || ''
 

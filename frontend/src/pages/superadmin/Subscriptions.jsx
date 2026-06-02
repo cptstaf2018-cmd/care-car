@@ -236,7 +236,15 @@ export default function Subscriptions() {
                               ? new Date(t.subscription_ends_at)
                               : new Date()
                             base.setDate(base.getDate() + 30)
-                            update.mutate({ id: t.id, data: { subscription_ends_at: base.toISOString().split('T')[0], is_active: true } })
+                            update.mutate({
+                              id: t.id,
+                              data: {
+                                subscription_ends_at: base.toISOString().split('T')[0],
+                                is_active: true,
+                                subscription_request_plan: null,
+                                subscription_request_ref: null,
+                              },
+                            })
                           }} disabled={update.isPending}
                             className="flex items-center justify-center gap-2 rounded-lg bg-cyan-50 px-3 py-2 text-sm font-bold text-cyan-700 hover:bg-cyan-100 disabled:opacity-50">
                             <BadgeCheck size={14} /> تجديد 30 يوم

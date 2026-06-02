@@ -88,6 +88,8 @@ export default function Monitoring() {
         is_active: true,
         subscription_starts_at: today.toISOString().split('T')[0],
         subscription_ends_at: base.toISOString().split('T')[0],
+        subscription_request_plan: null,
+        subscription_request_ref: null,
       },
     })
   }
