@@ -9,9 +9,12 @@ def send_whatsapp_message(tenant: Tenant, phone: str, message: str) -> tuple[str
     if not phone:
         return "missing_phone", "Customer phone number is missing"
 
+    recipient = phone.strip()
+    if recipient.startswith("0"):
+        recipient = "+964" + recipient[1:]
+
     payload = {
-        "from": tenant.whatsapp_number,
-        "to": phone,
+        "to": recipient,
         "text": message,
     }
     headers = {"Authorization": f"Bearer {tenant.wasnder_api_key}"}
