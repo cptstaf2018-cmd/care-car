@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, Numeric, Date, String
+from sqlalchemy import Boolean, Column, Integer, ForeignKey, Numeric, Date, String
 from app.models.base import Base, TimestampMixin
 
 class Debt(Base, TimestampMixin):
@@ -10,3 +10,4 @@ class Debt(Base, TimestampMixin):
     amount = Column(Numeric(12, 2), nullable=False)
     due_date = Column(Date)
     notes = Column(String(300))
+    auto_reminder_enabled = Column(Boolean, default=True, nullable=False)

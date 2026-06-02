@@ -6,6 +6,7 @@ import Dashboard from './pages/Dashboard'
 import Cars from './pages/Cars'
 import NewService from './pages/NewService'
 import Invoices from './pages/Invoices'
+import Debts from './pages/Debts'
 import Inventory from './pages/Inventory'
 import Reports from './pages/Reports'
 import CenterSettings from './pages/CenterSettings'
@@ -43,6 +44,7 @@ export default function App() {
           <Route path="/center/cars" element={<ProtectedRoute allowedRoles={centerRoles}><Cars /></ProtectedRoute>} />
           <Route path="/center/services/new" element={<ProtectedRoute allowedRoles={centerRoles}><NewService /></ProtectedRoute>} />
           <Route path="/center/invoices" element={<ProtectedRoute allowedRoles={centerRoles}><Invoices /></ProtectedRoute>} />
+          <Route path="/center/debts" element={<ProtectedRoute allowedRoles={centerRoles}><Debts /></ProtectedRoute>} />
           <Route path="/center/inventory" element={<ProtectedRoute allowedRoles={centerRoles}><Inventory /></ProtectedRoute>} />
           <Route path="/center/reports" element={<ProtectedRoute allowedRoles={centerRoles}><Reports /></ProtectedRoute>} />
           <Route path="/center/settings" element={<ProtectedRoute allowedRoles={centerRoles}><CenterSettings /></ProtectedRoute>} />
@@ -51,6 +53,7 @@ export default function App() {
           <Route path="/cars" element={<Navigate to="/center/cars" replace />} />
           <Route path="/services/new" element={<Navigate to="/center/services/new" replace />} />
           <Route path="/invoices" element={<Navigate to="/center/invoices" replace />} />
+          <Route path="/debts" element={<Navigate to="/center/debts" replace />} />
           <Route path="/inventory" element={<Navigate to="/center/inventory" replace />} />
           <Route path="/reports" element={<Navigate to="/center/reports" replace />} />
           <Route path="/admin" element={<ProtectedRoute requiredRole="superadmin"><AdminOverview /></ProtectedRoute>} />

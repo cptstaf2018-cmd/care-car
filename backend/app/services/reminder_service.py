@@ -127,7 +127,11 @@ def get_debt_reminders(db: Session, tenant: Tenant) -> list[dict]:
     rows = (
         db.query(Car, func.coalesce(func.sum(Debt.amount), 0).label("debt_amount"))
         .join(Debt, Debt.car_id == Car.id)
-        .filter(Car.tenant_id == tenant.id, Debt.tenant_id == tenant.id)
+        .filter(
+            Car.tenant_id == tenant.id,
+            Debt.tenant_id == tenant.id,
+            Debt.auto_reminder_enabled == True,
+        )
         .group_by(Car.id)
         .having(func.coalesce(func.sum(Debt.amount), 0) > 0)
         .all()

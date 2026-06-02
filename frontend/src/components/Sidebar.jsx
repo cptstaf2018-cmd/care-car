@@ -22,6 +22,7 @@ const centerGroups = [
     title: 'الإدارة',
     links: [
       { to: '/center/invoices', label: 'الفواتير', icon: Receipt },
+      { to: '/center/debts', label: 'الديون', icon: CreditCard },
       { to: '/center/inventory', label: 'المخزون', icon: Package },
       { to: '/center/reports', label: 'التقارير', icon: BarChart3 },
       { to: '/center/settings', label: 'إعدادات المركز', icon: Settings },
