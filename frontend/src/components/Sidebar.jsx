@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useAuthStore } from '../store/auth'
 import { getCenterSettings } from '../api/settings'
+import { displayUserContact } from '../utils/displayIdentity'
 
 const centerGroups = [
   {
@@ -52,6 +53,7 @@ function SidebarContent({ collapsed, setCollapsed, onClose }) {
   })
   const centerName = center?.name || 'تشغيل المركز'
   const isAdmin = user?.role === 'superadmin'
+  const userContact = displayUserContact(user, center)
 
   return (
     <div className="flex h-full flex-col border-l border-slate-900 bg-[#08111f] text-white">
@@ -112,7 +114,7 @@ function SidebarContent({ collapsed, setCollapsed, onClose }) {
         {!collapsed && (
           <div className="mb-3 rounded-lg border border-white/10 bg-white/[0.04] p-3">
             {user?.role !== 'superadmin' && <p className="mb-1 truncate text-xs font-bold text-cyan-200">{centerName}</p>}
-            <p className="truncate text-sm font-bold">{user?.email}</p>
+            <p className="truncate text-sm font-bold" dir="ltr">{userContact}</p>
             <p className="mt-1 text-xs text-slate-400">{user?.role === 'superadmin' ? 'مدير المنصة' : 'حساب مركز'}</p>
           </div>
         )}

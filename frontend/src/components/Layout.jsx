@@ -4,6 +4,7 @@ import { Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
 import { useAuthStore } from '../store/auth'
 import { getCenterSettings } from '../api/settings'
+import { displayUserContact } from '../utils/displayIdentity'
 
 export default function Layout({ children, hideHeader = false, compact = false }) {
   const { user } = useAuthStore()
@@ -14,6 +15,7 @@ export default function Layout({ children, hideHeader = false, compact = false }
     enabled: user?.role !== 'superadmin',
   })
   const pageTitle = user?.role === 'superadmin' ? 'لوحة السوبر أدمن' : 'لوحة المركز'
+  const userContact = displayUserContact(user, center)
 
   return (
     <div className="flex min-h-screen bg-[#f4f7fb]">
@@ -37,7 +39,7 @@ export default function Layout({ children, hideHeader = false, compact = false }
                 </div>
               </div>
               <div className="hidden text-left sm:block">
-                <p className="text-sm font-semibold text-slate-900">{user?.email}</p>
+                <p className="text-sm font-semibold text-slate-900" dir="ltr">{userContact}</p>
                 <p className="text-xs text-slate-500">{user?.role === 'superadmin' ? 'إدارة المنصة والمشتركين' : 'تشغيل المركز والزبائن'}</p>
               </div>
             </div>
