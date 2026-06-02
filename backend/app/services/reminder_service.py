@@ -8,19 +8,25 @@ from app.models.tenant import Tenant
 
 
 PRE_REMINDER_TEMPLATE = (
-    "مرحباً أستاذ {customer_name} 👋\n"
-    "سيارتك {car_type} رقم {plate_number}\n"
-    "موعد خدمة سيارتك بعد يومين فقط 🔧\n"
-    "مركز {center_name} جاهز لاستقبالك\n"
-    "للحجز: {center_phone}"
+    "أهلاً أستاذ {customer_name} 👋\n"
+    "نحب نذكّرك أن سيارة {car_type} رقم {plate_number} صار موعد خدمتها قريب.\n"
+    "فريق {center_name} جاهز يفحصها ويخدمها بسرعة واهتمام حتى تبقى سيارتك بأفضل حالة.\n"
+    "للحجز أو الاستفسار: {center_phone}"
 )
 
 DUE_REMINDER_TEMPLATE = (
-    "صباح الخير أستاذ {customer_name} ☀️\n"
-    "اليوم موعد تبديل زيت سيارتك {car_type}\n"
-    "محركك يستحق العناية 🔧\n"
-    "فريق {center_name} جاهز لك الآن\n"
-    "📞 {center_phone}"
+    "أهلاً أستاذ {customer_name} 👋\n"
+    "نحب نذكّرك أن سيارة {car_type} رقم {plate_number} مستحقة للخدمة اليوم.\n"
+    "تشرفنا زيارتك في {center_name}، وفريقنا جاهز لخدمتك بدون تأخير.\n"
+    "للتواصل: {center_phone}"
+)
+
+DEBT_REMINDER_TEMPLATE = (
+    "أهلاً أستاذ {customer_name} 👋\n"
+    "نذكّركم بكل احترام بوجود مبلغ متبقي قدره {debt_amount} على فاتورة خدمة سيارة رقم {plate_number}.\n"
+    "يمكنكم تسديد المبلغ أو التواصل معنا لترتيب الدفع في أقرب وقت.\n"
+    "{center_name}\n"
+    "للتواصل: {center_phone}"
 )
 
 
@@ -38,11 +44,17 @@ def _render(template: str, tenant: Tenant, car: Car) -> str:
 
 
 def render_pre_reminder(tenant: Tenant, car: Car) -> str:
-    return _render(PRE_REMINDER_TEMPLATE, tenant, car)
+    return _render(tenant.reminder_message_template or PRE_REMINDER_TEMPLATE, tenant, car)
 
 
 def render_due_reminder(tenant: Tenant, car: Car) -> str:
-    return _render(DUE_REMINDER_TEMPLATE, tenant, car)
+    return _render(tenant.reminder_message_template or DUE_REMINDER_TEMPLATE, tenant, car)
+
+
+def render_debt_reminder(tenant: Tenant, car: Car, debt_amount: float | int | str) -> str:
+    template = tenant.debt_message_template or DEBT_REMINDER_TEMPLATE
+    message = _render(template, tenant, car)
+    return message.replace("{debt_amount}", f"{float(debt_amount):,.0f} د.ع" if isinstance(debt_amount, (int, float)) else str(debt_amount))
 
 
 def _already_sent(db: Session, tenant_id: int, car_id: int, reminder_type: str) -> bool:

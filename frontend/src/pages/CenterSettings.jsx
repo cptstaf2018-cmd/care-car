@@ -4,6 +4,17 @@ import Layout from '../components/Layout'
 import { getCenterSettings, updateCenterSettings, requestSubscription, uploadLogo } from '../api/settings'
 import { PLAN_DETAILS } from '../constants/plans'
 
+const MARKETING_REMINDER_TEMPLATE = `أهلاً أستاذ {customer_name} 👋
+نحب نذكّرك أن سيارة {car_type} رقم {plate_number} صار موعد خدمتها قريب.
+فريق {center_name} جاهز يفحصها ويخدمها بسرعة واهتمام حتى تبقى سيارتك بأفضل حالة.
+للحجز أو الاستفسار: {center_phone}`
+
+const DEBT_REMINDER_TEMPLATE = `أهلاً أستاذ {customer_name} 👋
+نذكّركم بكل احترام بوجود مبلغ متبقي قدره {debt_amount} على فاتورة خدمة سيارة رقم {plate_number}.
+يمكنكم تسديد المبلغ أو التواصل معنا لترتيب الدفع في أقرب وقت.
+{center_name}
+للتواصل: {center_phone}`
+
 const PLANS = [
   {
     id: 'basic',
@@ -246,6 +257,30 @@ const defaultForm = {
   wasnder_api_key: '',
   reminder_days: 30,
   reminder_message_template: '',
+  debt_message_template: '',
+}
+
+function TemplateCard({ title, description, value, onUse }) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h4 className="font-black text-slate-950">{title}</h4>
+          <p className="mt-1 text-xs leading-5 text-slate-500">{description}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onUse}
+          className="rounded-lg bg-slate-950 px-4 py-2 text-xs font-black text-white hover:bg-slate-800"
+        >
+          استخدام القالب
+        </button>
+      </div>
+      <pre className="mt-4 whitespace-pre-wrap rounded-lg border border-slate-200 bg-white p-3 text-right text-xs leading-6 text-slate-700">
+        {value}
+      </pre>
+    </div>
+  )
 }
 
 function LogoUpload({ currentUrl, onUploaded }) {
@@ -300,7 +335,8 @@ export default function CenterSettings() {
         whatsapp_number: center.whatsapp_number || '',
         wasnder_api_key: '',
         reminder_days: center.reminder_days || 30,
-        reminder_message_template: center.reminder_message_template || '',
+        reminder_message_template: center.reminder_message_template || MARKETING_REMINDER_TEMPLATE,
+        debt_message_template: center.debt_message_template || DEBT_REMINDER_TEMPLATE,
       })
     }
   }, [center])
@@ -383,9 +419,29 @@ export default function CenterSettings() {
           </div>
           <textarea value={form.reminder_message_template} onChange={e => update('reminder_message_template', e.target.value)}
             rows={5}
-            placeholder="قالب رسالة التذكير التسويقية"
+            placeholder="قالب رسالة الرجوع للمركز"
             className="mt-4 w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm leading-7 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
-          <p className="mt-3 text-xs leading-6 text-slate-500">يمكن استخدام: {'{customer_name}'}، {'{plate_number}'}، {'{center_name}'}، {'{center_phone}'}.</p>
+          <textarea value={form.debt_message_template} onChange={e => update('debt_message_template', e.target.value)}
+            rows={5}
+            placeholder="قالب رسالة المطالبة بالدين"
+            className="mt-4 w-full rounded-lg border border-rose-100 bg-rose-50/40 px-4 py-3 text-sm leading-7 outline-none focus:border-rose-300 focus:ring-4 focus:ring-rose-100" />
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <TemplateCard
+              title="قالب رجوع الزبون للمركز"
+              description="رسالة تسويقية محترمة تذكّر الزبون بموعد خدمة السيارة وتشجعه على الحجز."
+              value={MARKETING_REMINDER_TEMPLATE}
+              onUse={() => update('reminder_message_template', MARKETING_REMINDER_TEMPLATE)}
+            />
+            <TemplateCard
+              title="قالب مطالبة الدين"
+              description="رسالة تحصيل هادئة تحفظ علاقة المركز بالزبون وتذكره بالمبلغ المتبقي."
+              value={DEBT_REMINDER_TEMPLATE}
+              onUse={() => update('debt_message_template', DEBT_REMINDER_TEMPLATE)}
+            />
+          </div>
+          <p className="mt-3 text-xs leading-6 text-slate-500">
+            يمكن استخدام: {'{customer_name}'}، {'{car_type}'}، {'{plate_number}'}، {'{center_name}'}، {'{center_phone}'}، {'{debt_amount}'} لقالب الدين.
+          </p>
         </section>
       </div>
 

@@ -63,7 +63,7 @@ def update_center_settings(
         "name", "contact_phone", "logo_url",
         "ip_camera_url", "ip_camera_username", "ip_camera_password",
         "wasnder_api_key", "whatsapp_number",
-        "reminder_days", "reminder_message_template",
+        "reminder_days", "reminder_message_template", "debt_message_template",
     }
     updates = body.model_dump(exclude_none=True)
     for key, value in updates.items():

@@ -17,6 +17,7 @@ class TenantCreate(BaseModel):
     whatsapp_number: str | None = None
     reminder_days: int = 30
     reminder_message_template: str | None = None
+    debt_message_template: str | None = None
     subscription_request_plan: str | None = None
     subscription_request_ref: str | None = None
 
@@ -36,6 +37,7 @@ class TenantUpdate(BaseModel):
     whatsapp_number: str | None = None
     reminder_days: int | None = None
     reminder_message_template: str | None = None
+    debt_message_template: str | None = None
     subscription_request_plan: str | None = None
     subscription_request_ref: str | None = None
 
@@ -56,6 +58,7 @@ class TenantOut(BaseModel):
     has_wasnder_api_key: bool = False
     reminder_days: int
     reminder_message_template: str | None
+    debt_message_template: str | None
     trial_ends_at: datetime | None
     subscription_request_plan: str | None
     subscription_request_ref: str | None
