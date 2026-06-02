@@ -12,7 +12,7 @@ def send_whatsapp_message(tenant: Tenant, phone: str, message: str) -> tuple[str
     payload = {
         "from": tenant.whatsapp_number,
         "to": phone,
-        "message": message,
+        "text": message,
     }
     headers = {"Authorization": f"Bearer {tenant.wasnder_api_key}"}
 
