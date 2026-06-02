@@ -69,8 +69,6 @@ def update_center_settings(
     for key, value in updates.items():
         if key in allowed:
             setattr(tenant, key, value)
-    if "whatsapp_number" in updates and updates["whatsapp_number"]:
-        tenant.contact_phone = updates["whatsapp_number"]
     db.commit()
     db.refresh(tenant)
     return tenant

@@ -218,6 +218,7 @@ function SubscriptionSection({ center }) {
 }
 
 const defaultForm = {
+  name: '',
   contact_phone: '',
   logo_url: '',
   ip_camera_url: '',
@@ -274,6 +275,7 @@ export default function CenterSettings() {
     if (center) {
       setForm({
         contact_phone: center.contact_phone || '',
+        name: center.name || '',
         logo_url: center.logo_url || '',
         ip_camera_url: center.ip_camera_url || '',
         ip_camera_username: center.ip_camera_username || '',
@@ -316,6 +318,9 @@ export default function CenterSettings() {
         <section className="surface rounded-lg p-6">
           <h3 className="font-bold text-slate-950">هوية المركز</h3>
           <div className="mt-5 space-y-4">
+            <input value={form.name} onChange={e => update('name', e.target.value)}
+              placeholder="اسم المركز"
+              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
             <input value={form.contact_phone} onChange={e => update('contact_phone', e.target.value)}
               placeholder="هاتف المركز"
               className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
