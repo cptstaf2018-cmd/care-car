@@ -50,17 +50,24 @@ function SidebarContent({ collapsed, setCollapsed, onClose }) {
     enabled: user?.role !== 'superadmin',
   })
   const centerName = center?.name || 'تشغيل المركز'
+  const isAdmin = user?.role === 'superadmin'
 
   return (
     <div className="flex h-full flex-col border-l border-slate-900 bg-[#08111f] text-white">
       <div className="border-b border-white/10 p-5">
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-cyan-400 text-lg font-black text-slate-950 shadow-lg shadow-cyan-500/20">CC</div>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-cyan-400 text-lg font-black text-slate-950 shadow-lg shadow-cyan-500/20">
+              {!isAdmin && center?.logo_url ? (
+                <img src={center.logo_url} alt="" className="h-full w-full bg-white object-contain p-1" />
+              ) : (
+                'CC'
+              )}
+            </div>
             {!collapsed && (
               <div>
-                <h2 className="max-w-[170px] truncate font-black text-white">{user?.role === 'superadmin' ? 'care-car-saas' : centerName}</h2>
-                <p className="mt-1 text-xs text-slate-400">{user?.role === 'superadmin' ? 'لوحة السوبر أدمن' : 'ERP مركز الزيت'}</p>
+                <h2 className="max-w-[170px] truncate font-black text-white">{isAdmin ? 'care-car-saas' : centerName}</h2>
+                <p className="mt-1 text-xs text-slate-400">{isAdmin ? 'لوحة السوبر أدمن' : 'ERP مركز الزيت'}</p>
               </div>
             )}
           </div>

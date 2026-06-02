@@ -13,7 +13,7 @@ export default function Layout({ children, hideHeader = false, compact = false }
     queryFn: () => getCenterSettings().then(r => r.data),
     enabled: user?.role !== 'superadmin',
   })
-  const pageTitle = user?.role === 'superadmin' ? 'لوحة السوبر أدمن' : center?.name || 'لوحة المركز'
+  const pageTitle = user?.role === 'superadmin' ? 'لوحة السوبر أدمن' : 'لوحة المركز'
 
   return (
     <div className="flex min-h-screen bg-[#f4f7fb]">
@@ -29,11 +29,6 @@ export default function Layout({ children, hideHeader = false, compact = false }
                 >
                   <Menu size={20} />
                 </button>
-                {user?.role !== 'superadmin' && center?.logo_url && (
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-white">
-                    <img src={center.logo_url} alt="" className="h-full w-full object-contain p-1" />
-                  </div>
-                )}
                 <div>
                   <p className="text-[11px] font-black uppercase tracking-wide text-slate-500">care-car-saas</p>
                   <h1 className="text-base font-black text-slate-950 lg:text-lg">
