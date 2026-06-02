@@ -15,7 +15,7 @@ class TenantCreate(BaseModel):
     ip_camera_password: str | None = None
     wasnder_api_key: str | None = None
     whatsapp_number: str | None = None
-    reminder_days: int = 30
+    reminder_days: int = 20
     reminder_message_template: str | None = None
     debt_message_template: str | None = None
     subscription_request_plan: str | None = None
