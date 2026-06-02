@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { BatteryCharging, Car, CircleDot, Droplets, Fan, Gauge, GaugeCircle, Package, Printer, PlusCircle, ShowerHead, Sparkles, SprayCan, Trash2, Wrench, Camera, CameraOff, CheckCircle2, Keyboard, ScanLine, Search, Smartphone, Zap } from 'lucide-react'
+import { Car, Droplets, Package, Printer, PlusCircle, Trash2, Camera, CameraOff, CheckCircle2, Keyboard, ScanLine, Search, Smartphone, Zap } from 'lucide-react'
 import Layout from '../components/Layout'
 import { getCars, createCar } from '../api/cars'
 import { createService } from '../api/services'
@@ -11,17 +11,17 @@ import { readPlate } from '../api/vision'
 
 const OIL_GRADES = ['15W40', '10W30', '5W30', '5W20', '0W20']
 const SERVICE_TYPES = [
-  { label: 'تبديل زيت', icon: Droplets, tone: 'cyan', hint: 'الأكثر طلباً' },
-  { label: 'فلتر زيت', icon: CircleDot, tone: 'amber', hint: 'فلترة المحرك' },
-  { label: 'فلتر هواء', icon: Fan, tone: 'sky', hint: 'تنفس أنظف' },
-  { label: 'فلتر مكيف', icon: SprayCan, tone: 'violet', hint: 'هواء المقصورة' },
-  { label: 'تبديل ماء رديتر', icon: Droplets, tone: 'blue', hint: 'تبريد المحرك' },
-  { label: 'فحص بطارية', icon: BatteryCharging, tone: 'emerald', hint: 'فولتية وشحن' },
-  { label: 'تبديل بواجي', icon: Sparkles, tone: 'fuchsia', hint: 'تشغيل أنعم' },
-  { label: 'تعبئة نيتروجين', icon: GaugeCircle, tone: 'teal', hint: 'ضغط مستقر' },
-  { label: 'غسيل', icon: ShowerHead, tone: 'indigo', hint: 'تنظيف سريع' },
-  { label: 'ميزان', icon: Gauge, tone: 'rose', hint: 'ثبات الطريق' },
-  { label: 'ترصيص', icon: Wrench, tone: 'slate', hint: 'اهتزاز أقل' },
+  { label: 'تبديل زيت', image: '/service-icons/oil-change.png', tone: 'cyan', hint: 'الأكثر طلباً' },
+  { label: 'فلتر زيت', image: '/service-icons/oil-filter.png', tone: 'amber', hint: 'فلترة المحرك' },
+  { label: 'فلتر هواء', image: '/service-icons/air-filter.png', tone: 'sky', hint: 'تنفس أنظف' },
+  { label: 'فلتر مكيف', image: '/service-icons/ac-filter.png', tone: 'violet', hint: 'هواء المقصورة' },
+  { label: 'تبديل ماء رديتر', image: '/service-icons/coolant.png', tone: 'blue', hint: 'تبريد المحرك' },
+  { label: 'فحص بطارية', image: '/service-icons/battery.png', tone: 'emerald', hint: 'فولتية وشحن' },
+  { label: 'تبديل بواجي', image: '/service-icons/spark-plug.png', tone: 'fuchsia', hint: 'تشغيل أنعم' },
+  { label: 'تعبئة نيتروجين', image: '/service-icons/nitrogen.png', tone: 'teal', hint: 'ضغط مستقر' },
+  { label: 'غسيل', image: '/service-icons/wash.png', tone: 'indigo', hint: 'تنظيف سريع' },
+  { label: 'ميزان', image: '/service-icons/alignment.png', tone: 'rose', hint: 'ثبات الطريق' },
+  { label: 'ترصيص', image: '/service-icons/balancing.png', tone: 'slate', hint: 'اهتزاز أقل' },
 ]
 
 const SERVICE_TONES = {
@@ -644,15 +644,14 @@ export default function NewService() {
 
 function ServiceTypePicker({ serviceType, setServiceType, oilGrade, setOilGrade }) {
   const selectedService = SERVICE_TYPES.find(item => item.label === serviceType) || SERVICE_TYPES[0]
-  const SelectedIcon = selectedService.icon
   const selectedTone = SERVICE_TONES[selectedService.tone] || SERVICE_TONES.cyan
 
   return (
     <div className="surface overflow-hidden rounded-lg">
       <div className="flex flex-col gap-4 border-b border-slate-100 bg-gradient-to-l from-slate-50 via-white to-white p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ring-1 shadow-lg ${selectedTone.icon}`}>
-            <SelectedIcon size={25} strokeWidth={2.6} />
+          <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ring-1 shadow-lg ${selectedTone.icon}`}>
+            <img src={selectedService.image} alt="" className="h-11 w-11 object-contain" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -667,8 +666,8 @@ function ServiceTypePicker({ serviceType, setServiceType, oilGrade, setOilGrade 
         </div>
       </div>
       <div className="p-4">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
-          {SERVICE_TYPES.map(({ label, icon: Icon, hint, tone }) => {
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {SERVICE_TYPES.map(({ label, image, tone }) => {
             const isActive = serviceType === label
             const toneClasses = SERVICE_TONES[tone] || SERVICE_TONES.cyan
 
@@ -678,24 +677,23 @@ function ServiceTypePicker({ serviceType, setServiceType, oilGrade, setOilGrade 
                 type="button"
                 onClick={() => setServiceType(label)}
                 whileTap={{ scale: 0.98 }}
-                className={`group relative min-h-[86px] overflow-hidden rounded-lg border bg-gradient-to-l px-4 py-3 text-right transition duration-200 focus:outline-none focus:ring-4 focus:ring-cyan-100 ${
+                className={`group relative min-h-[82px] overflow-hidden rounded-xl border bg-gradient-to-l px-4 py-3 text-right transition duration-200 focus:outline-none focus:ring-4 focus:ring-cyan-100 ${
                   isActive
-                    ? `${toneClasses.active} shadow-lg`
+                    ? `${toneClasses.active} shadow-xl`
                     : `${toneClasses.card} text-slate-700 shadow-sm hover:-translate-y-0.5 hover:shadow-md`
                 }`}
               >
                 <span className="flex h-full items-center justify-between gap-3">
-                  <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ring-1 shadow-lg transition ${toneClasses.icon}`}>
-                    <Icon size={28} strokeWidth={2.65} />
+                  <span className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full ring-1 shadow-lg transition ${toneClasses.icon}`}>
+                    <img src={image} alt="" className="h-14 w-14 object-contain drop-shadow-md transition duration-200 group-hover:scale-105" />
                   </span>
                   {isActive && (
                     <span className={`absolute left-3 top-3 flex h-7 w-7 items-center justify-center rounded-full shadow-md ${toneClasses.check}`}>
                       <CheckCircle2 size={18} strokeWidth={3} />
                     </span>
                   )}
-                  <span className="min-w-0 flex-1 pr-1">
-                    <span className="block text-base font-black leading-6 text-slate-950">{label}</span>
-                    <span className="mt-1 block text-xs font-bold leading-5 text-slate-500">{hint}</span>
+                  <span className="min-w-0 flex-1 pr-2">
+                    <span className="block text-lg font-black leading-7 text-slate-950">{label}</span>
                   </span>
                 </span>
               </motion.button>
@@ -733,7 +731,7 @@ function ServiceTypePicker({ serviceType, setServiceType, oilGrade, setOilGrade 
                   }`}
                 >
                   <span className={`flex h-8 w-8 items-center justify-center rounded-full ring-1 shadow-md ${oilTone.icon}`}>
-                    <Droplets size={19} strokeWidth={2.7} />
+                    <img src="/service-icons/oil-drop.png" alt="" className="h-7 w-7 object-contain" />
                   </span>
                   <span className="text-slate-950">{t}</span>
                   {oilGrade === t && (
