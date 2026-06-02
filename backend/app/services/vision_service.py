@@ -193,6 +193,23 @@ def _bytes_to_cv2(image_bytes: bytes):
 
 def fast_alpr_plate_candidates(image_bytes: bytes) -> list[str]:
     """Read Latin plate candidates with FastALPR when available."""
+    return [read["plate"] for read in fast_alpr_plate_reads(image_bytes)]
+
+
+def _ocr_confidence(ocr) -> float:
+    for attr in ("confidence", "conf", "score", "probability"):
+        value = getattr(ocr, attr, None)
+        if value is not None:
+            try:
+                value = float(value)
+                return value / 100 if value > 1 else value
+            except (TypeError, ValueError):
+                pass
+    return 0.75
+
+
+def fast_alpr_plate_reads(image_bytes: bytes) -> list[dict]:
+    """Read Latin plate candidates with normalized confidence metadata."""
     if not NUMPY_AVAILABLE or not CV2_AVAILABLE or not FAST_ALPR_AVAILABLE:
         return []
     alpr = _get_fast_alpr()
@@ -206,14 +223,16 @@ def fast_alpr_plate_candidates(image_bytes: bytes) -> list[str]:
     except Exception:
         return []
 
-    candidates = []
+    reads = []
+    seen = set()
     for result in results or []:
         ocr = getattr(result, 'ocr', None)
         text = getattr(ocr, 'text', '') if ocr else ''
         candidate = normalize_plate_candidate(text)
-        if candidate and candidate not in candidates:
-            candidates.append(candidate)
-    return candidates[:4]
+        if candidate and candidate not in seen:
+            seen.add(candidate)
+            reads.append({"plate": candidate, "confidence": _ocr_confidence(ocr)})
+    return reads[:4]
 
 
 def _cv2_to_bytes(img, quality=95) -> bytes:

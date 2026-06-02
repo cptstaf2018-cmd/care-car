@@ -1,5 +1,6 @@
 import asyncio
 import base64
+from collections import defaultdict, deque
 import logging
 import time
 import cv2
@@ -11,13 +12,16 @@ from app.core.security import decode_token
 from app.models.tenant import Tenant
 from app.models.car import Car
 from app.models.user import Role
-from app.services.vision_service import _cv2_to_bytes, fast_alpr_plate_candidates
+from app.services.vision_service import _cv2_to_bytes, fast_alpr_plate_reads
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 ALLOWED_ROLES = {Role.manager.value, Role.employee.value}
 PLATE_COOLDOWN = 10.0  # seconds before same plate triggers again
+VOTE_WINDOW_SECONDS = 2.8
+MIN_PLATE_VOTES = 3
+MIN_AVG_CONFIDENCE = 0.68
 
 try:
     import supervision as sv
@@ -42,9 +46,47 @@ def _frame_to_b64(frame) -> str:
 
 async def _read_plate_async(frame_bytes: bytes) -> dict:
     loop = asyncio.get_event_loop()
-    candidates = await loop.run_in_executor(None, fast_alpr_plate_candidates, frame_bytes)
-    plate = candidates[0] if candidates else ""
-    return {"plate": plate, "car_type": "", "car_color": ""}
+    reads = await loop.run_in_executor(None, fast_alpr_plate_reads, frame_bytes)
+    best = reads[0] if reads else {}
+    return {
+        "plate": best.get("plate", ""),
+        "confidence": float(best.get("confidence", 0) or 0),
+        "candidates": [read.get("plate", "") for read in reads if read.get("plate")],
+        "car_type": "",
+        "car_color": "",
+    }
+
+
+def _vote_plate(plate_votes, plate_result: dict, now: float) -> dict | None:
+    plate = plate_result.get("plate", "")
+    if not plate or len(plate) < 4:
+        return None
+
+    confidence = float(plate_result.get("confidence", 0) or 0)
+    votes = plate_votes.setdefault(plate, deque())
+    votes.append((now, confidence))
+
+    cutoff = now - VOTE_WINDOW_SECONDS
+    for key in list(plate_votes.keys()):
+        while plate_votes[key] and plate_votes[key][0][0] < cutoff:
+            plate_votes[key].popleft()
+        if not plate_votes[key]:
+            del plate_votes[key]
+
+    best_plate = ""
+    best_votes = 0
+    best_avg = 0.0
+    for key, items in plate_votes.items():
+        vote_count = len(items)
+        avg_confidence = sum(item[1] for item in items) / vote_count
+        if (vote_count, avg_confidence) > (best_votes, best_avg):
+            best_plate = key
+            best_votes = vote_count
+            best_avg = avg_confidence
+
+    if best_plate == plate and best_votes >= MIN_PLATE_VOTES and best_avg >= MIN_AVG_CONFIDENCE:
+        return {**plate_result, "plate": best_plate, "confidence": round(best_avg, 3), "votes": best_votes}
+    return None
 
 
 @router.websocket("/ws/camera/{tenant_id}")
@@ -89,6 +131,7 @@ async def camera_stream(websocket: WebSocket, tenant_id: int, db: Session = Depe
     smoother = sv.DetectionsSmoother() if SUPERVISION_AVAILABLE else None
 
     seen_plates: dict[str, float] = {}  # plate → last_sent_time
+    plate_votes = defaultdict(deque)
     frame_count = 0
 
     try:
@@ -127,27 +170,29 @@ async def camera_stream(websocket: WebSocket, tenant_id: int, db: Session = Depe
                                 if crop.size < 100:
                                     continue
                                 plate_result = await _read_plate_async(_cv2_to_bytes(crop))
-                                plate = plate_result.get("plate", "")
-                                if plate and len(plate) >= 4:
+                                confirmed = _vote_plate(plate_votes, plate_result, now)
+                                if confirmed:
+                                    plate = confirmed["plate"]
                                     last_time = seen_plates.get(plate, 0)
                                     if now - last_time >= PLATE_COOLDOWN:
                                         seen_plates[plate] = now
                                         car = db.query(Car).filter(Car.tenant_id == tenant_id, Car.plate_number == plate).first()
                                         car_info = {"id": car.id, "plate_number": car.plate_number, "owner_name": car.owner_name, "car_type": car.car_type, "phone": car.phone} if car else None
-                                        await websocket.send_json({"type": "plate_detected", "plate": plate, "car_type": plate_result.get("car_type", ""), "car_color": plate_result.get("car_color", ""), "car": car_info, "frame": _frame_to_b64(frame)})
+                                        await websocket.send_json({"type": "plate_detected", "plate": plate, "confidence": confirmed.get("confidence", 0), "votes": confirmed.get("votes", 0), "car_type": confirmed.get("car_type", ""), "car_color": confirmed.get("car_color", ""), "car": car_info, "frame": _frame_to_b64(frame)})
                     except Exception:
                         pass
                 else:
                     # Simple fallback without tracking
                     plate_result = await _read_plate_async(frame_bytes)
-                    plate = plate_result.get("plate", "")
-                    if plate and len(plate) >= 4:
+                    confirmed = _vote_plate(plate_votes, plate_result, now)
+                    if confirmed:
+                        plate = confirmed["plate"]
                         last_time = seen_plates.get(plate, 0)
                         if now - last_time >= PLATE_COOLDOWN:
                             seen_plates[plate] = now
                             car = db.query(Car).filter(Car.tenant_id == tenant_id, Car.plate_number == plate).first()
                             car_info = {"id": car.id, "plate_number": car.plate_number, "owner_name": car.owner_name, "car_type": car.car_type, "phone": car.phone} if car else None
-                            await websocket.send_json({"type": "plate_detected", "plate": plate, "car_type": plate_result.get("car_type", ""), "car_color": plate_result.get("car_color", ""), "car": car_info, "frame": _frame_to_b64(frame)})
+                            await websocket.send_json({"type": "plate_detected", "plate": plate, "confidence": confirmed.get("confidence", 0), "votes": confirmed.get("votes", 0), "car_type": confirmed.get("car_type", ""), "car_color": confirmed.get("car_color", ""), "car": car_info, "frame": _frame_to_b64(frame)})
 
             await asyncio.sleep(0.033)  # ~30fps max
 
