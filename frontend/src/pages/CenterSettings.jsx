@@ -2,35 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Layout from '../components/Layout'
 import { getCenterSettings, updateCenterSettings, requestSubscription, uploadLogo } from '../api/settings'
-import { PLAN_DETAILS } from '../constants/plans'
+import { PLAN_DETAILS, PLAN_ORDER } from '../constants/plans'
 
-const PLANS = [
-  {
-    id: 'basic',
-    name: PLAN_DETAILS.basic.name,
-    price: PLAN_DETAILS.basic.price,
-    features: ['إدارة السيارات والعملاء', 'الفواتير والمخزون', 'التقارير'],
-    noFeatures: ['كاميرا IP', 'واتساب التذكيرات'],
-    color: 'slate',
-  },
-  {
-    id: 'pro',
-    name: PLAN_DETAILS.pro.name,
-    price: PLAN_DETAILS.pro.price,
-    badge: 'الأكثر طلباً',
-    features: ['كل ميزات الخطة الأساسية', 'كاميرا IP', 'واتساب التذكيرات', 'تقارير متقدمة'],
-    noFeatures: [],
-    color: 'cyan',
-  },
-  {
-    id: 'enterprise',
-    name: PLAN_DETAILS.enterprise.name,
-    price: PLAN_DETAILS.enterprise.price,
-    features: ['كل ميزات الخطة الاحترافية', 'دعم فني 24/7', 'إعداد مخصص'],
-    noFeatures: [],
-    color: 'violet',
-  },
-]
+const PLAN_COLORS = { basic: 'slate', pro: 'cyan', enterprise: 'violet' }
+const PLAN_BADGES = { pro: 'الأكثر طلباً' }
+const PLANS = PLAN_ORDER.map(id => ({
+  id,
+  ...PLAN_DETAILS[id],
+  color: PLAN_COLORS[id] || 'slate',
+  badge: PLAN_BADGES[id],
+}))
 
 function TrialBanner({ trialEndsAt, subscriptionEndsAt }) {
   if (subscriptionEndsAt) {

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { AlertTriangle, BadgeCheck, Bell, CheckCircle2, ChevronDown, ChevronUp, Clock, Lock, Unlock, X } from 'lucide-react'
+import { AlertTriangle, BadgeCheck, Bell, Check, CheckCircle2, ChevronDown, ChevronUp, Clock, Lock, Unlock, X } from 'lucide-react'
 import Layout from '../../components/Layout'
 import { getTenants, updateTenant } from '../../api/tenants'
 import { PLAN_DETAILS, PLAN_ORDER, planShortName } from '../../constants/plans'
@@ -11,6 +11,41 @@ const PLAN_IQD = {
   basic: '100,000 IQD',
   pro: '150,000 IQD',
   enterprise: '250,000 IQD',
+}
+
+function PlanFeaturesSummary() {
+  return (
+    <section className="mb-6 grid gap-3 lg:grid-cols-3">
+      {PLAN_ORDER.map(plan => {
+        const details = PLAN_DETAILS[plan]
+        return (
+          <div key={plan} className="rounded-xl border border-slate-200 bg-white p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-black text-slate-950">{details.name}</p>
+                <p className="mt-0.5 text-xs font-bold text-slate-400">{PLAN_IQD[plan]} / شهر</p>
+              </div>
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-600">
+                {details.shortName}
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {details.features.map(feature => (
+                <p key={feature} className="flex items-start gap-2 text-xs font-bold leading-5 text-slate-700">
+                  <Check size={13} className="mt-0.5 shrink-0 text-emerald-600" /> {feature}
+                </p>
+              ))}
+              {details.noFeatures.map(feature => (
+                <p key={feature} className="flex items-start gap-2 text-xs font-bold leading-5 text-slate-400 line-through">
+                  <X size={13} className="mt-0.5 shrink-0" /> {feature}
+                </p>
+              ))}
+            </div>
+          </div>
+        )
+      })}
+    </section>
+  )
 }
 
 function daysLeft(dateStr) {
@@ -99,8 +134,10 @@ export default function Subscriptions() {
       <div className="mb-6">
         <p className="text-xs font-black uppercase tracking-wider text-cyan-600">care-car-saas</p>
         <h2 className="mt-1 text-2xl font-black text-slate-950">اشتراكات المراكز</h2>
-        <p className="mt-1 text-sm text-slate-500">إدارة الاشتراكات والدفع والتفعيل لجميع المراكز</p>
+        <p className="mt-1 text-sm text-slate-500">إدارة الاشتراكات والدفع، ومعرفة المميزات المتاحة لكل خطة.</p>
       </div>
+
+      <PlanFeaturesSummary />
 
       {/* Pending payment requests */}
       <AnimatePresence>
@@ -249,6 +286,24 @@ export default function Subscriptions() {
                             className="flex items-center justify-center gap-2 rounded-lg bg-cyan-50 px-3 py-2 text-sm font-bold text-cyan-700 hover:bg-cyan-100 disabled:opacity-50">
                             <BadgeCheck size={14} /> تجديد 30 يوم
                           </button>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 rounded-lg border border-slate-200 bg-white p-4">
+                        <p className="mb-3 text-xs font-black text-slate-500">
+                          مميزات خطة {planShortName(t.plan)}
+                        </p>
+                        <div className="grid gap-2 md:grid-cols-2">
+                          {PLAN_DETAILS[t.plan]?.features.map(feature => (
+                            <p key={feature} className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                              <Check size={13} className="text-emerald-600" /> {feature}
+                            </p>
+                          ))}
+                          {PLAN_DETAILS[t.plan]?.noFeatures.map(feature => (
+                            <p key={feature} className="flex items-center gap-2 text-xs font-bold text-slate-400 line-through">
+                              <X size={13} /> {feature}
+                            </p>
+                          ))}
                         </div>
                       </div>
 
