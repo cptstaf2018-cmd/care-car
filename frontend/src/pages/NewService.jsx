@@ -11,11 +11,11 @@ import { readPlate } from '../api/vision'
 
 const OIL_GRADES = ['15W40', '10W30', '5W30', '5W20', '0W20']
 const SERVICE_TYPES = [
-  { label: 'تبديل زيت', image: '/service-icons/oil-change.png', tone: 'cyan', hint: 'الأكثر طلباً' },
+  { label: 'تبديل زيت', image: '/service-icons/oil-jug.png', tone: 'cyan', hint: 'الأكثر طلباً' },
   { label: 'فلتر زيت', image: '/service-icons/oil-filter.png', tone: 'amber', hint: 'فلترة المحرك' },
   { label: 'فلتر هواء', image: '/service-icons/air-filter.png', tone: 'sky', hint: 'تنفس أنظف' },
   { label: 'فلتر مكيف', image: '/service-icons/ac-filter.png', tone: 'violet', hint: 'هواء المقصورة' },
-  { label: 'تبديل ماء رديتر', image: '/service-icons/coolant.png', tone: 'blue', hint: 'تبريد المحرك' },
+  { label: 'تبديل ماء رديتر', image: '/service-icons/coolant-jug.png', tone: 'blue', hint: 'تبريد المحرك' },
   { label: 'فحص بطارية', image: '/service-icons/battery.png', tone: 'emerald', hint: 'فولتية وشحن' },
   { label: 'تبديل بواجي', image: '/service-icons/spark-plug.png', tone: 'fuchsia', hint: 'تشغيل أنعم' },
   { label: 'تعبئة نيتروجين', image: '/service-icons/nitrogen.png', tone: 'teal', hint: 'ضغط مستقر' },
