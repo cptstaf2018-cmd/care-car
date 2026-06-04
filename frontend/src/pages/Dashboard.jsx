@@ -68,12 +68,13 @@ export default function Dashboard() {
   const inventory = inventoryQuery.data || []
   const invoices = invoicesQuery.data || []
   const centerName = centerQuery.data?.name || 'مركزك'
+  const isOilCenter = (centerQuery.data?.specialty || 'quick_service') === 'quick_service'
   const lowStock = inventory.filter(item => item.low_stock)
   const unpaidInvoices = invoices.filter(inv => inv.status !== 'paid')
-  const dueCars = cars
+  const dueCars = isOilCenter ? cars
     .map(car => ({ ...car, days_left: daysUntilReminder(car) }))
     .filter(car => car.days_left <= 5)
-    .slice(0, 6)
+    .slice(0, 6) : []
   const apiAds = adsQuery.data || []
   const promoItems = apiAds.length > 0
     ? apiAds.map(a => a.url)
@@ -103,7 +104,7 @@ export default function Dashboard() {
   }, [promoItems.length])
 
   return (
-    <Layout hideHeader compact>
+    <Layout compact>
       {/* Hero banner — quarter height with carousel */}
       <section className="relative mb-5 overflow-hidden rounded-2xl border border-slate-900 bg-[#050b17] text-white shadow-xl">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_18%_24%,rgba(34,211,238,0.13),transparent_32%)]" />
@@ -225,7 +226,14 @@ export default function Dashboard() {
       <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
         <StatCard icon={Wrench}        label="خدمات اليوم"   value={daily?.service_count}  color="blue"   helper="سيارات تمت خدمتها اليوم"  loading={dailyQuery.isLoading} />
         <StatCard icon={Receipt}       label="إيرادات اليوم" value={daily?.total_sales != null ? `${daily.total_sales.toLocaleString()} IQD` : null} color="green" helper="إجمالي الفواتير المدفوعة" loading={dailyQuery.isLoading} />
-        <StatCard icon={MessageCircle} label="مواعيد الصيانة" value={dueCars.length}        color="orange" helper="سيارات تقترب من موعد خدمتها" loading={carsQuery.isLoading} />
+        <StatCard
+          icon={MessageCircle}
+          label={isOilCenter ? 'مواعيد الصيانة' : 'رسائل الديون'}
+          value={isOilCenter ? dueCars.length : unpaidInvoices.length}
+          color="orange"
+          helper={isOilCenter ? 'سيارات تقترب من موعد خدمتها' : 'مطالبات دين يمكن إرسالها'}
+          loading={isOilCenter ? carsQuery.isLoading : invoicesQuery.isLoading}
+        />
         <StatCard icon={AlertTriangle} label="مستحقات العملاء" value={monthly?.pending_debts != null ? `${monthly.pending_debts.toLocaleString()} IQD` : null} color="red" helper={`${unpaidInvoices.length} فاتورة غير مسددة`} loading={monthlyQuery.isLoading} />
       </div>
 
@@ -244,12 +252,21 @@ export default function Dashboard() {
             text={unpaidInvoices.length ? `${unpaidInvoices.length} فواتير تحتاج تحصيل` : 'لا توجد مستحقات متأخرة'}
             to="/center/invoices"
           />
-          <ActionAlert
-            tone={dueCars.length ? 'cyan' : 'green'}
-            title={dueCars.length ? 'مواعيد صيانة قريبة' : 'لا مواعيد عاجلة'}
-            text={dueCars.length ? `${dueCars.length} سيارة تقترب من موعد صيانتها` : 'جميع مواعيد الصيانة بعيدة'}
-            to="/center/cars"
-          />
+          {isOilCenter ? (
+            <ActionAlert
+              tone={dueCars.length ? 'cyan' : 'green'}
+              title={dueCars.length ? 'مواعيد صيانة قريبة' : 'لا مواعيد عاجلة'}
+              text={dueCars.length ? `${dueCars.length} سيارة تقترب من موعد صيانتها` : 'جميع مواعيد الصيانة بعيدة'}
+              to="/center/cars"
+            />
+          ) : (
+            <ActionAlert
+              tone={unpaidInvoices.length ? 'rose' : 'green'}
+              title={unpaidInvoices.length ? 'رسائل ديون جاهزة' : 'لا توجد ديون للتذكير'}
+              text={unpaidInvoices.length ? 'استخدم صفحة الديون للإرسال اليدوي أو التلقائي' : 'كل الفواتير مسددة لهذا المركز'}
+              to="/center/debts"
+            />
+          )}
         </Panel>
 
         <Panel title="آخر فواتير الخدمة" icon={Receipt}>
@@ -271,8 +288,8 @@ export default function Dashboard() {
 
       {/* Panels row 2 */}
       <section className="mt-4 grid gap-4 xl:grid-cols-[1fr_1fr]">
-        <Panel title="مواعيد الصيانة القادمة" icon={MessageCircle}>
-          {dueCars.length ? dueCars.map(car => (
+        <Panel title={isOilCenter ? 'مواعيد الصيانة القادمة' : 'متابعة رسائل الديون'} icon={MessageCircle}>
+          {isOilCenter && dueCars.length ? dueCars.map(car => (
             <div key={car.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5">
               <div>
                 <p className="font-mono font-black text-slate-950">{car.plate_number}</p>
@@ -282,7 +299,23 @@ export default function Dashboard() {
                 {car.days_left <= 0 ? 'موعد الصيانة اليوم' : `بعد ${car.days_left} أيام`}
               </span>
             </div>
-          )) : <EmptyState text="لا توجد مواعيد صيانة قريبة" />}
+          )) : isOilCenter ? (
+            <EmptyState text="لا توجد مواعيد صيانة قريبة" />
+          ) : unpaidInvoices.length ? (
+            unpaidInvoices.slice(0, 6).map(inv => (
+              <div key={inv.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5">
+                <div>
+                  <p className="font-black text-slate-950">فاتورة #{inv.id}</p>
+                  <p className="text-xs text-slate-400">{inv.invoice_date || 'تاريخ غير محدد'}</p>
+                </div>
+                <Link to="/center/debts" className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-black text-white transition hover:bg-rose-700">
+                  تذكير دين
+                </Link>
+              </div>
+            ))
+          ) : (
+            <EmptyState text="لا توجد ديون للتذكير" />
+          )}
         </Panel>
 
         <Panel title="آخر السيارات المخدومة" icon={Car}>

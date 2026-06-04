@@ -17,8 +17,8 @@ import AdminTenants from './pages/superadmin/Tenants'
 import Subscriptions from './pages/superadmin/Subscriptions'
 import PlatformAds from './pages/superadmin/PlatformAds'
 import Activate from './pages/Activate'
-import CameraMonitor from './pages/CameraMonitor'
 import LandingPage from './pages/LandingPage'
+import MobileCamera from './pages/MobileCamera'
 import { useAuthStore } from './store/auth'
 
 const qc = new QueryClient()
@@ -39,6 +39,7 @@ export default function App() {
           <Route path="/register" element={<Login initialMode="register" />} />
           <Route path="/activate" element={<Activate />} />
           <Route path="/about" element={<LandingPage />} />
+          <Route path="/mobile-camera/:token" element={<MobileCamera />} />
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/center" element={<ProtectedRoute allowedRoles={centerRoles}><Dashboard /></ProtectedRoute>} />
           <Route path="/center/cars" element={<ProtectedRoute allowedRoles={centerRoles}><Cars /></ProtectedRoute>} />
@@ -48,7 +49,8 @@ export default function App() {
           <Route path="/center/inventory" element={<ProtectedRoute allowedRoles={centerRoles}><Inventory /></ProtectedRoute>} />
           <Route path="/center/reports" element={<ProtectedRoute allowedRoles={centerRoles}><Reports /></ProtectedRoute>} />
           <Route path="/center/settings" element={<ProtectedRoute allowedRoles={centerRoles}><CenterSettings /></ProtectedRoute>} />
-          <Route path="/center/camera" element={<ProtectedRoute allowedRoles={centerRoles}><CameraMonitor /></ProtectedRoute>} />
+          <Route path="/center/reception" element={<Navigate to="/center/services/new" replace />} />
+          <Route path="/center/camera" element={<Navigate to="/center/services/new" replace />} />
           <Route path="/center/invoices/:id/print" element={<ProtectedRoute allowedRoles={centerRoles}><InvoicePrint /></ProtectedRoute>} />
           <Route path="/cars" element={<Navigate to="/center/cars" replace />} />
           <Route path="/services/new" element={<Navigate to="/center/services/new" replace />} />

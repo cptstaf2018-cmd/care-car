@@ -17,6 +17,7 @@ os.makedirs(LOGO_DIR, exist_ok=True)
 
 _LOGO_EXT = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
 _MAX_LOGO_BYTES = 8 * 1024 * 1024
+_PLAN_RANK = {"basic": 1, "pro": 2, "enterprise": 3}
 
 
 def _detect_logo_ext(content: bytes, content_type: str | None) -> str | None:
@@ -118,12 +119,16 @@ def request_subscription(
     tenant = db.get(Tenant, user.tenant_id)
     if not tenant:
         raise HTTPException(status_code=404, detail="Center not found")
-    if tenant.subscription_ends_at and tenant.subscription_ends_at > date.today():
+    current_plan = getattr(tenant.plan, "value", tenant.plan)
+    requested_plan = body.plan
+    if requested_plan not in _PLAN_RANK:
+        raise HTTPException(status_code=400, detail="خطة غير صحيحة")
+    if tenant.subscription_ends_at and tenant.subscription_ends_at > date.today() and _PLAN_RANK[requested_plan] <= _PLAN_RANK.get(current_plan, 1):
         tenant.subscription_request_plan = None
         tenant.subscription_request_ref = None
         db.commit()
         return {"status": "active", "message": "اشتراكك نشط بالفعل"}
-    tenant.subscription_request_plan = body.plan
+    tenant.subscription_request_plan = requested_plan
     tenant.subscription_request_ref = body.payment_ref
     db.commit()
     return {"status": "pending", "message": "تم إرسال طلبك، سيتم التفعيل خلال 24 ساعة"}

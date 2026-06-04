@@ -19,6 +19,7 @@ from app.models.service import Service
 from app.models.tenant import Tenant
 from app.models.user import User, Role
 from app.schemas.tenant import TenantCreate, TenantUpdate, TenantOut
+from app.services.monthly_archive_service import run_monthly_archives
 import httpx
 
 router = APIRouter(prefix="/tenants", tags=["tenants"])
@@ -61,12 +62,13 @@ def list_tenants(db: Session = Depends(get_db), _=Depends(require_superadmin)):
     result = []
     for t in tenants:
         manager = db.query(User).filter(User.tenant_id == t.id, User.role == Role.manager).first()
+        is_whatsapp_registration = bool(manager and manager.email.endswith('@carecar.app'))
         d = TenantOut.model_validate(t).model_dump()
         d['has_wasnder_api_key'] = bool(t.wasnder_api_key)
-        d['manager_email'] = manager.email if manager else None
+        d['manager_email'] = None if is_whatsapp_registration else (manager.email if manager else None)
         d['manager_name'] = manager.full_name if manager else None
         d['manager_phone'] = t.whatsapp_number or t.contact_phone
-        if manager and manager.email.endswith('@carecar.app'):
+        if is_whatsapp_registration:
             d['registration_method'] = 'whatsapp'
             d['registration_contact'] = t.whatsapp_number or t.contact_phone or manager.email.removesuffix('@carecar.app')
         elif manager:
@@ -162,15 +164,17 @@ def monitor_tenants(db: Session = Depends(get_db), _=Depends(require_superadmin)
         rows.append({
             "tenant_id": tenant.id,
             "name": tenant.name,
+            "specialty": tenant.specialty,
             "plan": tenant.plan,
             "is_active": tenant.is_active,
             "health": health,
             "issues": issues,
             "manager_name": manager.full_name if manager else None,
-            "manager_email": manager.email if manager else None,
+            "manager_email": None if manager and manager.email.endswith('@carecar.app') else (manager.email if manager else None),
             "contact_phone": tenant.contact_phone,
             "whatsapp_number": tenant.whatsapp_number,
             "subscription_ends_at": _iso(tenant.subscription_ends_at),
+            "trial_ends_at": _iso(tenant.trial_ends_at),
             "days_to_expiry": days_to_expiry,
             "last_activity_at": _iso(latest_activity),
             "invoice_count": invoice_count,
@@ -235,11 +239,21 @@ def create_tenant(body: TenantWithManagerCreate, db: Session = Depends(get_db), 
     }
 
 
+@router.post("/monthly-archives/run")
+def run_monthly_archives_now(
+    year: int | None = None,
+    month: int | None = None,
+    db: Session = Depends(get_db),
+    _=Depends(require_superadmin),
+):
+    return run_monthly_archives(db, year, month)
+
+
 # IMPORTANT: subscription_request_plan and subscription_request_ref MUST stay in this set
 # so approvePayment() in Subscriptions.jsx can clear them by sending null values.
 # Also: use exclude_unset=True (not exclude_none) in update_tenant to allow null clearing.
 SUPERADMIN_ALLOWED_FIELDS = {
-    'name', 'plan', 'is_active', 'contact_phone',
+    'name', 'specialty', 'plan', 'is_active', 'contact_phone',
     'subscription_starts_at', 'subscription_ends_at', 'subscription_notes',
     'subscription_request_plan', 'subscription_request_ref',
 }

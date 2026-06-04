@@ -13,7 +13,8 @@ client.interceptors.response.use(
   (r) => r,
   (err) => {
     const suspended = err.response?.status === 403 && err.response?.data?.detail === 'Account suspended'
-    if (err.response?.status === 401 || suspended) useAuthStore.getState().logout()
+    const wrongAdminSession = err.response?.status === 403 && err.response?.data?.detail === 'Superadmin only'
+    if (err.response?.status === 401 || suspended || wrongAdminSession) useAuthStore.getState().logout()
     return Promise.reject(err)
   }
 )

@@ -23,10 +23,20 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 ACTIVATION_CODE_EXPIRE_MINUTES = 30
 PASSWORD_RESET_CODE_EXPIRE_MINUTES = 15
 MAX_PASSWORD_RESET_ATTEMPTS = 10
+CENTER_SPECIALTIES = {
+    "quick_service",
+    "tires",
+    "wash",
+    "electrical",
+    "mechanic",
+    "ac",
+    "body_paint",
+}
 
 
 class RegisterRequest(BaseModel):
     center_name: str
+    specialty: str = "quick_service"
     full_name: str | None = None
     manager_name: str | None = None
     contact_method: str | None = None
@@ -271,16 +281,17 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="اسم المركز مطلوب")
 
     center_name = body.center_name.strip()
+    specialty = body.specialty if body.specialty in CENTER_SPECIALTIES else "quick_service"
     if db.query(Tenant).filter(Tenant.name == center_name).first():
         raise HTTPException(status_code=409, detail="اسم المركز مستخدم بالفعل، يرجى اختيار اسم آخر")
 
     uses_auto_login_flow = bool(body.full_name or body.contact_method)
     if uses_auto_login_flow:
-        return _register_with_auto_login(body, db, center_name)
-    return _register_with_activation_code(body, db, center_name)
+        return _register_with_auto_login(body, db, center_name, specialty)
+    return _register_with_activation_code(body, db, center_name, specialty)
 
 
-def _register_with_auto_login(body: RegisterRequest, db: Session, center_name: str):
+def _register_with_auto_login(body: RegisterRequest, db: Session, center_name: str, specialty: str):
     if not body.full_name or not body.full_name.strip():
         raise HTTPException(status_code=400, detail="الاسم الكامل مطلوب")
     if body.contact_method == "whatsapp" and not body.whatsapp:
@@ -300,6 +311,7 @@ def _register_with_auto_login(body: RegisterRequest, db: Session, center_name: s
     try:
         tenant = Tenant(
             name=center_name,
+            specialty=specialty,
             plan=Plan.basic,
             is_active=True,
             contact_phone=contact_phone,
@@ -338,7 +350,7 @@ def _register_with_auto_login(body: RegisterRequest, db: Session, center_name: s
         raise HTTPException(status_code=500, detail="حدث خطأ أثناء إنشاء الحساب، حاول مجددًا")
 
 
-def _register_with_activation_code(body: RegisterRequest, db: Session, center_name: str):
+def _register_with_activation_code(body: RegisterRequest, db: Session, center_name: str, specialty: str):
     if not body.email and not body.phone:
         raise HTTPException(status_code=400, detail="يجب تقديم إيميل أو رقم واتساب")
 
@@ -348,6 +360,7 @@ def _register_with_activation_code(body: RegisterRequest, db: Session, center_na
 
     tenant = Tenant(
         name=center_name,
+        specialty=specialty,
         plan=Plan.basic,
         is_active=True,
         contact_phone=body.phone,

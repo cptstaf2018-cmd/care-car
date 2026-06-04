@@ -8,10 +8,14 @@ import {
 } from 'lucide-react'
 import Layout from '../../components/Layout'
 import { getTenants, createTenant, updateTenant, deleteTenant } from '../../api/tenants'
-import { PLAN_ORDER, planName, planShortName, PLAN_DETAILS, IQD } from '../../constants/plans'
+import {
+  PLAN_ORDER, planName, planShortName, PLAN_DETAILS, IQD,
+  tenantPlanLabel, tenantPlanPriceLabel,
+} from '../../constants/plans'
+import { CENTER_SPECIALTIES, DEFAULT_CENTER_SPECIALTY, getSpecialtyLabel } from '../../constants/centerSpecialties'
 
 const emptyForm = {
-  name: '', plan: 'basic', contact_phone: '',
+  name: '', specialty: DEFAULT_CENTER_SPECIALTY, plan: 'basic', contact_phone: '',
   subscription_ends_at: '', manager_email: '',
   manager_phone: '', manager_name: '',
 }
@@ -67,10 +71,17 @@ function PlanBadge({ plan }) {
   )
 }
 
+function SpecialtyBadge({ specialty }) {
+  return (
+    <span className="rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-bold text-cyan-700 ring-1 ring-cyan-100">
+      {getSpecialtyLabel(specialty)}
+    </span>
+  )
+}
+
 function TenantCard({ t, onToggle, onDelete, highlighted }) {
   const [expanded, setExpanded] = useState(highlighted)
   const days = remainingDays(t.subscription_ends_at)
-  const price = PLAN_DETAILS[t.plan]?.adminPrice || 0
   const registrationLabel = t.registration_method === 'email' ? 'تسجيل بالإيميل' : t.registration_method === 'whatsapp' ? 'تسجيل بالواتساب' : 'تسجيل غير محدد'
   const primaryPhone = t.manager_phone || t.whatsapp_number || t.contact_phone
 
@@ -111,8 +122,9 @@ function TenantCard({ t, onToggle, onDelete, highlighted }) {
 
         {/* Plan + price */}
         <div className="hidden sm:flex flex-col items-end gap-1">
+          <SpecialtyBadge specialty={t.specialty} />
           <PlanBadge plan={t.plan} />
-          <span className="text-xs font-bold text-slate-500">{IQD(price)}/شهر</span>
+          <span className="text-xs font-bold text-slate-500">{tenantPlanPriceLabel(t)}</span>
         </div>
 
         {/* Subscription end */}
@@ -157,6 +169,7 @@ function TenantCard({ t, onToggle, onDelete, highlighted }) {
                 <InfoRow icon={User} label="الاسم" value={t.manager_name} />
                 <InfoRow icon={Mail} label="الإيميل" value={t.manager_email} />
                 <InfoRow icon={Smartphone} label="طريقة التسجيل" value={registrationLabel} />
+                <InfoRow icon={Tag} label="اختصاص المركز" value={getSpecialtyLabel(t.specialty)} />
                 <InfoRow icon={MessageCircle} label="رقم المدير" value={t.manager_phone} />
                 <InfoRow icon={Phone} label="هاتف المركز" value={t.contact_phone} />
               </div>
@@ -166,7 +179,7 @@ function TenantCard({ t, onToggle, onDelete, highlighted }) {
             <div>
               <p className="text-xs font-black uppercase text-slate-400 mb-2">الاشتراك</p>
               <div className="space-y-1.5">
-                <InfoRow icon={CreditCard} label="الخطة" value={`${planShortName(t.plan)} — ${IQD(price)}/شهر`} />
+                <InfoRow icon={CreditCard} label="الخطة" value={`${tenantPlanLabel(t)} — ${tenantPlanPriceLabel(t)}`} />
                 <InfoRow icon={Calendar} label="البداية" value={t.subscription_starts_at} />
                 <InfoRow icon={Calendar} label="النهاية" value={t.subscription_ends_at || 'غير محدد'} />
                 {days !== null && (
@@ -250,7 +263,13 @@ export default function AdminTenants() {
 
   const create = useMutation({
     mutationFn: () => createTenant({
-      tenant: { name: form.name, plan: form.plan, contact_phone: form.contact_phone || null, subscription_ends_at: form.subscription_ends_at || null },
+      tenant: {
+        name: form.name,
+        specialty: form.specialty,
+        plan: form.plan,
+        contact_phone: form.contact_phone || null,
+        subscription_ends_at: form.subscription_ends_at || null,
+      },
       manager_email: form.manager_email,
       manager_phone: form.manager_phone || null,
       manager_name: form.manager_name || null,
@@ -323,6 +342,10 @@ export default function AdminTenants() {
             <select value={form.plan} onChange={e => setForm({ ...form, plan: e.target.value })}
               className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none focus:border-cyan-400">
               {PLAN_ORDER.map(p => <option key={p} value={p}>{planName(p)} — {IQD(PLAN_DETAILS[p].adminPrice)}/شهر</option>)}
+            </select>
+            <select value={form.specialty} onChange={e => setForm({ ...form, specialty: e.target.value })}
+              className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm text-slate-950 outline-none focus:border-cyan-400">
+              {CENTER_SPECIALTIES.map(item => <option key={item.value} value={item.value}>{item.label}</option>)}
             </select>
           </div>
           {create.isError && <p className="text-red-600 text-sm mt-3">حدث خطأ، تحقق من البيانات.</p>}

@@ -4,6 +4,7 @@ from app.models.tenant import Plan
 
 class TenantCreate(BaseModel):
     name: str
+    specialty: str = "quick_service"
     plan: Plan = Plan.basic
     contact_phone: str | None = None
     logo_url: str | None = None
@@ -23,6 +24,7 @@ class TenantCreate(BaseModel):
 
 class TenantUpdate(BaseModel):
     name: str | None = None
+    specialty: str | None = None
     plan: Plan | None = None
     is_active: bool | None = None
     contact_phone: str | None = None
@@ -45,6 +47,7 @@ class TenantOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
     name: str
+    specialty: str
     plan: str
     is_active: bool
     contact_phone: str | None

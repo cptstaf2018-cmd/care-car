@@ -4,10 +4,23 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.inventory import InventoryItem
+from app.models.tenant import Tenant
 from app.models.user import User
 from app.schemas.inventory import InventoryCreate, InventoryUpdate, InventoryOut, InventoryReceiptCreate
 
 router = APIRouter(prefix="/inventory", tags=["inventory"])
+
+_PLAN_RANK = {"basic": 1, "pro": 2, "enterprise": 3}
+
+
+def _plan_value(plan) -> str:
+    return getattr(plan, "value", plan) or "basic"
+
+
+def _require_plan(db: Session, tenant_id: int, min_plan: str):
+    tenant = db.get(Tenant, tenant_id)
+    if not tenant or _PLAN_RANK.get(_plan_value(tenant.plan), 1) < _PLAN_RANK[min_plan]:
+        raise HTTPException(status_code=403, detail="هذه الميزة تحتاج ترقية الاشتراك")
 
 @router.get("/", response_model=list[InventoryOut])
 def list_inventory(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
@@ -29,6 +42,7 @@ def create_item(body: InventoryCreate, db: Session = Depends(get_db), user: User
 
 @router.post("/receipt", response_model=list[InventoryOut], status_code=201)
 def add_receipt_items(body: InventoryReceiptCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    _require_plan(db, user.tenant_id, "pro")
     if not body.lines:
         raise HTTPException(status_code=400, detail="Receipt has no lines")
 

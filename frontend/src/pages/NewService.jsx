@@ -1,28 +1,143 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Car, Droplets, Package, Printer, PlusCircle, Trash2, Camera, CameraOff, CheckCircle2, Keyboard, ScanLine, Search, Smartphone, Wallet, Zap } from 'lucide-react'
+import {
+  Activity, BadgeDollarSign, Bandage, Battery, Brush, Car, CarFront, CircleDot,
+  CircleGauge, Cog, Cpu, Disc3, Droplets, Eraser, Fan, Gauge, Hammer, Camera, CameraOff,
+  Keyboard, Lightbulb, MonitorCog, Package, PaintRoller, Paintbrush,
+  PlayCircle, PlugZap, Printer, RotateCw, ScanSearch, Search, ShieldCheck,
+  Snowflake, Sparkles, SprayCan, ThermometerSnowflake, Trash2,
+  UserPlus, Wallet, Wind, Wrench, Zap, CheckCircle2, PlusCircle,
+} from 'lucide-react'
 import Layout from '../components/Layout'
 import { getCars, createCar } from '../api/cars'
 import { createService } from '../api/services'
 import { getInventory } from '../api/inventory'
-import { readPlate } from '../api/vision'
+import { getCenterSettings } from '../api/settings'
+import { DEFAULT_CENTER_SPECIALTY, getSpecialtyLabel } from '../constants/centerSpecialties'
+import { hasPlanFeature } from '../constants/plans'
+import { useAuthStore } from '../store/auth'
+
+const WS_CAMERA_BASE = window.location.protocol === 'https:'
+  ? `wss://${window.location.host}/ws/camera`
+  : `ws://${window.location.host}/ws/camera`
 
 const OIL_GRADES = ['15W40', '10W30', '5W30', '5W20', '0W20']
-const SERVICE_TYPES = [
-  { label: 'تبديل زيت', image: '/service-icons/oil-jug.png', tone: 'cyan', hint: 'الأكثر طلباً' },
-  { label: 'فلتر زيت', image: '/service-icons/oil-filter.png', tone: 'amber', hint: 'فلترة المحرك' },
-  { label: 'فلتر هواء', image: '/service-icons/air-filter.png', tone: 'sky', hint: 'تنفس أنظف' },
-  { label: 'فلتر مكيف', image: '/service-icons/ac-filter.png', tone: 'violet', hint: 'هواء المقصورة' },
-  { label: 'تبديل ماء رديتر', image: '/service-icons/coolant-jug.png', tone: 'blue', hint: 'تبريد المحرك' },
-  { label: 'فحص بطارية', image: '/service-icons/battery.png', tone: 'emerald', hint: 'فولتية وشحن' },
-  { label: 'تبديل بواجي', image: '/service-icons/spark-plug.png', tone: 'fuchsia', hint: 'تشغيل أنعم' },
-  { label: 'تعبئة نيتروجين', image: '/service-icons/nitrogen.png', tone: 'teal', hint: 'ضغط مستقر' },
-  { label: 'غسيل', image: '/service-icons/wash.png', tone: 'indigo', hint: 'تنظيف سريع' },
-  { label: 'ميزان', image: '/service-icons/alignment.png', tone: 'rose', hint: 'ثبات الطريق' },
-  { label: 'ترصيص', image: '/service-icons/balancing.png', tone: 'slate', hint: 'اهتزاز أقل' },
+const SERVICE_ICON_MAP = {
+  oil: Droplets,
+  oilFilter: Package,
+  airFilter: Wind,
+  acFilter: Snowflake,
+  coolant: ThermometerSnowflake,
+  battery: Battery,
+  sparkPlug: Zap,
+  nitrogen: CircleGauge,
+  wash: SprayCan,
+  alignment: Gauge,
+  balancing: Disc3,
+  tire: CircleDot,
+  tireSale: BadgeDollarSign,
+  tirePatch: Bandage,
+  tireValve: CircleGauge,
+  tireRotate: RotateCw,
+  washInterior: Brush,
+  polish: Sparkles,
+  wax: ShieldCheck,
+  nano: Activity,
+  disinfect: ShieldCheck,
+  diagnostic: MonitorCog,
+  alternator: Cog,
+  starter: PlugZap,
+  sensor: ScanSearch,
+  headlight: Lightbulb,
+  fuse: Zap,
+  brake: Disc3,
+  shock: Activity,
+  controlArm: Wrench,
+  belt: RotateCw,
+  waterPump: Droplets,
+  radiator: ThermometerSnowflake,
+  inspection: ScanSearch,
+  acGas: Snowflake,
+  acLeak: Wind,
+  compressor: Cog,
+  evaporator: Snowflake,
+  fan: Fan,
+  paint: PaintRoller,
+  dent: Hammer,
+  scratch: Eraser,
+  protection: ShieldCheck,
+  service: Wrench,
+}
+const QUICK_SERVICE_TYPES = [
+  { label: 'تبديل زيت', image: '/service-icons-3d/auto-pack/oil-can.webp', tone: 'cyan', hint: 'الأكثر طلباً' },
+  { label: 'فلتر زيت', image: '/service-icons-3d/auto-pack/oil-filter.webp', tone: 'amber', hint: 'فلترة المحرك' },
+  { label: 'فلتر هواء', image: '/service-icons-3d/auto-pack/air-filter.webp', tone: 'sky', hint: 'تنفس أنظف' },
+  { label: 'فلتر مكيف', image: '/service-icons-3d/auto-pack/ac-filter.webp', tone: 'violet', hint: 'هواء المقصورة' },
+  { label: 'تبديل ماء رديتر', image: '/service-icons-3d/auto-pack/radiator-coolant-exact.webp', tone: 'blue', hint: 'تبريد المحرك' },
+  { label: 'فحص بطارية', image: '/service-icons-3d/auto-pack/battery-check.webp', tone: 'emerald', hint: 'فولتية وشحن' },
+  { label: 'تبديل بواجي', image: '/service-icons-3d/auto-pack/spark-plug.webp', tone: 'fuchsia', hint: 'تشغيل أنعم' },
+  { label: 'تعبئة نيتروجين', image: '/service-icons-3d/auto-pack/nitrogen.webp', tone: 'teal', hint: 'ضغط مستقر' },
+  { label: 'غسيل', image: '/service-icons-3d/auto-pack/car-wash.webp', tone: 'indigo', hint: 'تنظيف سريع' },
+  { label: 'ميزان', image: '/service-icons-3d/auto-pack/wheel-alignment.webp', tone: 'rose', hint: 'ثبات الطريق' },
+  { label: 'ترصيص', image: '/service-icons-3d/auto-pack/wheel-balancing.webp', tone: 'slate', hint: 'اهتزاز أقل' },
 ]
+const SERVICE_TEMPLATES = {
+  quick_service: QUICK_SERVICE_TYPES,
+  tires: [
+    { label: 'تبديل إطار', image: '/service-icons-3d/auto-pack/tire-change-exact.webp', tone: 'slate', hint: 'تركيب إطار' },
+    { label: 'بيع إطار', image: '/service-icons-3d/auto-pack/tire-sale-exact.webp', tone: 'cyan', hint: 'إطار جديد' },
+    { label: 'رقعة إطار', image: '/service-icons-3d/auto-pack/tire-patch.webp', tone: 'amber', hint: 'تصليح بنجر' },
+    { label: 'ترصيص', image: '/service-icons-3d/auto-pack/wheel-balancing-exact.webp', tone: 'rose', hint: 'توازن الإطار' },
+    { label: 'ميزان', image: '/service-icons-3d/auto-pack/wheel-alignment-exact.webp', tone: 'sky', hint: 'ضبط مسار' },
+    { label: 'تعبئة نيتروجين', image: '/service-icons-3d/auto-pack/nitrogen-fill-exact.webp', tone: 'teal', hint: 'ضغط ثابت' },
+    { label: 'تبديل بلف', image: '/service-icons-3d/auto-pack/tire-valve-exact.webp', tone: 'emerald', hint: 'بلف الإطار' },
+    { label: 'تدوير إطارات', image: '/service-icons-3d/auto-pack/tire-rotate.webp', tone: 'violet', hint: 'توزيع التآكل' },
+  ],
+  wash: [
+    { label: 'غسيل خارجي', image: '/service-icons-3d/auto-pack/car-wash-exterior-exact.webp', tone: 'sky', hint: 'تنظيف سريع' },
+    { label: 'غسيل كامل', image: '/service-icons-3d/auto-pack/car-wash-full-exact.webp', tone: 'cyan', hint: 'خارجي وداخلي' },
+    { label: 'تنظيف داخلي', image: '/service-icons-3d/auto-pack/interior-clean.webp', tone: 'indigo', hint: 'المقصورة' },
+    { label: 'بولش', image: '/service-icons-3d/auto-pack/polisher.webp', tone: 'amber', hint: 'لمعان الطلاء' },
+    { label: 'واكس', image: '/service-icons-3d/auto-pack/wax-shield.webp', tone: 'teal', hint: 'حماية الطلاء' },
+    { label: 'نانو سيراميك', image: '/service-icons-3d/auto-pack/nano-shield.webp', tone: 'violet', hint: 'حماية متقدمة' },
+    { label: 'تعقيم', image: '/service-icons-3d/auto-pack/disinfect-spray.webp', tone: 'emerald', hint: 'تنظيف صحي' },
+  ],
+  electrical: [
+    { label: 'فحص كمبيوتر', image: '/service-icons-3d/auto-pack/computer-scan.webp', tone: 'cyan', hint: 'تشخيص أعطال' },
+    { label: 'تبديل بطارية', image: '/service-icons-3d/auto-pack/battery.webp', tone: 'emerald', hint: 'بطارية جديدة' },
+    { label: 'فحص دينمو', image: '/service-icons-3d/auto-pack/alternator.webp', tone: 'amber', hint: 'شحن السيارة' },
+    { label: 'تصليح سلف', image: '/service-icons-3d/auto-pack/starter.webp', tone: 'slate', hint: 'تشغيل المحرك' },
+    { label: 'تبديل حساس', image: '/service-icons-3d/auto-pack/sensor.webp', tone: 'sky', hint: 'حساسات السيارة' },
+    { label: 'تصليح إنارة', image: '/service-icons-3d/auto-pack/headlight.webp', tone: 'violet', hint: 'مصابيح وأسلاك' },
+    { label: 'تبديل فيوز', image: '/service-icons-3d/auto-pack/fuse.webp', tone: 'rose', hint: 'كهرباء داخلية' },
+  ],
+  mechanic: [
+    { label: 'تبديل بريك', image: '/service-icons-3d/auto-pack/brake-replace-exact.webp', tone: 'rose', hint: 'أمان الفرامل' },
+    { label: 'تبديل جامبين', image: '/service-icons-3d/auto-pack/shock.webp', tone: 'slate', hint: 'تعليق السيارة' },
+    { label: 'تبديل مقص', image: '/service-icons-3d/auto-pack/control-arm.webp', tone: 'amber', hint: 'أذرع التعليق' },
+    { label: 'تبديل سير', image: '/service-icons-3d/auto-pack/engine-belt.webp', tone: 'cyan', hint: 'سيور المحرك' },
+    { label: 'تبديل مضخة ماء', image: '/service-icons-3d/auto-pack/water-pump.webp', tone: 'blue', hint: 'تبريد المحرك' },
+    { label: 'تصليح رديتر', image: '/service-icons-3d/auto-pack/radiator.webp', tone: 'sky', hint: 'نظام التبريد' },
+    { label: 'فحص عام', image: '/service-icons-3d/auto-pack/inspection.webp', tone: 'emerald', hint: 'كشف ميكانيكي' },
+  ],
+  ac: [
+    { label: 'تعبئة غاز مكيف', image: '/service-icons-3d/auto-pack/ac-gas-exact.webp', tone: 'cyan', hint: 'تبريد أفضل' },
+    { label: 'فحص تهريب مكيف', image: '/service-icons-3d/auto-pack/ac-leak-exact.webp', tone: 'sky', hint: 'كشف تسريب' },
+    { label: 'تبديل كمبروسر', image: '/service-icons-3d/auto-pack/ac-compressor-exact.webp', tone: 'violet', hint: 'ضاغط المكيف' },
+    { label: 'تبديل فلتر مكيف', image: '/service-icons-3d/auto-pack/ac-filter.webp', tone: 'emerald', hint: 'هواء المقصورة' },
+    { label: 'تنظيف ثلاجة', image: '/service-icons-3d/auto-pack/ac-evaporator-exact.webp', tone: 'teal', hint: 'تنظيف داخلي' },
+    { label: 'تصليح مروحة', image: '/service-icons-3d/auto-pack/fan.webp', tone: 'amber', hint: 'هواء وتبريد' },
+  ],
+  body_paint: [
+    { label: 'صبغ قطعة', image: '/service-icons-3d/auto-pack/paint-spray.webp', tone: 'rose', hint: 'دهان موضعي' },
+    { label: 'سمكرة ضربة', image: '/service-icons-3d/auto-pack/dent-repair.webp', tone: 'slate', hint: 'تعديل الهيكل' },
+    { label: 'تلميع', image: '/service-icons-3d/auto-pack/polisher.webp', tone: 'amber', hint: 'لمعان الطلاء' },
+    { label: 'بولش خدوش', image: '/service-icons-3d/auto-pack/scratch-polish.webp', tone: 'cyan', hint: 'إزالة آثار' },
+    { label: 'حماية طلاء', image: '/service-icons-3d/auto-pack/paint-protection.webp', tone: 'teal', hint: 'طبقة حماية' },
+  ],
+}
 
 const SERVICE_TONES = {
   amber: {
@@ -108,13 +223,14 @@ export default function NewService() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const qc = useQueryClient()
+  const user = useAuthStore(s => s.user)
   const arrivalPlate = searchParams.get('plate') || ''
   const arrivalCarType = searchParams.get('car_type') || ''
   const arrivalCarColor = searchParams.get('car_color') || ''
   const [search, setSearch] = useState('')
   const [selectedCar, setSelectedCar] = useState(null)
   const [newCarForm, setNewCarForm] = useState(null) // { plate_number, car_type, car_color }
-  const [serviceType, setServiceType] = useState('تبديل زيت')
+  const [serviceType, setServiceType] = useState('')
   const [oilGrade, setOilGrade] = useState('15W40')
   const [form, setForm] = useState({ amount: '', discount: '0', mileage: '', notes: '' })
   const [lineInventoryId, setLineInventoryId] = useState('')
@@ -123,16 +239,127 @@ export default function NewService() {
   const [paymentMode, setPaymentMode] = useState('paid')
   const [paidAmount, setPaidAmount] = useState('')
   const [result, setResult] = useState(null)
+  const [submitError, setSubmitError] = useState('')
+  const [receptionActive, setReceptionActive] = useState(false)
+  const [receptionStatus, setReceptionStatus] = useState('idle')
+  const [receptionError, setReceptionError] = useState('')
+  const [receptionFrame, setReceptionFrame] = useState('')
+  const [receptionPlates, setReceptionPlates] = useState([])
+  const [receptionCount, setReceptionCount] = useState(0)
+  const receptionWsRef = useRef(null)
+
+  const { data: centerSettings, isLoading: centerSettingsLoading } = useQuery({
+    queryKey: ['center-settings'],
+    queryFn: () => getCenterSettings().then(r => r.data),
+  })
+  const centerSpecialty = centerSettings?.specialty || DEFAULT_CENTER_SPECIALTY
+  const cameraEnabled = centerSettings && hasPlanFeature(centerSettings.plan, 'camera')
+  const inventoryAutomationEnabled = centerSettings && hasPlanFeature(centerSettings.plan, 'inventory_auto_deduct')
+  const serviceTypes = SERVICE_TEMPLATES[centerSpecialty] || SERVICE_TEMPLATES[DEFAULT_CENTER_SPECIALTY]
+  const defaultServiceType = serviceTypes[0]?.label || 'خدمة'
+  const usesOilGrade = serviceType === 'تبديل زيت'
+
+  const stopReception = useCallback(() => {
+    receptionWsRef.current?.close()
+    receptionWsRef.current = null
+    setReceptionStatus('idle')
+    setReceptionActive(false)
+    setReceptionFrame('')
+  }, [])
+
+  const chooseReceptionPlate = useCallback((item) => {
+    setSearch(item.plate)
+    setSubmitError('')
+    if (item.car) {
+      setSelectedCar(item.car)
+      setNewCarForm(null)
+      return
+    }
+    setSelectedCar(null)
+    setNewCarForm({
+      plate_number: item.plate,
+      car_type: item.car_type || '',
+      car_color: item.car_color || '',
+      owner_name: '',
+      phone: '',
+    })
+  }, [])
+
+  const startReception = useCallback(() => {
+    if (!user?.tenant_id) return
+    receptionWsRef.current?.close()
+    setReceptionStatus('connecting')
+    setReceptionError('')
+    const token = useAuthStore.getState().token
+    const ws = new WebSocket(`${WS_CAMERA_BASE}/${user.tenant_id}?token=${encodeURIComponent(token || '')}`)
+    receptionWsRef.current = ws
+
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data)
+      if (msg.type === 'connected') {
+        setReceptionStatus('active')
+      } else if (msg.type === 'frame') {
+        setReceptionFrame(`data:image/jpeg;base64,${msg.data}`)
+      } else if (msg.type === 'plate_detected' || msg.type === 'plate_candidate') {
+        const confirmed = msg.type === 'plate_detected'
+        if (confirmed) setReceptionCount(n => n + 1)
+        setReceptionPlates(prev => [
+          {
+            plate: msg.plate,
+            car: msg.car,
+            car_type: msg.car_type,
+            car_color: msg.car_color,
+            confidence: msg.confidence,
+            votes: msg.votes,
+            confirmed,
+            frame: msg.frame ? `data:image/jpeg;base64,${msg.frame}` : '',
+            time: new Date().toLocaleTimeString('ar-IQ'),
+          },
+          ...prev.filter(item => item.plate !== msg.plate).slice(0, 7)
+        ])
+      } else if (msg.type === 'error') {
+        setReceptionStatus('error')
+        setReceptionError(msg.message || 'تعذر تشغيل استقبال السيارة')
+        setReceptionActive(false)
+      }
+    }
+
+    ws.onclose = () => {
+      setReceptionStatus(prev => prev === 'error' ? prev : 'idle')
+    }
+
+    ws.onerror = () => {
+      setReceptionStatus('error')
+      setReceptionError('تعذر الاتصال بالكاميرا')
+      setReceptionActive(false)
+    }
+  }, [user?.tenant_id])
+
+  useEffect(() => {
+    if (receptionActive) startReception()
+    else if (receptionWsRef.current) stopReception()
+  }, [receptionActive, startReception, stopReception])
+
+  useEffect(() => () => receptionWsRef.current?.close(), [])
+
+  useEffect(() => {
+    if (centerSettingsLoading) return
+    if (!serviceTypes.some(item => item.label === serviceType)) {
+      setServiceType(defaultServiceType)
+      setLineInventoryId('')
+      setForm(prev => ({ ...prev, amount: '', notes: '' }))
+    }
+  }, [centerSettingsLoading, defaultServiceType, serviceType, serviceTypes])
 
   const { data: inventoryItems = [] } = useQuery({
     queryKey: ['inventory'],
     queryFn: () => getInventory().then(r => r.data),
-    enabled: !!selectedCar,
+    enabled: !!selectedCar && !!inventoryAutomationEnabled,
   })
 
   // Auto-match inventory item when service type or oil grade changes
   useEffect(() => {
-    if (!selectedCar || inventoryItems.length === 0) return
+    if (!selectedCar || !inventoryAutomationEnabled || inventoryItems.length === 0) return
     const kwMap = {
       'تبديل زيت': [oilGrade, oilGrade.replace('W', 'W-'), 'زيت محرك', 'زيت'],
       'فلتر زيت': ['فلتر زيت'],
@@ -141,6 +368,17 @@ export default function NewService() {
       'تبديل ماء رديتر': ['ماء رديتر', 'رديتر'],
       'تبديل بواجي': ['شمعات', 'بواجي'],
       'ترصيص': ['أوزان', 'ترصيص'],
+      'تبديل إطار': ['إطار', 'تاير'],
+      'بيع إطار': ['إطار', 'تاير'],
+      'رقعة إطار': ['رقعة', 'لصق'],
+      'تبديل بلف': ['بلف'],
+      'تعبئة نيتروجين': ['نيتروجين'],
+      'تبديل بطارية': ['بطارية'],
+      'تبديل فلتر مكيف': ['فلتر مكيف'],
+      'تعبئة غاز مكيف': ['غاز مكيف', 'فريون'],
+      'تبديل بريك': ['بريك', 'فرامل'],
+      'تبديل سير': ['سير'],
+      'تبديل مضخة ماء': ['مضخة ماء', 'طرمبة ماء'],
     }
     const kws = kwMap[serviceType]
     let found = null
@@ -156,7 +394,7 @@ export default function NewService() {
       setLineInventoryId('')
       setForm(prev => ({ ...prev, amount: '' }))
     }
-  }, [serviceType, oilGrade, inventoryItems, selectedCar])
+  }, [serviceType, oilGrade, inventoryItems, selectedCar, inventoryAutomationEnabled])
 
   // Auto-fill price from selected inventory item
   useEffect(() => {
@@ -167,14 +405,6 @@ export default function NewService() {
       setForm(prev => ({ ...prev, amount: String(Math.round(item.unit_cost * qty)) }))
     }
   }, [lineInventoryId, lineInventoryQty, inventoryItems])
-
-  const videoRef = useRef(null)
-  const fileInputRef = useRef(null)
-  const [stream, setStream] = useState(null)
-  const [cameraActive, setCameraActive] = useState(false)
-  const [scanning, setScanning] = useState(false)
-  const [scanResult, setScanResult] = useState(null)
-  const [scanError, setScanError] = useState('')
 
   const { data: cars = [] } = useQuery({
     queryKey: ['cars', search],
@@ -205,7 +435,13 @@ export default function NewService() {
 
   const mutation = useMutation({
     mutationFn: createService,
-    onSuccess: (res) => setResult(res.data),
+    onSuccess: (res) => {
+      setSubmitError('')
+      navigate(`/center/invoices/${res.data.invoice_id}/print`, { replace: true })
+    },
+    onError: (err) => {
+      setSubmitError(err.response?.data?.detail || 'تعذر اعتماد الفاتورة. راجع البيانات وحاول مرة أخرى.')
+    },
   })
 
   const createCarMutation = useMutation({
@@ -227,9 +463,10 @@ export default function NewService() {
       : Math.min(Math.max(parseFloat(paidAmount) || 0, 0), normalizedNet)
   const remainingAmount = Math.max(normalizedNet - effectivePaidAmount, 0)
   const canSubmit = selectedCar && invoiceLines.length > 0 && !mutation.isPending
-  const serviceName = serviceType === 'تبديل زيت' ? `${serviceType} ${oilGrade}` : serviceType
+  const serviceName = usesOilGrade ? `${serviceType} ${oilGrade}` : serviceType
   const addLineToInvoice = () => {
     if (!form.amount) return
+    setSubmitError('')
     const invItem = lineInventoryId ? inventoryItems.find(i => i.id === Number(lineInventoryId)) : null
     setInvoiceLines(prev => [...prev, {
       id: Date.now() + Math.random().toString(36).slice(2),
@@ -244,17 +481,26 @@ export default function NewService() {
     setLineInventoryId('')
     setLineInventoryQty('1')
   }
+
   const submitService = () => {
+    setSubmitError('')
     const deductions = invoiceLines
       .filter(l => l.inventoryItemId)
       .map(l => ({ item_id: l.inventoryItemId, quantity: l.inventoryQty }))
+    const invoiceDetails = invoiceLines.map(line => ({
+      name: line.name,
+      amount: Number(line.amount || 0),
+      notes: line.notes || '',
+      inventory_item_name: line.inventoryItemName || '',
+      inventory_quantity: line.inventoryQty || null,
+    }))
     mutation.mutate({
       car_id: selectedCar.id,
       oil_type: invoiceLines.map(line => line.name).join(' + '),
       amount: invoiceTotal,
       discount: parseFloat(form.discount) || 0,
       mileage: form.mileage ? parseFloat(form.mileage) : null,
-      notes: invoiceLines.map(line => line.notes ? `${line.name}: ${line.notes}` : line.name).join(' | '),
+      notes: `INVOICE_LINES:${JSON.stringify(invoiceDetails)}`,
       inventory_deductions: deductions,
       payment_status: paymentMode,
       paid_amount: effectivePaidAmount,
@@ -271,88 +517,6 @@ export default function NewService() {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [canSubmit, selectedCar, form, mutation, serviceName])
-
-  useEffect(() => {
-    return () => { if (stream) stream.getTracks().forEach(t => t.stop()) }
-  }, [stream])
-
-  const startCamera = async () => {
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-      setStream(s)
-      setCameraActive(true)
-      setScanResult(null)
-      // wait for videoRef to be attached then assign
-      setTimeout(() => {
-        if (videoRef.current) videoRef.current.srcObject = s
-      }, 50)
-    } catch {
-      alert('تعذر فتح الكاميرا. تأكد من منح الإذن في المتصفح.')
-    }
-  }
-
-  const stopCamera = () => {
-    if (stream) stream.getTracks().forEach(t => t.stop())
-    setStream(null)
-    setCameraActive(false)
-  }
-
-  const scanFromFile = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    e.target.value = ''
-    setScanning(true)
-    setScanError('')
-    try {
-      const res = await readPlate(file)
-      const { plate_number: plate, car_type, car_color, confidence, candidates = [], message } = res.data
-      if (plate) {
-        setScanResult({ plate, car_type, car_color, confidence, candidates })
-        setSearch(plate)
-        setNewCarForm({ plate_number: plate, car_type: car_type || '', car_color: car_color || '', owner_name: '', phone: '' })
-        stopCamera()
-      } else {
-        setScanResult(null)
-        setScanError(message || 'لم نتمكن من قراءة رقم اللوحة من الصورة. أعد التصوير بإضاءة أوضح، أو أدخل رقم اللوحة يدوياً للمتابعة.')
-      }
-    } catch (err) {
-      setScanError(err.response?.data?.detail || 'تعذرت القراءة الآن. أدخل رقم اللوحة يدوياً للمتابعة، ثم حاول استخدام الكاميرا لاحقاً.')
-    } finally {
-      setScanning(false)
-    }
-  }
-
-  const captureAndScan = async () => {
-    if (!videoRef.current) return
-    const canvas = document.createElement('canvas')
-    canvas.width = videoRef.current.videoWidth
-    canvas.height = videoRef.current.videoHeight
-    canvas.getContext('2d').drawImage(videoRef.current, 0, 0)
-
-    canvas.toBlob(async (blob) => {
-      if (!blob) return
-      setScanning(true)
-      setScanError('')
-      try {
-        const file = new File([blob], 'plate.jpg', { type: 'image/jpeg' })
-        const res = await readPlate(file)
-        const { plate_number: plate, car_type, car_color, confidence, candidates = [], message } = res.data
-        if (plate) {
-          setScanResult({ plate, car_type, car_color, confidence, candidates })
-          setSearch(plate)
-          setNewCarForm({ plate_number: plate, car_type: car_type || '', car_color: car_color || '', owner_name: '', phone: '' })
-          stopCamera()
-        } else {
-          setScanResult(null)
-          setScanError(message || 'لم نتمكن من قراءة رقم اللوحة من الصورة. أعد التصوير بإضاءة أوضح، أو أدخل رقم اللوحة يدوياً للمتابعة.')
-        }
-      } catch (err) {
-        setScanError(err.response?.data?.detail || 'تعذرت القراءة الآن. أدخل رقم اللوحة يدوياً للمتابعة، ثم حاول استخدام الكاميرا لاحقاً.')
-      } finally {
-        setScanning(false)
-      }
-    }, 'image/jpeg', 0.9)
-  }
 
   if (result) return (
     <Layout>
@@ -376,7 +540,7 @@ export default function NewService() {
             className="flex items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-8 py-3 text-sm font-black text-cyan-700 hover:bg-cyan-100">
             تعديل أو حذف الفاتورة
           </button>
-          <button onClick={() => { setResult(null); setSelectedCar(null); setSearch(''); setServiceType('تبديل زيت'); setOilGrade('15W40'); setInvoiceLines([]); setPaymentMode('paid'); setPaidAmount(''); setForm({ amount: '', discount: '0', mileage: '', notes: '' }) }}
+          <button onClick={() => { setResult(null); setSelectedCar(null); setSearch(''); setServiceType(defaultServiceType); setOilGrade('15W40'); setInvoiceLines([]); setPaymentMode('paid'); setPaidAmount(''); setForm({ amount: '', discount: '0', mileage: '', notes: '' }) }}
             className="rounded-xl border border-slate-200 px-8 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
             خدمة جديدة
           </button>
@@ -385,12 +549,24 @@ export default function NewService() {
     </Layout>
   )
 
+  if (centerSettingsLoading) return (
+    <Layout>
+      <div className="surface rounded-lg p-8 text-center">
+        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-cyan-50 text-cyan-700">
+          <Wrench size={24} />
+        </div>
+        <p className="text-lg font-black text-slate-950">جاري تجهيز قالب المركز...</p>
+        <p className="mt-2 text-sm font-bold text-slate-500">نقرأ اختصاص المركز حتى تظهر الخدمات المناسبة فقط.</p>
+      </div>
+    </Layout>
+  )
+
   return (
     <Layout>
       <div className="mb-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
         <div>
           <p className="text-sm font-semibold text-cyan-700">استقبال الخدمة</p>
-          <h2 className="mt-1 text-2xl font-black text-slate-950">خدمة سريعة للسيارة</h2>
+          <h2 className="mt-1 text-2xl font-black text-slate-950">خدمة سيارة - {getSpecialtyLabel(centerSpecialty)}</h2>
           <p className="mt-2 text-sm text-slate-500">
             {arrivalPlate
               ? `تم استقبال السيارة من كاميرا الباب: ${arrivalPlate}. أكمل بياناتها أو اخترها من النتائج ثم أضف الخدمات.`
@@ -402,103 +578,139 @@ export default function NewService() {
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[0.75fr_1.25fr]">
-        {/* Camera panel */}
-        <div className="surface rounded-lg p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-bold text-slate-950">قراءة اللوحة بالكاميرا</h3>
+      <section className="mb-5 grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+        <div className="surface overflow-hidden rounded-lg">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-white p-4">
+            <div>
+              <p className="text-xs font-black text-cyan-700">كاميرا الاستقبال</p>
+              <h3 className="mt-1 font-black text-slate-950">قراءة لوحة السيارة</h3>
+            </div>
             <button
-              onClick={cameraActive ? stopCamera : startCamera}
-              className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold transition ${cameraActive ? 'bg-rose-50 text-rose-700 hover:bg-rose-100' : 'bg-cyan-50 text-cyan-700 hover:bg-cyan-100'}`}>
-              {cameraActive ? <><CameraOff size={14} /> إيقاف</> : <><Camera size={14} /> تفعيل الكاميرا</>}
+              type="button"
+              onClick={() => cameraEnabled && setReceptionActive(v => !v)}
+              disabled={!cameraEnabled}
+              className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-black transition ${
+                receptionActive
+                  ? 'bg-rose-100 text-rose-700 hover:bg-rose-200'
+                  : 'bg-slate-950 text-white hover:bg-slate-800'
+              } disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400`}
+            >
+              {receptionActive ? <CameraOff size={17} /> : <Camera size={17} />}
+              {receptionActive ? 'إيقاف الكاميرا' : 'تشغيل الكاميرا'}
             </button>
           </div>
+          <div className="p-4">
+            <div className="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-950">
+              {receptionFrame ? (
+                <img src={receptionFrame} alt="بث كاميرا الاستقبال" className="aspect-video w-full object-cover" />
+              ) : (
+                <div className="flex aspect-video items-center justify-center bg-slate-100">
+                  <div className="text-center">
+                    <div className={`mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full ${
+                      receptionActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-400'
+                    }`}>
+                      {receptionActive ? <Camera size={30} /> : <CameraOff size={30} />}
+                    </div>
+                    <p className="font-black text-slate-600">
+                      {cameraEnabled ? (receptionActive ? 'بانتظار صورة من الموبايل' : 'الكاميرا متوقفة') : 'قراءة اللوحة ضمن الخطة المميزة'}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {receptionStatus === 'active' && (
+                <div className="absolute right-3 top-3 rounded-full bg-emerald-500 px-3 py-1 text-xs font-black text-white shadow-lg">
+                  يعمل
+                </div>
+              )}
+            </div>
+            <div className="mt-3 min-h-[26px] text-center text-sm font-bold">
+              {receptionStatus === 'connecting' && <span className="text-amber-600">جاري الاتصال بالكاميرا...</span>}
+              {receptionStatus === 'active' && <span className="text-emerald-700">النظام يقرأ اللوحات الآن</span>}
+              {receptionStatus === 'error' && <span className="text-rose-600">{receptionError}</span>}
+              {receptionStatus === 'idle' && cameraEnabled && <span className="text-slate-500">افتح رابط كاميرا الموبايل ثم شغّل الكاميرا هنا</span>}
+              {receptionStatus === 'idle' && !cameraEnabled && (
+                <a href="/center/settings?upgrade=1" className="text-cyan-700 hover:underline">طلب ترقية لتفعيل كاميرا قراءة اللوحة</a>
+              )}
+            </div>
+          </div>
+        </div>
 
-          <div className="aspect-video overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
-            {cameraActive ? (
-              <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full items-center justify-center">
-                <div className="text-center">
-                  <Camera size={32} className="mx-auto mb-2 text-slate-300" />
-                  <p className="text-sm font-bold text-slate-400">اضغط "تفعيل الكاميرا"</p>
-                  <p className="text-xs text-slate-400">لقراءة رقم اللوحة تلقائياً</p>
+        <div className="surface overflow-hidden rounded-lg">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-white p-4">
+            <div>
+              <p className="text-xs font-black text-cyan-700">نتائج CTK</p>
+              <h3 className="mt-1 font-black text-slate-950">اللوحات المقروءة</h3>
+            </div>
+            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
+              {receptionCount}
+            </span>
+          </div>
+          <div className="max-h-[430px] space-y-3 overflow-y-auto p-4">
+            {receptionPlates.length ? receptionPlates.map((item, index) => (
+              <motion.div
+                key={`${item.plate}-${item.time}-${index}`}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm sm:grid-cols-[128px_1fr]"
+              >
+                <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                  {item.frame ? (
+                    <img src={item.frame} alt={`لوحة ${item.plate}`} className="h-24 w-full object-cover" />
+                  ) : (
+                    <div className="flex h-24 items-center justify-center">
+                      <CarFront size={28} className="text-slate-400" />
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-mono text-2xl font-black text-slate-950">{item.plate}</p>
+                        <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${
+                          item.confirmed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {item.confirmed ? 'مؤكد' : 'مرشح'}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs font-bold text-slate-500">
+                        {item.confidence ? `ثقة ${Math.round(item.confidence * 100)}%` : 'قراءة أولية'}
+                        {item.votes ? ` · ${item.votes} قراءات` : ''}
+                      </p>
+                    </div>
+                    <span className="text-xs font-bold text-slate-400">{item.time}</span>
+                  </div>
+                  <p className={`mt-2 rounded-md px-3 py-2 text-xs font-black ${
+                    item.car ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                  }`}>
+                    {item.car ? `${item.car.owner_name || 'زبون معروف'} · ${item.car.car_type || 'سيارة مسجلة'}` : 'سيارة غير مسجلة'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => chooseReceptionPlate(item)}
+                    className={`mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black transition ${
+                      item.car ? 'bg-slate-950 text-white hover:bg-slate-800' : 'bg-amber-500 text-white hover:bg-amber-600'
+                    }`}
+                  >
+                    {item.car ? <PlayCircle size={16} /> : <UserPlus size={16} />}
+                    {item.car ? 'اختيار السيارة' : 'إضافة السيارة'}
+                  </button>
+                </div>
+              </motion.div>
+            )) : (
+              <div className="flex min-h-[230px] items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 p-5 text-center">
+                <div>
+                  <ScanSearch size={34} className="mx-auto mb-3 text-slate-300" />
+                  <p className="font-black text-slate-600">لا توجد لوحة مقروءة بعد</p>
+                  <p className="mt-1 text-sm font-bold text-slate-400">عند قراءة اللوحة ستظهر هنا مع صورتها.</p>
                 </div>
               </div>
             )}
           </div>
-
-          {cameraActive && (
-            <button onClick={captureAndScan} disabled={scanning}
-              className="mt-3 w-full flex items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 py-3 text-sm font-bold text-white disabled:opacity-50 hover:bg-slate-800">
-              <ScanLine size={16} />
-              {scanning ? 'جاري القراءة...' : 'التقاط وقراءة اللوحة'}
-            </button>
-          )}
-
-          {scanResult && (
-            <div className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 space-y-1">
-              <p className="text-xs font-bold text-emerald-600">✓ تم قراءة اللوحة</p>
-              <p className="font-mono text-lg font-black text-emerald-800">{scanResult.plate}</p>
-              {scanResult.confidence > 0 && scanResult.confidence < 0.82 && (
-                <p className="text-xs font-bold text-amber-700">تأكد من الرقم قبل الحفظ — جودة القراءة متوسطة</p>
-              )}
-              {scanResult.car_type && (
-                <p className="text-xs font-bold text-slate-600">النوع: {scanResult.car_type}</p>
-              )}
-              {scanResult.car_color && (
-                <p className="text-xs font-bold text-slate-600">اللون التقريبي: {scanResult.car_color}</p>
-              )}
-              {scanResult.candidates?.filter(p => p !== scanResult.plate).length > 0 && (
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {scanResult.candidates.filter(p => p !== scanResult.plate).map(candidate => (
-                    <button
-                      key={candidate}
-                      onClick={() => {
-                        setSearch(candidate)
-                        setScanResult(prev => ({ ...prev, plate: candidate }))
-                        setNewCarForm(prev => ({ ...prev, plate_number: candidate }))
-                      }}
-                      className="rounded-md border border-emerald-200 bg-white px-2 py-1 text-xs font-black text-emerald-700"
-                    >
-                      {candidate}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {scanError && (
-            <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold leading-6 text-amber-800">
-              <p>{scanError}</p>
-              <p className="mt-1 text-xs font-semibold text-amber-700">
-                نصيحة: اجعل اللوحة في منتصف الصورة، وتجنب الظل أو الانعكاس القوي.
-              </p>
-            </div>
-          )}
-
-          <div className="mt-3 border-t border-slate-100 pt-3">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="hidden"
-              onChange={scanFromFile}
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={scanning}
-              className="w-full flex items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:border-cyan-300 hover:bg-cyan-50 disabled:opacity-50 transition">
-              <Smartphone size={15} />
-              {scanning ? 'جاري القراءة...' : 'صوّر اللوحة من الهاتف أو الجهاز'}
-            </button>
-            <p className="mt-2 text-center text-xs text-slate-400">يفتح الكاميرا مباشرة على الهاتف</p>
-          </div>
-
         </div>
+      </section>
 
+      <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
         {/* Service form */}
         <div className="space-y-4">
           {!selectedCar ? (
@@ -508,6 +720,8 @@ export default function NewService() {
                 setServiceType={setServiceType}
                 oilGrade={oilGrade}
                 setOilGrade={setOilGrade}
+                serviceTypes={serviceTypes}
+                specialtyLabel={getSpecialtyLabel(centerSpecialty)}
               />
               <div className="relative">
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={19} />
@@ -570,6 +784,8 @@ export default function NewService() {
                     setServiceType={setServiceType}
                     oilGrade={oilGrade}
                     setOilGrade={setOilGrade}
+                    serviceTypes={serviceTypes}
+                    specialtyLabel={getSpecialtyLabel(centerSpecialty)}
                   />
                 </div>
                 {[['amount', 'سعر هذه الخدمة (IQD) *', 'number'], ['notes', 'ملاحظات هذه الخدمة', 'text']].map(([k, p, t]) => (
@@ -581,22 +797,28 @@ export default function NewService() {
                   <div className="flex items-center gap-2 text-xs font-black text-slate-500">
                     <Package size={14} /> خصم من المخزون (اختياري)
                   </div>
-                  <div className="grid grid-cols-[1fr_90px] gap-2">
-                    <select value={lineInventoryId} onChange={e => setLineInventoryId(e.target.value)}
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-cyan-400">
-                      <option value="">— اختر المادة —</option>
-                      {inventoryItems.map(item => (
-                        <option key={item.id} value={item.id}>
-                          {item.oil_type} ({Number(item.quantity).toLocaleString()} {item.category || 'وحدة'})
-                        </option>
-                      ))}
-                    </select>
-                    <input type="number" min="0.1" step="0.1" value={lineInventoryQty}
-                      onChange={e => setLineInventoryQty(e.target.value)}
-                      placeholder="الكمية"
-                      className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-cyan-400"
-                      disabled={!lineInventoryId} />
-                  </div>
+                  {inventoryAutomationEnabled ? (
+                    <div className="grid grid-cols-[1fr_90px] gap-2">
+                      <select value={lineInventoryId} onChange={e => setLineInventoryId(e.target.value)}
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-cyan-400">
+                        <option value="">— اختر المادة —</option>
+                        {inventoryItems.map(item => (
+                          <option key={item.id} value={item.id}>
+                            {item.oil_type} ({Number(item.quantity).toLocaleString()} {item.category || 'وحدة'})
+                          </option>
+                        ))}
+                      </select>
+                      <input type="number" min="0.1" step="0.1" value={lineInventoryQty}
+                        onChange={e => setLineInventoryQty(e.target.value)}
+                        placeholder="الكمية"
+                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-cyan-400"
+                        disabled={!lineInventoryId} />
+                    </div>
+                  ) : (
+                    <div className="rounded-lg border border-cyan-100 bg-cyan-50 px-3 py-2 text-xs font-bold leading-5 text-cyan-900">
+                      الخصم التلقائي من المخزون مفعل في خطتك عند توفر مواد مسجلة.
+                    </div>
+                  )}
                 </div>
                 <button onClick={addLineToInvoice} disabled={!form.amount}
                   className="flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-400 px-6 py-4 text-base font-black text-slate-950 transition hover:bg-cyan-300 disabled:opacity-50">
@@ -686,6 +908,11 @@ export default function NewService() {
                     </div>
                   </div>
                 </div>
+                {submitError && (
+                  <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-700">
+                    {submitError}
+                  </div>
+                )}
                 <button onClick={submitService}
                   disabled={!invoiceLines.length || mutation.isPending}
                   className="mt-5 w-full rounded-lg bg-emerald-500 px-6 py-4 text-lg font-black text-white transition hover:bg-emerald-600 disabled:opacity-50">
@@ -700,21 +927,26 @@ export default function NewService() {
   )
 }
 
-function ServiceTypePicker({ serviceType, setServiceType, oilGrade, setOilGrade }) {
-  const selectedService = SERVICE_TYPES.find(item => item.label === serviceType) || SERVICE_TYPES[0]
+function ServiceTypePicker({ serviceType, setServiceType, oilGrade, setOilGrade, serviceTypes, specialtyLabel }) {
+  const selectedService = serviceTypes.find(item => item.label === serviceType) || serviceTypes[0]
   const selectedTone = SERVICE_TONES[selectedService.tone] || SERVICE_TONES.cyan
+  const SelectedIcon = SERVICE_ICON_MAP[selectedService.icon] || SERVICE_ICON_MAP.service
 
   return (
     <div className="surface overflow-hidden rounded-lg">
       <div className="flex flex-col gap-4 border-b border-slate-100 bg-gradient-to-l from-slate-50 via-white to-white p-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ring-1 shadow-lg ${selectedTone.icon}`}>
-            <img src={selectedService.image} alt="" className="h-11 w-11 object-contain" />
+            {selectedService.image ? (
+              <img src={selectedService.image} alt="" className="h-11 w-11 object-contain" />
+            ) : (
+              <SelectedIcon size={26} strokeWidth={2.5} />
+            )}
           </div>
           <div>
             <div className="flex items-center gap-2">
               <Car size={17} className="text-cyan-700" />
-              <h3 className="font-black text-slate-950">نوع الخدمة</h3>
+              <h3 className="font-black text-slate-950">{specialtyLabel}</h3>
             </div>
             <p className="mt-1 text-sm font-bold text-slate-500">{selectedService.label} · {selectedService.hint}</p>
           </div>
@@ -725,9 +957,10 @@ function ServiceTypePicker({ serviceType, setServiceType, oilGrade, setOilGrade 
       </div>
       <div className="p-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {SERVICE_TYPES.map(({ label, image, tone }) => {
+          {serviceTypes.map(({ label, icon, image, tone }) => {
             const isActive = serviceType === label
             const toneClasses = SERVICE_TONES[tone] || SERVICE_TONES.cyan
+            const Icon = SERVICE_ICON_MAP[icon] || SERVICE_ICON_MAP.service
 
             return (
               <motion.button
@@ -743,7 +976,11 @@ function ServiceTypePicker({ serviceType, setServiceType, oilGrade, setOilGrade 
               >
                 <span className="flex h-full items-center justify-between gap-3">
                   <span className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full ring-1 shadow-lg transition ${toneClasses.icon}`}>
-                    <img src={image} alt="" className="h-14 w-14 object-contain drop-shadow-md transition duration-200 group-hover:scale-105" />
+                    {image ? (
+                      <img src={image} alt="" className="h-14 w-14 object-contain drop-shadow-md transition duration-200 group-hover:scale-105" />
+                    ) : (
+                      <Icon size={34} strokeWidth={2.35} className="transition duration-200 group-hover:scale-105" />
+                    )}
                   </span>
                   {isActive && (
                     <span className={`absolute left-3 top-3 flex h-7 w-7 items-center justify-center rounded-full shadow-md ${toneClasses.check}`}>
@@ -789,7 +1026,7 @@ function ServiceTypePicker({ serviceType, setServiceType, oilGrade, setOilGrade 
                   }`}
                 >
                   <span className={`flex h-8 w-8 items-center justify-center rounded-full ring-1 shadow-md ${oilTone.icon}`}>
-                    <img src="/service-icons/oil-drop.png" alt="" className="h-7 w-7 object-contain" />
+                    <img src="/service-icons-3d/auto-pack/oil-can.webp" alt="" className="h-7 w-7 object-contain" />
                   </span>
                   <span className="text-slate-950">{t}</span>
                   {oilGrade === t && (

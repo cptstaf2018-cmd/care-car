@@ -8,6 +8,7 @@ from app.models.service import Service
 from app.models.tenant import Tenant
 
 REMINDER_INTERVAL_DAYS = 20
+OIL_REMINDER_SPECIALTIES = {"quick_service"}
 
 
 PRE_REMINDER_TEMPLATE = (
@@ -158,26 +159,28 @@ def get_debt_reminders(db: Session, tenant: Tenant) -> list[dict]:
 def get_cars_to_notify(db: Session, tenant: Tenant) -> list[dict]:
     """
     Returns cars that need a message today:
-    - pre_reminder: two days before the oil/service due date
-    - due_reminder: on the oil/service due date
+    - pre_reminder: two days before the oil service due date, for oil/quick-service centers only
+    - due_reminder: on the oil service due date, for oil/quick-service centers only
     - debt_reminder: every 20 days while the car still has debt
     """
-    reminders = get_due_reminders(db, tenant)
     result = []
 
-    for r in reminders:
-        if not r["phone"]:
-            continue
+    if (tenant.specialty or "quick_service") in OIL_REMINDER_SPECIALTIES:
+        reminders = get_due_reminders(db, tenant)
 
-        car = db.get(Car, r["car_id"])
-        if not car:
-            continue
+        for r in reminders:
+            if not r["phone"]:
+                continue
 
-        if r["is_pre_due"] and not _already_sent(db, tenant.id, car.id, "pre_reminder"):
-            result.append({**r, "reminder_type": "pre_reminder", "car": car})
+            car = db.get(Car, r["car_id"])
+            if not car:
+                continue
 
-        if r["is_due_today"] and not _already_sent(db, tenant.id, car.id, "due_reminder"):
-            result.append({**r, "reminder_type": "due_reminder", "car": car})
+            if r["is_pre_due"] and not _already_sent(db, tenant.id, car.id, "pre_reminder"):
+                result.append({**r, "reminder_type": "pre_reminder", "car": car})
+
+            if r["is_due_today"] and not _already_sent(db, tenant.id, car.id, "due_reminder"):
+                result.append({**r, "reminder_type": "due_reminder", "car": car})
 
     result.extend(get_debt_reminders(db, tenant))
     return result

@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 import os
+import json
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.deps import get_current_user
@@ -28,6 +29,40 @@ def _invoice_amounts(db: Session, inv: Invoice) -> tuple[float, float, float]:
     remaining = min(float(debt.amount or 0), total) if debt else (0 if inv.status == InvoiceStatus.paid else total)
     paid = max(total - remaining, 0)
     return total, paid, remaining
+
+
+def _invoice_lines(service: Service | None) -> list[dict]:
+    if not service:
+        return []
+    notes = service.notes or ""
+    if notes.startswith("INVOICE_LINES:"):
+        try:
+            data = json.loads(notes.removeprefix("INVOICE_LINES:"))
+            if isinstance(data, list):
+                return [
+                    {
+                        "name": str(line.get("name") or ""),
+                        "amount": float(line.get("amount") or 0),
+                        "notes": str(line.get("notes") or ""),
+                        "inventory_item_name": str(line.get("inventory_item_name") or ""),
+                        "inventory_quantity": line.get("inventory_quantity"),
+                    }
+                    for line in data
+                    if isinstance(line, dict) and (line.get("name") or line.get("inventory_item_name"))
+                ]
+        except (TypeError, ValueError, json.JSONDecodeError):
+            pass
+    return [
+        {
+            "name": line,
+            "amount": 0,
+            "notes": "",
+            "inventory_item_name": "",
+            "inventory_quantity": None,
+        }
+        for line in (service.oil_type or "").split(" + ")
+        if line
+    ]
 
 
 def _sync_invoice_debt(db: Session, inv: Invoice):
@@ -91,6 +126,7 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db), user: User = Dep
     car = db.get(Car, service.car_id) if service else None
     tenant = db.get(Tenant, inv.tenant_id)
     total, paid, remaining = _invoice_amounts(db, inv)
+    invoice_lines = _invoice_lines(service)
     return {
         "id": inv.id,
         "invoice_date": str(inv.invoice_date),
@@ -100,8 +136,9 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db), user: User = Dep
         "net": total,
         "paid_amount": paid,
         "remaining_amount": remaining,
-        "service_lines": (service.oil_type or "").split(" + ") if service else [],
-        "notes": service.notes if service else None,
+        "service_lines": [line["name"] for line in invoice_lines],
+        "invoice_lines": invoice_lines,
+        "notes": "" if service and (service.notes or "").startswith("INVOICE_LINES:") else (service.notes if service else None),
         "mileage": service.mileage if service else None,
         "customer_name": car.owner_name if car else None,
         "plate_number": car.plate_number if car else None,

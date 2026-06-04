@@ -7,7 +7,8 @@ import {
 } from 'lucide-react'
 import Layout from '../../components/Layout'
 import { getTenantMonitoring, updateTenant } from '../../api/tenants'
-import { IQD, planShortName } from '../../constants/plans'
+import { IQD, tenantPlanLabel } from '../../constants/plans'
+import { getSpecialtyLabel } from '../../constants/centerSpecialties'
 
 const healthMeta = {
   healthy: {
@@ -98,7 +99,7 @@ export default function Monitoring() {
     return rows.filter(row => {
       const matchesFilter = filter === 'all' || (filter === 'issues' ? row.health !== 'healthy' : row.health === filter)
       const needle = query.trim().toLowerCase()
-      const matchesQuery = !needle || [row.name, row.manager_name, row.manager_email, row.contact_phone, row.whatsapp_number]
+      const matchesQuery = !needle || [row.name, getSpecialtyLabel(row.specialty), row.manager_name, row.manager_email, row.contact_phone, row.whatsapp_number]
         .filter(Boolean)
         .some(value => String(value).toLowerCase().includes(needle))
       return matchesFilter && matchesQuery
@@ -243,6 +244,7 @@ function MonitorRow({ row, onRenew, fixing }) {
           <div className="min-w-0">
             <h3 className="truncate text-base font-black text-slate-950">{row.name}</h3>
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-bold text-slate-500">
+              <Info icon={Wrench} text={getSpecialtyLabel(row.specialty)} />
               <Info icon={User} text={row.manager_name || 'لا يوجد مدير'} />
               <Info icon={Phone} text={row.contact_phone || row.whatsapp_number || 'لا يوجد رقم'} ltr />
             </div>
@@ -255,7 +257,7 @@ function MonitorRow({ row, onRenew, fixing }) {
           <Icon size={13} /> {meta.label}
         </span>
         <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-black text-slate-700">
-          {planShortName(row.plan)}
+          {tenantPlanLabel(row)}
         </span>
         <span className="rounded-full bg-white px-2.5 py-1 text-xs font-black text-slate-500 ring-1 ring-slate-200">
           {expiryText(row.days_to_expiry)}

@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: str = ""
     SMTP_FROM_EMAIL: str = ""
     SMTP_FROM_NAME: str = "Care Car"
+    PUBLIC_BASE_URL: str = "https://carecar.online"
 
     model_config = {"env_file": ".env"}
 
