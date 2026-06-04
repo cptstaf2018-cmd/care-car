@@ -1,9 +1,7 @@
 name: Deploy to VPS (Hostinger)
 
 on:
-  push:
-    branches:
-      - master
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -13,6 +11,26 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Check required deployment secrets
+        run: |
+          missing=0
+          for name in VPS_HOST VPS_USER VPS_SSH_KEY VPS_PORT PROJECT_PATH BACKEND_SERVICE; do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name is not configured"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          PROJECT_PATH: ${{ secrets.PROJECT_PATH }}
+          BACKEND_SERVICE: ${{ secrets.BACKEND_SERVICE }}
 
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
