@@ -14,7 +14,7 @@ import Layout from '../components/Layout'
 import { getCars, createCar } from '../api/cars'
 import { createService } from '../api/services'
 import { getInventory } from '../api/inventory'
-import { getCenterSettings } from '../api/settings'
+import { getCenterSettings, readLatestMobilePlate } from '../api/settings'
 import { DEFAULT_CENTER_SPECIALTY, getSpecialtyLabel } from '../constants/centerSpecialties'
 import { hasPlanFeature } from '../constants/plans'
 import { useAuthStore } from '../store/auth'
@@ -453,6 +453,39 @@ export default function NewService() {
     },
   })
 
+  const latestPlateMutation = useMutation({
+    mutationFn: readLatestMobilePlate,
+    onSuccess: (res) => {
+      const data = res.data || {}
+      const plate = data.plate_number || ''
+      if (!plate) {
+        setReceptionStatus('error')
+        setReceptionError(data.message || 'لم نتمكن من قراءة اللوحة من آخر صورة')
+        return
+      }
+      const item = {
+        plate,
+        car: null,
+        car_type: '',
+        car_color: '',
+        confidence: data.confidence,
+        votes: 1,
+        confirmed: true,
+        frame: '',
+        time: new Date().toLocaleTimeString('ar-IQ'),
+      }
+      setReceptionPlates(prev => [item, ...prev.filter(row => row.plate !== plate).slice(0, 7)])
+      setReceptionCount(n => n + 1)
+      chooseReceptionPlate(item)
+      setReceptionStatus('active')
+      setReceptionError('')
+    },
+    onError: (err) => {
+      setReceptionStatus('error')
+      setReceptionError(err.response?.data?.detail || 'لا توجد صورة حديثة من كاميرا الموبايل')
+    },
+  })
+
   const invoiceTotal = invoiceLines.reduce((sum, line) => sum + Number(line.amount || 0), 0)
   const netAmount = invoiceTotal - (parseFloat(form.discount) || 0)
   const normalizedNet = Math.max(netAmount, 0)
@@ -632,6 +665,16 @@ export default function NewService() {
                 <a href="/center/settings?upgrade=1" className="text-cyan-700 hover:underline">طلب ترقية لتفعيل كاميرا قراءة اللوحة</a>
               )}
             </div>
+            {cameraEnabled && (
+              <button
+                type="button"
+                onClick={() => latestPlateMutation.mutate()}
+                disabled={latestPlateMutation.isPending}
+                className="mt-3 w-full rounded-lg border border-cyan-200 bg-cyan-50 px-4 py-2.5 text-sm font-black text-cyan-800 transition hover:bg-cyan-100 disabled:opacity-50"
+              >
+                {latestPlateMutation.isPending ? 'جاري قراءة آخر صورة...' : 'قراءة آخر صورة من كاميرا الموبايل'}
+              </button>
+            )}
           </div>
         </div>
 

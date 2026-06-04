@@ -487,6 +487,7 @@ export default function CenterSettings() {
     queryFn: () => getCenterSettings().then(r => r.data),
   })
   const mobileCameraEnabled = hasPlanFeature(center?.plan, 'camera')
+  const oilServiceReminders = (center?.specialty || 'quick_service') === 'quick_service'
   const { data: mobileCameraLink } = useQuery({
     queryKey: ['mobile-camera-link', 'settings'],
     queryFn: () => getMobileCameraLink().then(r => r.data),
@@ -625,7 +626,7 @@ export default function CenterSettings() {
         </section>
 
         <section className="surface rounded-lg p-6 xl:col-span-2">
-          <h3 className="font-bold text-slate-950">واتساب والتذكيرات التلقائية</h3>
+          <h3 className="font-bold text-slate-950">واتساب ورسائل الديون</h3>
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             <input value={form.whatsapp_number} onChange={e => update('whatsapp_number', e.target.value)}
               placeholder="رقم واتساب المركز"
@@ -634,13 +635,21 @@ export default function CenterSettings() {
               placeholder="مفتاح واتساب API"
               type="password"
               className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
-            <input value={form.reminder_days} onChange={e => update('reminder_days', e.target.value)}
-              placeholder="التذكير بعد كم يوم"
-              type="number"
-              className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
+            {oilServiceReminders ? (
+              <input value={form.reminder_days} onChange={e => update('reminder_days', e.target.value)}
+                placeholder="تذكير الصيانة بعد كم يوم"
+                type="number"
+                className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
+            ) : (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold leading-6 text-slate-600">
+                تذكير الصيانة خاص بمراكز الزيوت فقط. مركزك يستخدم رسائل الديون واتساب.
+              </div>
+            )}
           </div>
           <div className="mt-4 rounded-lg border border-cyan-100 bg-cyan-50 px-4 py-3 text-sm font-semibold leading-7 text-cyan-900">
-            الرسائل ثابتة داخل النظام وتُرسل تلقائيا: تذكير رجوع للمركز بعد مدة التذكير، ومطالبة دين كل 20 يوم ما دام الدين مفتوحا.
+            {oilServiceReminders
+              ? 'الرسائل ثابتة داخل النظام: تذكير صيانة لمراكز الزيوت حسب المدة، ومطالبة دين كل 20 يوم ما دام الدين مفتوحا.'
+              : 'الرسائل الثابتة لهذا الاختصاص: مطالبة دين واتساب كل 20 يوم ما دام الدين مفتوحا. لا يتم إرسال تذكير صيانة للسيارات هنا.'}
           </div>
         </section>
       </div>

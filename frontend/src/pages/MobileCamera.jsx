@@ -32,11 +32,12 @@ export default function MobileCamera() {
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
     const image = canvas.toDataURL('image/jpeg', 0.72)
     try {
-      await fetch(`/mobile-camera/${encodeURIComponent(token)}/frame`, {
+      const response = await fetch(`/mobile-camera/${encodeURIComponent(token)}/frame`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image }),
       })
+      if (!response.ok) throw new Error('frame rejected')
       setStatus('live')
     } catch {
       setStatus('error')
