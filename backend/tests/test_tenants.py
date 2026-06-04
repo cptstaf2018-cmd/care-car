@@ -69,7 +69,7 @@ def test_list_tenants_includes_manager_and_registration_details(client, db, supe
     assert r.status_code == 200
     center = next(item for item in r.json() if item["name"] == "Info Center")
     assert center["manager_name"] == "Center Manager"
-    assert center["manager_email"] == "07700000001@carecar.app"
+    assert center["manager_email"] is None
     assert center["manager_phone"] == "07700000001"
     assert center["registration_method"] == "whatsapp"
     assert center["registration_contact"] == "07700000001"

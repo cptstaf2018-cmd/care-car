@@ -2,11 +2,13 @@ import logging
 import secrets
 import smtplib
 import string
+import time
+from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
@@ -23,6 +25,14 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 ACTIVATION_CODE_EXPIRE_MINUTES = 30
 PASSWORD_RESET_CODE_EXPIRE_MINUTES = 15
 MAX_PASSWORD_RESET_ATTEMPTS = 10
+RATE_LIMIT_WINDOW_SECONDS = 60
+RATE_LIMITS = {
+    "login": 20,
+    "register": 10,
+    "activate": 20,
+    "password_reset_request": 10,
+    "password_reset_confirm": 20,
+}
 CENTER_SPECIALTIES = {
     "quick_service",
     "tires",
@@ -32,6 +42,27 @@ CENTER_SPECIALTIES = {
     "ac",
     "body_paint",
 }
+
+_rate_buckets: dict[tuple[str, str], deque[float]] = defaultdict(deque)
+
+
+def _client_ip(request: Request) -> str:
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    if forwarded_for:
+        return forwarded_for.split(",", 1)[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+def _check_rate_limit(request: Request, scope: str, identifier: str = "") -> None:
+    limit = RATE_LIMITS.get(scope, 20)
+    key = (scope, f"{_client_ip(request)}:{identifier.strip().lower()[:80]}")
+    now = time.monotonic()
+    bucket = _rate_buckets[key]
+    while bucket and now - bucket[0] > RATE_LIMIT_WINDOW_SECONDS:
+        bucket.popleft()
+    if len(bucket) >= limit:
+        raise HTTPException(status_code=429, detail="طلبات كثيرة، انتظر دقيقة وحاول مجدداً")
+    bucket.append(now)
 
 
 class RegisterRequest(BaseModel):
@@ -251,8 +282,9 @@ def _send_password_reset_email(email: str, code: str) -> str:
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(body: LoginRequest, db: Session = Depends(get_db)):
+def login(request: Request, body: LoginRequest, db: Session = Depends(get_db)):
     identifier = _normalize_login_identifier(body.email)
+    _check_rate_limit(request, "login", identifier)
     user = db.query(User).filter(User.email == identifier).first()
     if not user or not verify_password(body.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
@@ -276,7 +308,8 @@ def me(user: User = Depends(get_current_user)):
 
 
 @router.post("/register", status_code=201)
-def register(body: RegisterRequest, db: Session = Depends(get_db)):
+def register(request: Request, body: RegisterRequest, db: Session = Depends(get_db)):
+    _check_rate_limit(request, "register", body.email or body.phone or body.whatsapp or body.center_name)
     if not body.center_name or not body.center_name.strip():
         raise HTTPException(status_code=400, detail="اسم المركز مطلوب")
 
@@ -397,7 +430,8 @@ MAX_ACTIVATION_ATTEMPTS = 10
 
 
 @router.post("/activate", response_model=TokenResponse)
-def activate(body: ActivateRequest, db: Session = Depends(get_db)):
+def activate(request: Request, body: ActivateRequest, db: Session = Depends(get_db)):
+    _check_rate_limit(request, "activate", body.email or "")
     user = db.query(User).filter(User.email == body.email).first()
     if not user or not user.activation_code:
         raise HTTPException(status_code=400, detail="لا يوجد كود تفعيل لهذا البريد")
@@ -428,7 +462,8 @@ def activate(body: ActivateRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/password-reset/request")
-def request_password_reset(body: PasswordResetRequest, db: Session = Depends(get_db)):
+def request_password_reset(request: Request, body: PasswordResetRequest, db: Session = Depends(get_db)):
+    _check_rate_limit(request, "password_reset_request", body.identifier)
     identifier = body.identifier.strip()
     if not identifier:
         raise HTTPException(status_code=400, detail="الإيميل أو رقم الواتساب مطلوب")
@@ -466,7 +501,8 @@ def request_password_reset(body: PasswordResetRequest, db: Session = Depends(get
 
 
 @router.post("/password-reset/confirm")
-def confirm_password_reset(body: PasswordResetConfirmRequest, db: Session = Depends(get_db)):
+def confirm_password_reset(request: Request, body: PasswordResetConfirmRequest, db: Session = Depends(get_db)):
+    _check_rate_limit(request, "password_reset_confirm", body.identifier)
     user = db.query(User).filter(User.email == _normalize_login_identifier(body.identifier)).first()
     if not user or not user.activation_code:
         raise HTTPException(status_code=400, detail="لا يوجد كود إعادة تعيين لهذا الحساب")

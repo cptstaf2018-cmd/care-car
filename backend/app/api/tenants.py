@@ -29,6 +29,9 @@ ACTIVATION_CODE_EXPIRE_MINUTES = 30
 def _send_activation_whatsapp(phone: str, code: str, center_name: str) -> str:
     if not settings.PLATFORM_WASNDER_API_KEY or not settings.PLATFORM_WHATSAPP_NUMBER:
         return "not_configured"
+    recipient = phone.strip()
+    if recipient.startswith("0"):
+        recipient = "+964" + recipient[1:]
     message = (
         f"مرحباً بك في منصة Care Car 🚗\n"
         f"تم إنشاء حساب مركز «{center_name}» بنجاح.\n"
@@ -40,7 +43,7 @@ def _send_activation_whatsapp(phone: str, code: str, center_name: str) -> str:
     try:
         resp = httpx.post(
             settings.WASNDER_API_URL,
-            json={"from": settings.PLATFORM_WHATSAPP_NUMBER, "to": phone, "message": message},
+            json={"to": recipient, "text": message},
             headers={"Authorization": f"Bearer {settings.PLATFORM_WASNDER_API_KEY}"},
             timeout=10,
         )
