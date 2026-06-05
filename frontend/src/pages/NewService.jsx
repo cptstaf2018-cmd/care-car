@@ -83,6 +83,22 @@ const QUICK_SERVICE_TYPES = [
   { label: 'ميزان', image: '/service-icons-3d/auto-pack/wheel-alignment.webp', tone: 'rose', hint: 'ثبات الطريق' },
   { label: 'ترصيص', image: '/service-icons-3d/auto-pack/wheel-balancing.webp', tone: 'slate', hint: 'اهتزاز أقل' },
 ]
+
+const MULTI_SERVICE_TYPES = [
+  { label: 'فحص عام', image: '/service-icons-3d/auto-pack/inspection.webp', tone: 'emerald', hint: 'كشف شامل' },
+  { label: 'تبديل زيت', image: '/service-icons-3d/auto-pack/oil-can.webp', tone: 'cyan', hint: 'زيوت وفلاتر' },
+  { label: 'تبديل إطار', image: '/service-icons-3d/auto-pack/tire-change-exact.webp', tone: 'slate', hint: 'إطارات' },
+  { label: 'غسيل خارجي', image: '/service-icons-3d/auto-pack/car-wash-exterior-exact.webp', tone: 'sky', hint: 'عناية وتنظيف' },
+  { label: 'فحص كمبيوتر', image: '/service-icons-3d/auto-pack/computer-scan.webp', tone: 'violet', hint: 'كهرباء وتشخيص' },
+  { label: 'تعبئة غاز مكيف', image: '/service-icons-3d/auto-pack/ac-gas-exact.webp', tone: 'blue', hint: 'تكييف' },
+  { label: 'تبديل بريك', image: '/service-icons-3d/auto-pack/brake-replace-exact.webp', tone: 'rose', hint: 'ميكانيك' },
+  { label: 'فحص بطارية', image: '/service-icons-3d/auto-pack/battery-check.webp', tone: 'amber', hint: 'بطارية وشحن' },
+  { label: 'تلميع', image: '/service-icons-3d/auto-pack/polisher.webp', tone: 'teal', hint: 'لمعان الطلاء' },
+  { label: 'صبغ قطعة', image: '/service-icons-3d/auto-pack/paint-spray.webp', tone: 'fuchsia', hint: 'سمكرة وصبغ' },
+  { label: 'ترصيص', image: '/service-icons-3d/auto-pack/wheel-balancing-exact.webp', tone: 'sky', hint: 'توازن الإطار' },
+  { label: 'فلتر مكيف', image: '/service-icons-3d/auto-pack/ac-filter.webp', tone: 'violet', hint: 'هواء المقصورة' },
+]
+
 const SERVICE_TEMPLATES = {
   quick_service: QUICK_SERVICE_TYPES,
   tires: [
@@ -137,7 +153,7 @@ const SERVICE_TEMPLATES = {
     { label: 'بولش خدوش', image: '/service-icons-3d/auto-pack/scratch-polish.webp', tone: 'cyan', hint: 'إزالة آثار' },
     { label: 'حماية طلاء', image: '/service-icons-3d/auto-pack/paint-protection.webp', tone: 'teal', hint: 'طبقة حماية' },
   ],
-  multi_service: QUICK_SERVICE_TYPES,
+  multi_service: MULTI_SERVICE_TYPES,
 }
 
 const SERVICE_TONES = {
@@ -560,6 +576,12 @@ export default function NewService() {
       setForm(prev => ({ ...prev, mileage: '' }))
     }
   }, [invoiceNeedsMileage, form.mileage])
+
+  useEffect(() => {
+    if (defaultServiceType && !serviceTypes.some(item => item.label === serviceType)) {
+      setServiceType(defaultServiceType)
+    }
+  }, [defaultServiceType, serviceType, serviceTypes])
 
   useEffect(() => {
     const onKeyDown = (e) => {
