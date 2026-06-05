@@ -1,6 +1,7 @@
 import asyncio
 import base64
 from collections import defaultdict, deque
+import ipaddress
 import logging
 import time
 from urllib.parse import urlparse
@@ -58,11 +59,19 @@ def _is_private_camera_url(cam_url: str) -> bool:
         host = urlparse(cam_url).hostname or ""
     except Exception:
         return False
+    normalized_host = host.strip().lower()
+    if normalized_host in {"localhost", "127.0.0.1", "::1"}:
+        return True
+    try:
+        ip = ipaddress.ip_address(normalized_host)
+        return ip.is_private or ip.is_loopback or ip.is_link_local
+    except ValueError:
+        pass
     return (
-        host.startswith("192.168.")
-        or host.startswith("10.")
-        or any(host.startswith(f"172.{i}.") for i in range(16, 32))
-        or host.endswith(".local")
+        normalized_host.startswith("192.168.")
+        or normalized_host.startswith("10.")
+        or any(normalized_host.startswith(f"172.{i}.") for i in range(16, 32))
+        or normalized_host.endswith(".local")
     )
 
 

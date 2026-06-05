@@ -25,6 +25,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 ACTIVATION_CODE_EXPIRE_MINUTES = 30
 PASSWORD_RESET_CODE_EXPIRE_MINUTES = 15
 MAX_PASSWORD_RESET_ATTEMPTS = 10
+PASSWORD_RESET_GENERIC_RESPONSE = {"delivery_status": "sent_if_account_exists"}
 RATE_LIMIT_WINDOW_SECONDS = 60
 RATE_LIMITS = {
     "login": 20,
@@ -472,10 +473,8 @@ def request_password_reset(request: Request, body: PasswordResetRequest, db: Ses
         raise HTTPException(status_code=400, detail="الإيميل أو رقم الواتساب مطلوب")
 
     user = db.query(User).filter(User.email == _normalize_login_identifier(identifier)).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="لا يوجد حساب بهذه البيانات")
-    if not user.is_active:
-        raise HTTPException(status_code=403, detail="الحساب غير نشط")
+    if not user or not user.is_active:
+        return PASSWORD_RESET_GENERIC_RESPONSE
 
     code = _generate_numeric_code()
     user.activation_code = code
@@ -500,7 +499,7 @@ def request_password_reset(request: Request, body: PasswordResetRequest, db: Ses
         raise HTTPException(status_code=502, detail="تعذر إرسال كود إعادة التعيين، حاول لاحقاً أو استخدم طريقة أخرى")
 
     db.commit()
-    return {"delivery_status": delivery_status}
+    return PASSWORD_RESET_GENERIC_RESPONSE
 
 
 @router.post("/password-reset/confirm")

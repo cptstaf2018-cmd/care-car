@@ -51,6 +51,22 @@ def test_password_reset_request_sends_code(client, db, monkeypatch):
     assert user.activation_attempts == 0
 
 
+def test_password_reset_request_does_not_reveal_unknown_account(client, monkeypatch):
+    sent = {}
+
+    def fake_send(email, code):
+        sent["email"] = email
+        return "sent"
+
+    monkeypatch.setattr("app.api.auth._send_password_reset_email", fake_send)
+
+    r = client.post("/auth/password-reset/request", json={"identifier": "missing@test.com"})
+
+    assert r.status_code == 200
+    assert r.json()["delivery_status"] == "sent_if_account_exists"
+    assert sent == {}
+
+
 def test_password_reset_confirm_changes_password(client, db):
     user = User(email="owner@test.com", hashed_password="old", role=Role.superadmin, full_name="Owner")
     db.add(user)
