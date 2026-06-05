@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.api import auth, tenants, cars, services, invoices, inventory, debts, reports, settings, vision, platform, camera_ws, webhook, mobile_camera, users
+from app.core.config import settings as app_settings
 from app.services.scheduler_service import start_scheduler
 
 
@@ -35,5 +36,10 @@ for router in [auth.router, tenants.router, cars.router, services.router,
 
 app.include_router(camera_ws.router)
 
-os.makedirs("/app/uploads/ads", exist_ok=True)
-app.mount("/uploads", StaticFiles(directory="/app/uploads"), name="uploads")
+@app.get("/health", tags=["health"])
+def health():
+    return {"status": "ok"}
+
+
+os.makedirs(os.path.join(app_settings.UPLOADS_DIR, "ads"), exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=app_settings.UPLOADS_DIR), name="uploads")

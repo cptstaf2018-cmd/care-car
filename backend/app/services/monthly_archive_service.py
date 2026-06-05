@@ -20,7 +20,7 @@ from app.models.tenant import Tenant
 from app.models.user import Role, User
 
 
-EXPORT_DIR = Path("/app/uploads/monthly_exports")
+EXPORT_DIR = Path(settings.UPLOADS_DIR) / "monthly_exports"
 RETENTION_DAYS = 400
 ENTERPRISE_PLAN = "enterprise"
 

@@ -18,5 +18,8 @@ def create_access_token(data: dict) -> str:
 def decode_token(token: str) -> dict:
     return jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
 
-def create_signed_token(data: dict) -> str:
-    return jwt.encode(data, settings.SECRET_KEY, algorithm="HS256")
+def create_signed_token(data: dict, expires_minutes: int | None = None) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(
+        minutes=expires_minutes or settings.SIGNED_TOKEN_EXPIRE_MINUTES
+    )
+    return jwt.encode({**data, "exp": expire}, settings.SECRET_KEY, algorithm="HS256")

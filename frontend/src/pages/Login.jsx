@@ -322,7 +322,7 @@ export default function Login({ initialMode = 'login' }) {
                       <form onSubmit={handleLoginSubmit} className="space-y-4">
                         <label className="block">
                           <span className="mb-2 block text-sm font-bold text-slate-200">الإيميل أو رقم الواتساب</span>
-                          <input type="text" inputMode="email" placeholder="admin@oil.com أو 07xxxxxxxxx" value={loginId}
+                          <input type="text" inputMode="email" placeholder="email@example.com أو 07xxxxxxxxx" value={loginId}
                             onChange={(e) => setLoginId(e.target.value)} required
                             className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
                         </label>
@@ -356,7 +356,7 @@ export default function Login({ initialMode = 'login' }) {
                         <form onSubmit={handleResetRequest} className="space-y-4">
                           <label className="block">
                             <span className="mb-2 block text-sm font-bold text-slate-200">الإيميل أو رقم الواتساب</span>
-                            <input type="text" inputMode="email" placeholder="admin@oil.com أو 07xxxxxxxxx" value={resetId}
+                            <input type="text" inputMode="email" placeholder="email@example.com أو 07xxxxxxxxx" value={resetId}
                               onChange={(e) => setResetId(e.target.value)} required
                               className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
                           </label>

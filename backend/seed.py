@@ -4,6 +4,8 @@ from app.core.config import settings
 from app.models.user import User, Role
 
 def seed():
+    if not settings.FIRST_SUPERADMIN_EMAIL or not settings.FIRST_SUPERADMIN_PASSWORD:
+        raise RuntimeError("Set FIRST_SUPERADMIN_EMAIL and FIRST_SUPERADMIN_PASSWORD before running seed.py")
     db = SessionLocal()
     existing = db.query(User).filter(User.email == settings.FIRST_SUPERADMIN_EMAIL).first()
     if not existing:

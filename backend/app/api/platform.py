@@ -3,13 +3,14 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import require_superadmin
 from app.models.platform_ad import PlatformAd
 
 router = APIRouter(prefix="/platform", tags=["platform"])
 
-UPLOADS_DIR = "/app/uploads/ads"
+UPLOADS_DIR = os.path.join(settings.UPLOADS_DIR, "ads")
 os.makedirs(UPLOADS_DIR, exist_ok=True)
 
 # Extension derived from verified content-type only — never from filename

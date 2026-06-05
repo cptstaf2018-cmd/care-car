@@ -6,13 +6,14 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.deps import require_manager_or_above
+from app.core.config import settings
 from app.models.tenant import Tenant
 from app.models.user import User
 from app.schemas.tenant import TenantOut, TenantUpdate
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
-LOGO_DIR = "/app/uploads/logos"
+LOGO_DIR = os.path.join(settings.UPLOADS_DIR, "logos")
 os.makedirs(LOGO_DIR, exist_ok=True)
 
 _LOGO_EXT = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}
@@ -34,7 +35,7 @@ def _logo_exists(logo_url: str | None) -> bool:
     return bool(
         logo_url
         and logo_url.startswith("/uploads/logos/")
-        and os.path.exists(os.path.join("/app", logo_url.lstrip("/")))
+        and os.path.exists(os.path.join(settings.UPLOADS_DIR, logo_url.removeprefix("/uploads/")))
     )
 
 

@@ -4,8 +4,9 @@ class Settings(BaseSettings):
     DATABASE_URL: str
     SECRET_KEY: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440
-    FIRST_SUPERADMIN_EMAIL: str = "admin@oil.com"
-    FIRST_SUPERADMIN_PASSWORD: str = "Admin1234!"
+    SIGNED_TOKEN_EXPIRE_MINUTES: int = 43200
+    FIRST_SUPERADMIN_EMAIL: str = ""
+    FIRST_SUPERADMIN_PASSWORD: str = ""
     WASNDER_API_URL: str = "https://www.wasenderapi.com/api/send-message"
     PLATFORM_WASNDER_API_KEY: str = ""
     PLATFORM_WHATSAPP_NUMBER: str = ""
@@ -16,6 +17,7 @@ class Settings(BaseSettings):
     SMTP_FROM_EMAIL: str = ""
     SMTP_FROM_NAME: str = "Care Car"
     PUBLIC_BASE_URL: str = "https://carecar.online"
+    UPLOADS_DIR: str = "/app/uploads"
 
     model_config = {"env_file": ".env"}
 
