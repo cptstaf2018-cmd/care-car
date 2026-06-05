@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
@@ -90,7 +90,7 @@ const MULTI_SERVICE_TYPES = [
   { label: 'فلتر هواء', image: '/service-icons-3d/auto-pack/air-filter.webp', tone: 'sky', hint: 'فلاتر محرك' },
   { label: 'فلتر مكيف', image: '/service-icons-3d/auto-pack/ac-filter.webp', tone: 'violet', hint: 'هواء المقصورة' },
   { label: 'بطارية', image: '/service-icons-3d/auto-pack/battery.webp', tone: 'emerald', hint: 'بطاريات سيارات' },
-  { label: 'بواجي', image: '/service-icons-3d/auto-pack/spark-plug.webp', tone: 'fuchsia', hint: 'شمعات تشغيل' },
+  { label: 'بلكات', image: '/service-icons-3d/auto-pack/spark-plug.webp', tone: 'fuchsia', hint: 'شمعات تشغيل' },
   { label: 'بريك', image: '/service-icons-3d/auto-pack/brake-pads.webp', tone: 'rose', hint: 'فرامل وملحقات' },
   { label: 'إطار', image: '/service-icons-3d/auto-pack/tire-sale-exact.webp', tone: 'slate', hint: 'إطارات للبيع' },
   { label: 'مساحات', image: '/service-icons-3d/auto-pack/wipers.webp', tone: 'teal', hint: 'مساحات زجاج' },
@@ -154,6 +154,43 @@ const SERVICE_TEMPLATES = {
     { label: 'حماية طلاء', image: '/service-icons-3d/auto-pack/paint-protection.webp', tone: 'teal', hint: 'طبقة حماية' },
   ],
   multi_service: MULTI_SERVICE_TYPES,
+}
+
+const PARTS_CATEGORIES = [
+  { key: 'all', label: 'الكل', hint: 'كل مواد المخزون' },
+  { key: 'oils', label: 'الزيوت', hint: 'زيوت محرك، كير، فرامل' },
+  { key: 'filters', label: 'الفلاتر', hint: 'زيت، هواء، مكيف' },
+  { key: 'spark', label: 'البلكات', hint: 'بلكات وشمعات' },
+  { key: 'engine', label: 'المحرك', hint: 'سيور، مضخات، حساسات' },
+  { key: 'transmission', label: 'الكير', hint: 'زيت وقطع ناقل الحركة' },
+  { key: 'brakes', label: 'الفرامل', hint: 'بريك وزيت فرامل' },
+  { key: 'cooling', label: 'التبريد', hint: 'رديتر وسائل تبريد' },
+  { key: 'electrical', label: 'الكهرباء', hint: 'بطاريات وفيوزات' },
+  { key: 'tires', label: 'الإطارات', hint: 'إطارات وبلف' },
+  { key: 'accessories', label: 'الإكسسوارات', hint: 'مساحات ومواد عامة' },
+]
+
+function normalizeArabicText(value = '') {
+  return String(value)
+    .toLowerCase()
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+}
+
+function getPartCategory(item) {
+  const text = normalizeArabicText(`${item.oil_type || ''} ${item.category || ''}`)
+  if (/كير|قير|gear|transmission/.test(text)) return 'transmission'
+  if (/فلتر|filter/.test(text)) return 'filters'
+  if (/بلك|بلكات|بواجي|شمعات|spark/.test(text)) return 'spark'
+  if (/بريك|فرامل|brake/.test(text)) return 'brakes'
+  if (/رديتر|تبريد|coolant|radiator|ماء/.test(text)) return 'cooling'
+  if (/بطاري|فيوز|دينمو|سلف|حساس|كهرب|battery|fuse|sensor/.test(text)) return 'electrical'
+  if (/اطار|إطار|تاير|بلف|نيتروجين|tire|tyre/.test(text)) return 'tires'
+  if (/زيت|oil/.test(text)) return 'oils'
+  if (/سير|محرك|مكينه|مكينة|طرمبه|مضخه|engine|belt|pump/.test(text)) return 'engine'
+  if (/مساح|وايبر|اكسسوار|accessor|wiper/.test(text)) return 'accessories'
+  return 'accessories'
 }
 
 const SERVICE_TONES = {
@@ -252,6 +289,7 @@ export default function NewService() {
   const [form, setForm] = useState({ amount: '', discount: '0', mileage: '', notes: '' })
   const [lineInventoryId, setLineInventoryId] = useState('')
   const [lineInventoryQty, setLineInventoryQty] = useState('1')
+  const [activePartCategory, setActivePartCategory] = useState('all')
   const [invoiceLines, setInvoiceLines] = useState([])
   const [paymentMode, setPaymentMode] = useState('paid')
   const [paidAmount, setPaidAmount] = useState('')
@@ -386,7 +424,7 @@ export default function NewService() {
   const { data: inventoryItems = [] } = useQuery({
     queryKey: ['inventory'],
     queryFn: () => getInventory().then(r => r.data),
-    enabled: !!selectedCar && !!inventoryAutomationEnabled,
+    enabled: !!selectedCar && (!!inventoryAutomationEnabled || isPartsStore),
   })
 
   // Auto-match inventory item when service type or oil grade changes
@@ -399,7 +437,8 @@ export default function NewService() {
       'فلتر هواء': ['فلتر هواء'],
       'فلتر مكيف': ['فلتر مكيف'],
       'تبديل ماء رديتر': ['ماء رديتر', 'رديتر'],
-      'تبديل بواجي': ['شمعات', 'بواجي'],
+      'تبديل بواجي': ['شمعات', 'بواجي', 'بلكات'],
+      'بلكات': ['بلكات', 'بلك', 'شمعات', 'بواجي'],
       'ترصيص': ['أوزان', 'ترصيص'],
       'تبديل إطار': ['إطار', 'تاير'],
       'بيع إطار': ['إطار', 'تاير'],
@@ -530,15 +569,35 @@ export default function NewService() {
   const remainingAmount = Math.max(normalizedNet - effectivePaidAmount, 0)
   const canSubmit = selectedCar && invoiceLines.length > 0 && !mutation.isPending
   const serviceName = usesOilGrade ? `${serviceType} ${oilGrade}` : serviceType
+  const filteredPartItems = useMemo(() => {
+    if (!isPartsStore) return []
+    return inventoryItems.filter(item => activePartCategory === 'all' || getPartCategory(item) === activePartCategory)
+  }, [activePartCategory, inventoryItems, isPartsStore])
+
+  const addInventoryProductToInvoice = (item, qty = 1) => {
+    const quantity = Number(qty) || 1
+    const unitPrice = Number(item.unit_cost || 0)
+    setSubmitError('')
+    setInvoiceLines(prev => [...prev, {
+      id: Date.now() + Math.random().toString(36).slice(2),
+      name: item.oil_type,
+      amount: Math.round(unitPrice * quantity),
+      notes: '',
+      inventoryItemId: item.id,
+      inventoryItemName: item.oil_type,
+      inventoryQty: quantity,
+    }])
+  }
   const addLineToInvoice = () => {
     if (!form.amount) return
     setSubmitError('')
     const invItem = lineInventoryId ? inventoryItems.find(i => i.id === Number(lineInventoryId)) : null
+    const lineName = isPartsStore && form.notes ? form.notes : serviceName
     setInvoiceLines(prev => [...prev, {
       id: Date.now() + Math.random().toString(36).slice(2),
-      name: serviceName,
+      name: lineName,
       amount: parseFloat(form.amount) || 0,
-      notes: form.notes,
+      notes: isPartsStore ? '' : form.notes,
       inventoryItemId: invItem ? invItem.id : null,
       inventoryItemName: invItem ? invItem.oil_type : null,
       inventoryQty: invItem ? parseFloat(lineInventoryQty) || 1 : null,
@@ -876,24 +935,36 @@ export default function NewService() {
                   </div>
                   <button onClick={() => setSelectedCar(null)} className="text-slate-500 hover:text-rose-600 text-sm">تغيير</button>
                 </div>
-                <div>
-                  <ServiceTypePicker
-                    serviceType={serviceType}
-                    setServiceType={setServiceType}
-                    oilGrade={oilGrade}
-                    setOilGrade={setOilGrade}
-                    serviceTypes={serviceTypes}
-                    specialtyLabel={getSpecialtyLabel(centerSpecialty)}
+                {isPartsStore ? (
+                  <ProductCatalog
+                    categories={PARTS_CATEGORIES}
+                    activeCategory={activePartCategory}
+                    setActiveCategory={setActivePartCategory}
+                    items={filteredPartItems}
+                    allItemsCount={inventoryItems.length}
+                    onAddProduct={addInventoryProductToInvoice}
                   />
-                </div>
+                ) : (
+                  <div>
+                    <ServiceTypePicker
+                      serviceType={serviceType}
+                      setServiceType={setServiceType}
+                      oilGrade={oilGrade}
+                      setOilGrade={setOilGrade}
+                      serviceTypes={serviceTypes}
+                      specialtyLabel={getSpecialtyLabel(centerSpecialty)}
+                    />
+                  </div>
+                )}
                 {[
-                  ['amount', isPartsStore ? 'سعر هذا المنتج (IQD) *' : 'سعر هذه الخدمة (IQD) *', 'number'],
-                  ['notes', isPartsStore ? 'ملاحظات هذا المنتج' : 'ملاحظات هذه الخدمة', 'text'],
+                  ['amount', isPartsStore ? 'سعر منتج غير مسجل (IQD)' : 'سعر هذه الخدمة (IQD) *', 'number'],
+                  ['notes', isPartsStore ? 'اسم / ملاحظات منتج غير مسجل' : 'ملاحظات هذه الخدمة', 'text'],
                 ].map(([k, p, t]) => (
                   <input key={k} type={t} placeholder={p} value={form[k]}
                     onChange={e => setForm({ ...form, [k]: e.target.value })}
                     className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
                 ))}
+                {!isPartsStore && (
                 <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
                   <div className="flex items-center gap-2 text-xs font-black text-slate-500">
                     <Package size={14} /> خصم من المخزون (اختياري)
@@ -921,10 +992,11 @@ export default function NewService() {
                     </div>
                   )}
                 </div>
+                )}
                 <button onClick={addLineToInvoice} disabled={!form.amount}
                   className="flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-400 px-6 py-4 text-base font-black text-slate-950 transition hover:bg-cyan-300 disabled:opacity-50">
                   <PlusCircle size={18} />
-                  {isPartsStore ? 'إضافة المنتج إلى السلة' : 'إضافة الخدمة إلى الفاتورة'}
+                  {isPartsStore ? 'إضافة منتج غير مسجل إلى السلة' : 'إضافة الخدمة إلى الفاتورة'}
                 </button>
               </div>
               <div className="sticky top-24 h-fit rounded-lg border border-slate-200 bg-slate-950 p-5 text-white shadow-2xl">
@@ -1034,6 +1106,103 @@ export default function NewService() {
         </div>
       </div>
     </Layout>
+  )
+}
+
+function ProductCatalog({ categories, activeCategory, setActiveCategory, items, allItemsCount, onAddProduct }) {
+  return (
+    <div className="surface overflow-hidden rounded-lg">
+      <div className="border-b border-slate-100 bg-gradient-to-l from-emerald-50 via-white to-white p-4">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-black text-emerald-700">كتالوج المخزون</p>
+            <h3 className="mt-1 font-black text-slate-950">اختر القسم ثم اضغط المادة لإضافتها للسلة</h3>
+          </div>
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200">
+            <Package size={24} />
+          </div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
+          {categories.map(category => {
+            const active = activeCategory === category.key
+            return (
+              <button
+                key={category.key}
+                type="button"
+                onClick={() => setActiveCategory(category.key)}
+                className={`rounded-lg border px-3 py-3 text-right transition ${
+                  active
+                    ? 'border-emerald-400 bg-emerald-50 text-emerald-900 shadow-sm'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:bg-emerald-50/50'
+                }`}
+              >
+                <span className="block text-sm font-black">{category.label}</span>
+                <span className="mt-1 block text-[11px] font-bold text-slate-500">{category.hint}</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      <div className="p-4">
+        {allItemsCount ? (
+          items.length ? (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {items.map(item => {
+                const qty = Number(item.quantity || 0)
+                const price = Number(item.unit_cost || 0)
+                const disabled = qty <= 0
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => !disabled && onAddProduct(item)}
+                    disabled={disabled}
+                    className={`group rounded-xl border bg-white p-4 text-right shadow-sm transition ${
+                      disabled
+                        ? 'cursor-not-allowed border-slate-200 opacity-55'
+                        : 'border-slate-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-lg'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="line-clamp-2 text-base font-black leading-6 text-slate-950">{item.oil_type}</p>
+                        <p className="mt-1 text-xs font-bold text-slate-500">
+                          {PARTS_CATEGORIES.find(category => category.key === getPartCategory(item))?.label || 'مواد'}
+                        </p>
+                      </div>
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-black ${
+                        qty <= 0 ? 'bg-rose-50 text-rose-700' : qty <= 3 ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700'
+                      }`}>
+                        {qty.toLocaleString()} متوفر
+                      </span>
+                    </div>
+                    <div className="mt-4 flex items-end justify-between gap-3">
+                      <div>
+                        <p className="text-[11px] font-bold text-slate-400">السعر</p>
+                        <p className="mt-1 text-lg font-black text-slate-950">{price.toLocaleString()} IQD</p>
+                      </div>
+                      <span className="rounded-lg bg-emerald-500 px-3 py-2 text-xs font-black text-white transition group-hover:bg-emerald-600">
+                        إضافة للسلة
+                      </span>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
+              <p className="font-black text-slate-700">لا توجد مواد داخل هذا القسم</p>
+              <p className="mt-1 text-sm font-bold text-slate-400">اختر قسماً آخر أو أضف المواد من صفحة المخزون.</p>
+            </div>
+          )
+        ) : (
+          <div className="rounded-lg border border-dashed border-amber-200 bg-amber-50 p-6 text-center">
+            <p className="font-black text-amber-800">المخزون فارغ حالياً</p>
+            <p className="mt-1 text-sm font-bold text-amber-700">أضف المواد في صفحة المخزون حتى تظهر هنا حسب الأقسام.</p>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 
