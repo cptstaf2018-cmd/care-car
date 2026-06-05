@@ -36,8 +36,8 @@ export const CENTER_SPECIALTIES = [
   },
   {
     value: 'multi_service',
-    label: 'متعدد الخدمات',
-    description: 'أكثر من خدمة في مركز واحد',
+    label: 'مركز بيع قطع السيارات',
+    description: 'بيع قطع، فلاتر، زيوت، بطاريات، إكسسوارات',
   },
 ]
 

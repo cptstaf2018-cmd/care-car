@@ -85,18 +85,18 @@ const QUICK_SERVICE_TYPES = [
 ]
 
 const MULTI_SERVICE_TYPES = [
-  { label: 'فحص عام', image: '/service-icons-3d/auto-pack/inspection.webp', tone: 'emerald', hint: 'كشف شامل' },
-  { label: 'تبديل زيت', image: '/service-icons-3d/auto-pack/oil-can.webp', tone: 'cyan', hint: 'زيوت وفلاتر' },
-  { label: 'تبديل إطار', image: '/service-icons-3d/auto-pack/tire-change-exact.webp', tone: 'slate', hint: 'إطارات' },
-  { label: 'غسيل خارجي', image: '/service-icons-3d/auto-pack/car-wash-exterior-exact.webp', tone: 'sky', hint: 'عناية وتنظيف' },
-  { label: 'فحص كمبيوتر', image: '/service-icons-3d/auto-pack/computer-scan.webp', tone: 'violet', hint: 'كهرباء وتشخيص' },
-  { label: 'تعبئة غاز مكيف', image: '/service-icons-3d/auto-pack/ac-gas-exact.webp', tone: 'blue', hint: 'تكييف' },
-  { label: 'تبديل بريك', image: '/service-icons-3d/auto-pack/brake-replace-exact.webp', tone: 'rose', hint: 'ميكانيك' },
-  { label: 'فحص بطارية', image: '/service-icons-3d/auto-pack/battery-check.webp', tone: 'amber', hint: 'بطارية وشحن' },
-  { label: 'تلميع', image: '/service-icons-3d/auto-pack/polisher.webp', tone: 'teal', hint: 'لمعان الطلاء' },
-  { label: 'صبغ قطعة', image: '/service-icons-3d/auto-pack/paint-spray.webp', tone: 'fuchsia', hint: 'سمكرة وصبغ' },
-  { label: 'ترصيص', image: '/service-icons-3d/auto-pack/wheel-balancing-exact.webp', tone: 'sky', hint: 'توازن الإطار' },
+  { label: 'زيت محرك', image: '/service-icons-3d/auto-pack/oil-can.webp', tone: 'cyan', hint: 'عبوات زيوت' },
+  { label: 'فلتر زيت', image: '/service-icons-3d/auto-pack/oil-filter.webp', tone: 'amber', hint: 'قطع استهلاكية' },
+  { label: 'فلتر هواء', image: '/service-icons-3d/auto-pack/air-filter.webp', tone: 'sky', hint: 'فلاتر محرك' },
   { label: 'فلتر مكيف', image: '/service-icons-3d/auto-pack/ac-filter.webp', tone: 'violet', hint: 'هواء المقصورة' },
+  { label: 'بطارية', image: '/service-icons-3d/auto-pack/battery.webp', tone: 'emerald', hint: 'بطاريات سيارات' },
+  { label: 'بواجي', image: '/service-icons-3d/auto-pack/spark-plug.webp', tone: 'fuchsia', hint: 'شمعات تشغيل' },
+  { label: 'بريك', image: '/service-icons-3d/auto-pack/brake-pads.webp', tone: 'rose', hint: 'فرامل وملحقات' },
+  { label: 'إطار', image: '/service-icons-3d/auto-pack/tire-sale-exact.webp', tone: 'slate', hint: 'إطارات للبيع' },
+  { label: 'مساحات', image: '/service-icons-3d/auto-pack/wipers.webp', tone: 'teal', hint: 'مساحات زجاج' },
+  { label: 'سائل تبريد', image: '/service-icons-3d/auto-pack/coolant-blue.webp', tone: 'blue', hint: 'سوائل سيارات' },
+  { label: 'زيت فرامل', image: '/service-icons-3d/auto-pack/brake-fluid.webp', tone: 'amber', hint: 'سوائل فرامل' },
+  { label: 'سير محرك', image: '/service-icons-3d/auto-pack/engine-belt.webp', tone: 'slate', hint: 'سيور وملحقات' },
 ]
 
 const SERVICE_TEMPLATES = {
@@ -271,11 +271,12 @@ export default function NewService() {
     queryFn: () => getCenterSettings().then(r => r.data),
   })
   const centerSpecialty = centerSettings?.specialty || DEFAULT_CENTER_SPECIALTY
+  const isPartsStore = centerSpecialty === 'multi_service'
   const cameraEnabled = centerSettings && hasPlanFeature(centerSettings.plan, 'camera')
   const inventoryAutomationEnabled = centerSettings && hasPlanFeature(centerSettings.plan, 'inventory_auto_deduct')
   const serviceTypes = SERVICE_TEMPLATES[centerSpecialty] || SERVICE_TEMPLATES[DEFAULT_CENTER_SPECIALTY]
   const defaultServiceType = serviceTypes[0]?.label || 'خدمة'
-  const usesOilGrade = serviceType === 'تبديل زيت'
+  const usesOilGrade = !isPartsStore && serviceType === 'تبديل زيت'
   const invoiceNeedsMileage = usesOilGrade || invoiceLines.some(line => line.name?.includes('تبديل زيت'))
 
   const stopReception = useCallback((nextStatus = 'idle') => {
@@ -393,6 +394,7 @@ export default function NewService() {
     if (!selectedCar || !inventoryAutomationEnabled || inventoryItems.length === 0) return
     const kwMap = {
       'تبديل زيت': [oilGrade, oilGrade.replace('W', 'W-'), 'زيت محرك', 'زيت'],
+      'زيت محرك': ['زيت محرك', 'زيت'],
       'فلتر زيت': ['فلتر زيت'],
       'فلتر هواء': ['فلتر هواء'],
       'فلتر مكيف': ['فلتر مكيف'],
@@ -641,10 +643,14 @@ export default function NewService() {
     <Layout>
       <div className="mb-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
         <div>
-          <p className="text-sm font-semibold text-cyan-700">استقبال الخدمة</p>
-          <h2 className="mt-1 text-2xl font-black text-slate-950">خدمة سيارة - {getSpecialtyLabel(centerSpecialty)}</h2>
+          <p className="text-sm font-semibold text-cyan-700">{isPartsStore ? 'نقطة بيع' : 'استقبال الخدمة'}</p>
+          <h2 className="mt-1 text-2xl font-black text-slate-950">
+            {isPartsStore ? getSpecialtyLabel(centerSpecialty) : `خدمة سيارة - ${getSpecialtyLabel(centerSpecialty)}`}
+          </h2>
           <p className="mt-2 text-sm text-slate-500">
-            {arrivalPlate
+            {isPartsStore
+              ? 'ابحث عن الزبون أو السيارة عند الحاجة، أضف المنتجات إلى السلة، ثم اعتمد فاتورة البيع.'
+              : arrivalPlate
               ? `تم استقبال السيارة من كاميرا الباب: ${arrivalPlate}. أكمل بياناتها أو اخترها من النتائج ثم أضف الخدمات.`
               : 'ابحث عن السيارة، أضف الخدمات إلى الفاتورة، ثم اعتمد الفاتورة النهائية. Ctrl+Enter للحفظ.'}
           </p>
@@ -654,6 +660,7 @@ export default function NewService() {
         </div>
       </div>
 
+      {!isPartsStore && (
       <section className="mb-5 grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
         <div className="surface overflow-hidden rounded-lg">
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-white p-4">
@@ -797,6 +804,7 @@ export default function NewService() {
           </div>
         </div>
       </section>
+      )}
 
       <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
         {/* Service form */}
@@ -814,7 +822,7 @@ export default function NewService() {
               <div className="relative">
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={19} />
                 <input value={search} onChange={e => setSearch(e.target.value)}
-                  placeholder="ابحث عن السيارة برقم اللوحة..."
+                  placeholder={isPartsStore ? 'ابحث عن الزبون أو رقم السيارة...' : 'ابحث عن السيارة برقم اللوحة...'}
                   className="w-full rounded-lg border border-slate-200 bg-white py-4 pl-4 pr-12 text-lg font-bold text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
               </div>
               <div className="space-y-2">
@@ -827,7 +835,9 @@ export default function NewService() {
                 ))}
                 {search.length > 1 && cars.length === 0 && (
                   <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                    <p className="mb-3 text-sm font-black text-amber-800">السيارة غير مسجلة — أضفها الآن</p>
+                    <p className="mb-3 text-sm font-black text-amber-800">
+                      {isPartsStore ? 'الزبون غير مسجل — أضف بياناته عند الحاجة' : 'السيارة غير مسجلة — أضفها الآن'}
+                    </p>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {[
                         ['plate_number', 'رقم اللوحة *'],
@@ -850,7 +860,7 @@ export default function NewService() {
                       disabled={!newCarForm?.plate_number || createCarMutation.isPending}
                       className="mt-3 flex items-center gap-2 rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-black text-white hover:bg-amber-700 disabled:opacity-50 transition">
                       <PlusCircle size={15} />
-                      {createCarMutation.isPending ? 'جاري الحفظ...' : 'حفظ وتابع الخدمة'}
+                      {createCarMutation.isPending ? 'جاري الحفظ...' : (isPartsStore ? 'حفظ وتابع البيع' : 'حفظ وتابع الخدمة')}
                     </button>
                   </div>
                 )}
@@ -876,7 +886,10 @@ export default function NewService() {
                     specialtyLabel={getSpecialtyLabel(centerSpecialty)}
                   />
                 </div>
-                {[['amount', 'سعر هذه الخدمة (IQD) *', 'number'], ['notes', 'ملاحظات هذه الخدمة', 'text']].map(([k, p, t]) => (
+                {[
+                  ['amount', isPartsStore ? 'سعر هذا المنتج (IQD) *' : 'سعر هذه الخدمة (IQD) *', 'number'],
+                  ['notes', isPartsStore ? 'ملاحظات هذا المنتج' : 'ملاحظات هذه الخدمة', 'text'],
+                ].map(([k, p, t]) => (
                   <input key={k} type={t} placeholder={p} value={form[k]}
                     onChange={e => setForm({ ...form, [k]: e.target.value })}
                     className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
@@ -911,13 +924,18 @@ export default function NewService() {
                 <button onClick={addLineToInvoice} disabled={!form.amount}
                   className="flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-400 px-6 py-4 text-base font-black text-slate-950 transition hover:bg-cyan-300 disabled:opacity-50">
                   <PlusCircle size={18} />
-                  إضافة الخدمة إلى الفاتورة
+                  {isPartsStore ? 'إضافة المنتج إلى السلة' : 'إضافة الخدمة إلى الفاتورة'}
                 </button>
               </div>
               <div className="sticky top-24 h-fit rounded-lg border border-slate-200 bg-slate-950 p-5 text-white shadow-2xl">
-                <div className="mb-4 flex items-center gap-2 text-cyan-300"><Zap size={18} /><span className="font-black">الفاتورة النهائية</span></div>
+                <div className="mb-4 flex items-center gap-2 text-cyan-300">
+                  <Zap size={18} /><span className="font-black">{isPartsStore ? 'سلة البيع النهائية' : 'الفاتورة النهائية'}</span>
+                </div>
                 <div className="space-y-3 text-sm">
-                  <div className="flex justify-between"><span className="text-slate-400">السيارة</span><span className="font-mono font-black">{selectedCar.plate_number}</span></div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">{isPartsStore ? 'الزبون / المرجع' : 'السيارة'}</span>
+                    <span className="font-mono font-black">{selectedCar.plate_number}</span>
+                  </div>
                   <div className="rounded-lg border border-white/10 bg-white/5">
                     {invoiceLines.length ? invoiceLines.map(line => (
                       <div key={line.id} className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2 last:border-0">
@@ -935,10 +953,12 @@ export default function NewService() {
                         <span className="font-black">{Number(line.amount).toLocaleString()}</span>
                       </div>
                     )) : (
-                      <p className="px-3 py-6 text-center text-sm font-bold text-slate-400">أضف خدمة واحدة على الأقل</p>
+                      <p className="px-3 py-6 text-center text-sm font-bold text-slate-400">
+                        {isPartsStore ? 'أضف منتجاً واحداً على الأقل' : 'أضف خدمة واحدة على الأقل'}
+                      </p>
                     )}
                   </div>
-                  {invoiceNeedsMileage && (
+                  {!isPartsStore && invoiceNeedsMileage && (
                     <input type="number" placeholder="عداد المسافة (كم)" value={form.mileage}
                       onChange={e => setForm({ ...form, mileage: e.target.value })}
                       className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-white outline-none focus:border-cyan-300" />
@@ -1006,7 +1026,7 @@ export default function NewService() {
                 <button onClick={submitService}
                   disabled={!invoiceLines.length || mutation.isPending}
                   className="mt-5 w-full rounded-lg bg-emerald-500 px-6 py-4 text-lg font-black text-white transition hover:bg-emerald-600 disabled:opacity-50">
-                  {mutation.isPending ? 'جاري...' : 'اعتماد الفاتورة النهائية'}
+                  {mutation.isPending ? 'جاري...' : (isPartsStore ? 'اعتماد فاتورة البيع' : 'اعتماد الفاتورة النهائية')}
                 </button>
               </div>
             </div>

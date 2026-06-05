@@ -51,8 +51,8 @@ const specialtyArt = {
   multi_service: {
     tone: 'from-emerald-50 via-white to-teal-50 border-emerald-200 shadow-emerald-100',
     halo: 'from-emerald-100 via-white to-teal-100',
-    main: '/service-icons-3d/auto-pack/inspection.webp',
-    accent: '/service-icons-3d/auto-pack/service-wrench-car.webp',
+    main: '/service-icons-3d/auto-pack/oil-filter.webp',
+    accent: '/service-icons-3d/auto-pack/battery.webp',
   },
 }
 
