@@ -1,7 +1,7 @@
 """add invoice lines and store fields
 
 Revision ID: j5k6l7m8n9o0
-Revises: i4j5k6l7m8n9
+Revises: i4j5k6l7m8n9, b5c6d7e8f9a0
 Create Date: 2026-06-05 00:00:00.000000
 
 """
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 revision: str = "j5k6l7m8n9o0"
-down_revision: Union[str, None] = "i4j5k6l7m8n9"
+down_revision: Union[str, Sequence[str], None] = ("i4j5k6l7m8n9", "b5c6d7e8f9a0")
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
