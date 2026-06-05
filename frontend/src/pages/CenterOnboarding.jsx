@@ -59,16 +59,17 @@ const specialtyArt = {
 function SpecialtyArt({ type, active }) {
   const art = specialtyArt[type] || specialtyArt.multi_service
   return (
-    <span className={`relative mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br ${art.halo} shadow-inner ring-1 ring-white/80`}>
-      <span className="absolute inset-2 rounded-full bg-white/72 shadow-[inset_0_1px_8px_rgba(15,23,42,0.06)]" />
+    <span className={`relative mx-auto flex h-[124px] w-[124px] items-center justify-center rounded-full bg-gradient-to-br ${art.halo} shadow-[inset_0_2px_14px_rgba(15,23,42,0.08)] ring-1 ring-white/90`}>
+      <span className="absolute inset-3 rounded-full bg-white/74 shadow-[inset_0_1px_10px_rgba(15,23,42,0.07)]" />
+      <span className="absolute bottom-5 h-5 w-20 rounded-full bg-slate-900/10 blur-md" />
       <img
         src={art.main}
         alt=""
-        className={`relative z-10 h-[72px] w-[72px] object-contain drop-shadow-[0_14px_16px_rgba(15,23,42,0.22)] transition duration-200 ${active ? 'scale-105' : 'group-hover:scale-105'}`}
+        className={`relative z-10 h-[96px] w-[96px] object-contain drop-shadow-[0_18px_18px_rgba(15,23,42,0.24)] transition duration-200 ${active ? 'scale-110' : 'group-hover:scale-110'}`}
       />
       {art.accent && (
-        <span className="absolute -bottom-1 -left-1 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg ring-1 ring-slate-100">
-          <img src={art.accent} alt="" className="h-8 w-8 object-contain" />
+        <span className="absolute bottom-2 left-1 z-20 flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-xl ring-1 ring-slate-100">
+          <img src={art.accent} alt="" className="h-11 w-11 object-contain drop-shadow-[0_8px_10px_rgba(15,23,42,0.16)]" />
         </span>
       )}
     </span>
@@ -91,9 +92,9 @@ export default function CenterOnboarding() {
   return (
     <main dir="rtl" className="min-h-screen bg-slate-50 px-4 py-8 text-slate-950">
       <section className="mx-auto max-w-6xl">
-        <div className="mb-7 text-center">
+        <div className="mb-8 text-center">
           <p className="text-sm font-black text-cyan-700">إعداد مركزك</p>
-          <h1 className="mt-2 text-3xl font-black sm:text-4xl">
+          <h1 className="mt-2 text-4xl font-black sm:text-5xl">
             اختر <span className="text-blue-600">نوع مركزك</span>
           </h1>
           <p className="mt-3 text-sm font-semibold text-slate-500">
@@ -110,18 +111,19 @@ export default function CenterOnboarding() {
                 key={item.value}
                 type="button"
                 onClick={() => setSelected(item.value)}
-                className={`group relative min-h-[190px] overflow-hidden rounded-lg border bg-gradient-to-br p-5 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl ${
+                className={`group relative flex min-h-[240px] flex-col items-center overflow-hidden rounded-lg border bg-gradient-to-br px-5 pb-5 pt-6 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl ${
                   active ? `${art.tone} border-blue-500 shadow-blue-100 ring-2 ring-blue-100` : `${art.tone} hover:border-slate-300`
                 }`}
               >
+                <span className="pointer-events-none absolute inset-x-8 top-5 h-24 rounded-full bg-white/42 blur-2xl" />
                 {active && (
-                  <span className="absolute right-3 top-3 z-30 flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg">
-                    <Check size={16} strokeWidth={3} />
+                  <span className="absolute right-4 top-4 z-30 flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg">
+                    <Check size={18} strokeWidth={3} />
                   </span>
                 )}
                 <SpecialtyArt type={item.value} active={active} />
-                <span className="mt-4 block text-lg font-black">{item.label}</span>
-                <span className="mx-auto mt-2 block max-w-[190px] text-xs font-bold leading-6 text-slate-500">
+                <span className="mt-5 block text-xl font-black leading-7 text-slate-950">{item.label}</span>
+                <span className="mx-auto mt-3 block max-w-[210px] text-sm font-bold leading-7 text-slate-500">
                   {item.description}
                 </span>
               </button>
