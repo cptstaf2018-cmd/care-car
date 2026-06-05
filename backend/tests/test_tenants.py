@@ -4,7 +4,7 @@ from app.models.car import Car
 from app.models.invoice import Invoice, InvoiceStatus
 from app.models.service import Service
 from app.core.security import hash_password
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 
 
 def login(client, email, password):
@@ -114,7 +114,28 @@ def test_monitoring_returns_center_health_and_activity(client, db, superadmin, s
     assert row["service_count"] == 1
     assert row["invoice_count"] == 1
     assert row["revenue_30_days"] == 50000.0
-    assert "لا يوجد تاريخ انتهاء اشتراك" in row["issues"]
+    assert row["is_trial"] is False
+    assert "اشتراك مفتوح بلا تاريخ انتهاء" in row["issues"]
+
+
+def test_monitoring_trial_tenant_shows_remaining_days_not_open_ended(client, db, superadmin, superadmin_token):
+    tenant = Tenant(
+        name="Trial Center",
+        plan="basic",
+        contact_phone="07710000001",
+        whatsapp_number="07710000001",
+        trial_ends_at=datetime.now(timezone.utc) + timedelta(days=2),
+    )
+    db.add(tenant)
+    db.commit()
+
+    r = client.get("/tenants/monitoring", headers={"Authorization": f"Bearer {superadmin_token}"})
+    assert r.status_code == 200
+    row = next(item for item in r.json()["tenants"] if item["name"] == "Trial Center")
+    assert row["is_trial"] is True
+    assert row["days_to_expiry"] is not None
+    assert not any("مفتوح بلا تاريخ" in issue for issue in row["issues"])
+    assert any("تجريبية" in issue for issue in row["issues"])
 
 
 def test_suspended_tenant_blocks_login_and_existing_tokens(client, db, superadmin, superadmin_token):

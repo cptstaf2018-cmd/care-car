@@ -135,17 +135,24 @@ def monitor_tenants(db: Session = Depends(get_db), _=Depends(require_superadmin)
             key=lambda value: value or datetime.min,
         )
 
-        days_to_expiry = None
+        is_trial = bool(tenant.trial_ends_at and not tenant.subscription_ends_at)
         if tenant.subscription_ends_at:
-            days_to_expiry = (tenant.subscription_ends_at - now.date()).days
+            effective_end = tenant.subscription_ends_at
+        elif tenant.trial_ends_at:
+            effective_end = tenant.trial_ends_at.date()
+        else:
+            effective_end = None
+        days_to_expiry = (effective_end - now.date()).days if effective_end else None
 
         issues = []
         if not tenant.is_active:
             issues.append("الحساب موقوف")
         if days_to_expiry is None:
-            issues.append("لا يوجد تاريخ انتهاء اشتراك")
+            issues.append("اشتراك مفتوح بلا تاريخ انتهاء")
         elif days_to_expiry < 0:
-            issues.append("الاشتراك منتهي")
+            issues.append("انتهت الفترة التجريبية" if is_trial else "الاشتراك منتهي")
+        elif is_trial:
+            issues.append(f"فترة تجريبية — يتبقى {days_to_expiry} يوم")
         elif days_to_expiry <= 7:
             issues.append("الاشتراك قريب الانتهاء")
         if not manager:
@@ -178,6 +185,7 @@ def monitor_tenants(db: Session = Depends(get_db), _=Depends(require_superadmin)
             "whatsapp_number": tenant.whatsapp_number,
             "subscription_ends_at": _iso(tenant.subscription_ends_at),
             "trial_ends_at": _iso(tenant.trial_ends_at),
+            "is_trial": is_trial,
             "days_to_expiry": days_to_expiry,
             "last_activity_at": _iso(latest_activity),
             "invoice_count": invoice_count,

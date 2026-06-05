@@ -47,11 +47,12 @@ function formatDate(value) {
   return new Date(value).toLocaleString('ar-IQ', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
-function expiryText(days) {
-  if (days === null || days === undefined) return 'بدون تاريخ'
-  if (days < 0) return `منتهي منذ ${Math.abs(days)} يوم`
-  if (days === 0) return 'ينتهي اليوم'
-  return `باقي ${days} يوم`
+function expiryText(row) {
+  const days = row?.days_to_expiry
+  if (days === null || days === undefined) return 'مفتوح بلا انتهاء'
+  if (days < 0) return row.is_trial ? `انتهت التجربة منذ ${Math.abs(days)} يوم` : `منتهي منذ ${Math.abs(days)} يوم`
+  if (days === 0) return row.is_trial ? 'تنتهي التجربة اليوم' : 'ينتهي اليوم'
+  return row.is_trial ? `تجريبي — باقي ${days} يوم` : `باقي ${days} يوم`
 }
 
 export default function Monitoring() {
@@ -260,7 +261,7 @@ function MonitorRow({ row, onRenew, fixing }) {
           {tenantPlanLabel(row)}
         </span>
         <span className="rounded-full bg-white px-2.5 py-1 text-xs font-black text-slate-500 ring-1 ring-slate-200">
-          {expiryText(row.days_to_expiry)}
+          {expiryText(row)}
         </span>
       </div>
 
