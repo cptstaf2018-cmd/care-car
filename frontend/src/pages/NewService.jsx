@@ -157,17 +157,17 @@ const SERVICE_TEMPLATES = {
 }
 
 const PARTS_CATEGORIES = [
-  { key: 'all', label: 'الكل', hint: 'كل مواد المخزون' },
-  { key: 'oils', label: 'الزيوت', hint: 'زيوت محرك، كير، فرامل' },
-  { key: 'filters', label: 'الفلاتر', hint: 'زيت، هواء، مكيف' },
-  { key: 'spark', label: 'البلكات', hint: 'بلكات وشمعات' },
-  { key: 'engine', label: 'المحرك', hint: 'سيور، مضخات، حساسات' },
-  { key: 'transmission', label: 'الكير', hint: 'زيت وقطع ناقل الحركة' },
-  { key: 'brakes', label: 'الفرامل', hint: 'بريك وزيت فرامل' },
-  { key: 'cooling', label: 'التبريد', hint: 'رديتر وسائل تبريد' },
-  { key: 'electrical', label: 'الكهرباء', hint: 'بطاريات وفيوزات' },
-  { key: 'tires', label: 'الإطارات', hint: 'إطارات وبلف' },
-  { key: 'accessories', label: 'الإكسسوارات', hint: 'مساحات ومواد عامة' },
+  { key: 'all', label: 'الكل', store: 'متجر كل القطع', hint: 'كل مواد المخزون', image: '/service-icons-3d/auto-pack/inspection.webp', tone: 'emerald' },
+  { key: 'oils', label: 'الزيوت', store: 'متجر الزيوت', hint: 'زيوت محرك، كير، فرامل', image: '/service-icons-3d/auto-pack/oil-can.webp', tone: 'cyan' },
+  { key: 'filters', label: 'الفلاتر', store: 'متجر الفلاتر', hint: 'زيت، هواء، مكيف', image: '/service-icons-3d/auto-pack/oil-filter.webp', tone: 'amber' },
+  { key: 'spark', label: 'البلكات', store: 'متجر البلكات', hint: 'بلكات وشمعات', image: '/service-icons-3d/auto-pack/spark-plug.webp', tone: 'fuchsia' },
+  { key: 'engine', label: 'المحرك', store: 'متجر قطع المحرك', hint: 'سيور، مضخات، حساسات', image: '/service-icons-3d/auto-pack/engine-belt.webp', tone: 'slate' },
+  { key: 'transmission', label: 'الكير', store: 'متجر قطع الكير', hint: 'زيت وقطع ناقل الحركة', image: '/service-icons-3d/auto-pack/gear-shift.webp', tone: 'violet' },
+  { key: 'brakes', label: 'الفرامل', store: 'متجر الفرامل', hint: 'بريك وزيت فرامل', image: '/service-icons-3d/auto-pack/brake-pads.webp', tone: 'rose' },
+  { key: 'cooling', label: 'التبريد', store: 'متجر التبريد', hint: 'رديتر وسائل تبريد', image: '/service-icons-3d/auto-pack/coolant-blue.webp', tone: 'blue' },
+  { key: 'electrical', label: 'الكهرباء', store: 'متجر الكهرباء', hint: 'بطاريات وفيوزات', image: '/service-icons-3d/auto-pack/battery.webp', tone: 'emerald' },
+  { key: 'tires', label: 'الإطارات', store: 'متجر الإطارات', hint: 'إطارات وبلف', image: '/service-icons-3d/auto-pack/tire-sale-exact.webp', tone: 'slate' },
+  { key: 'accessories', label: 'الإكسسوارات', store: 'متجر الإكسسوارات', hint: 'مساحات ومواد عامة', image: '/service-icons-3d/auto-pack/wipers.webp', tone: 'teal' },
 ]
 
 function normalizeArabicText(value = '') {
@@ -576,7 +576,7 @@ export default function NewService() {
 
   const addInventoryProductToInvoice = (item, qty = 1) => {
     const quantity = Number(qty) || 1
-    const unitPrice = Number(item.unit_cost || 0)
+    const unitPrice = Number(item.sale_price || item.unit_cost || 0)
     setSubmitError('')
     setInvoiceLines(prev => [...prev, {
       id: Date.now() + Math.random().toString(36).slice(2),
@@ -1126,46 +1126,77 @@ export default function NewService() {
 }
 
 function ProductCatalog({ categories, activeCategory, setActiveCategory, items, allItemsCount, onAddProduct }) {
+  const activeCategoryData = categories.find(category => category.key === activeCategory) || categories[0]
+  const activeTone = SERVICE_TONES[activeCategoryData.tone] || SERVICE_TONES.emerald
+
   return (
     <div className="surface overflow-hidden rounded-lg">
       <div className="border-b border-slate-100 bg-gradient-to-l from-emerald-50 via-white to-white p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-xs font-black text-emerald-700">كتالوج المخزون</p>
-            <h3 className="mt-1 font-black text-slate-950">اختر القسم ثم اضغط المادة لإضافتها للسلة</h3>
+            <h3 className="mt-1 font-black text-slate-950">اختر القسم ثم ادخل متجره لإضافة المواد للسلة</h3>
           </div>
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200">
-            <Package size={24} />
+          <div className={`flex h-16 w-16 items-center justify-center rounded-full ring-1 shadow-lg ${activeTone.icon}`}>
+            <img src={activeCategoryData.image} alt="" className="h-14 w-14 object-contain drop-shadow-md" />
           </div>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {categories.map(category => {
             const active = activeCategory === category.key
+            const tone = SERVICE_TONES[category.tone] || SERVICE_TONES.emerald
             return (
-              <button
+              <motion.button
                 key={category.key}
                 type="button"
                 onClick={() => setActiveCategory(category.key)}
-                className={`rounded-lg border px-3 py-3 text-right transition ${
+                whileTap={{ scale: 0.98 }}
+                className={`group relative min-h-[92px] overflow-hidden rounded-xl border bg-gradient-to-l px-4 py-3 text-right transition focus:outline-none focus:ring-4 focus:ring-emerald-100 ${
                   active
-                    ? 'border-emerald-400 bg-emerald-50 text-emerald-900 shadow-sm'
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:bg-emerald-50/50'
+                    ? `${tone.active} shadow-xl`
+                    : `${tone.card} text-slate-700 shadow-sm hover:-translate-y-0.5 hover:shadow-md`
                 }`}
               >
-                <span className="block text-sm font-black">{category.label}</span>
-                <span className="mt-1 block text-[11px] font-bold text-slate-500">{category.hint}</span>
-              </button>
+                <span className="flex h-full items-center justify-between gap-3">
+                  <span className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full ring-1 shadow-lg transition ${tone.icon}`}>
+                    <img src={category.image} alt="" className="h-14 w-14 object-contain drop-shadow-md transition duration-200 group-hover:scale-105" />
+                  </span>
+                  {active && (
+                    <span className={`absolute left-3 top-3 flex h-7 w-7 items-center justify-center rounded-full shadow-md ${tone.check}`}>
+                      <CheckCircle2 size={18} strokeWidth={3} />
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1 pr-2">
+                    <span className="block text-lg font-black leading-7 text-slate-950">{category.label}</span>
+                    <span className="mt-1 block text-xs font-bold leading-5 text-slate-500">{category.hint}</span>
+                  </span>
+                </span>
+              </motion.button>
             )
           })}
         </div>
       </div>
       <div className="p-4">
+        <div className="mb-4 flex flex-col justify-between gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-3">
+            <div className={`flex h-12 w-12 items-center justify-center rounded-full ring-1 shadow-md ${activeTone.icon}`}>
+              <img src={activeCategoryData.image} alt="" className="h-10 w-10 object-contain" />
+            </div>
+            <div>
+              <p className="text-xs font-black text-slate-400">المتجر الحالي</p>
+              <h4 className="mt-1 text-lg font-black text-slate-950">{activeCategoryData.store}</h4>
+            </div>
+          </div>
+          <span className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-600">
+            {items.length.toLocaleString()} مادة
+          </span>
+        </div>
         {allItemsCount ? (
           items.length ? (
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
               {items.map(item => {
                 const qty = Number(item.quantity || 0)
-                const price = Number(item.unit_cost || 0)
+                const price = Number(item.sale_price || item.unit_cost || 0)
                 const disabled = qty <= 0
                 return (
                   <button
@@ -1173,7 +1204,7 @@ function ProductCatalog({ categories, activeCategory, setActiveCategory, items, 
                     type="button"
                     onClick={() => !disabled && onAddProduct(item)}
                     disabled={disabled}
-                    className={`group rounded-xl border bg-white p-4 text-right shadow-sm transition ${
+                    className={`group rounded-xl border bg-gradient-to-br from-white via-white to-slate-50 p-4 text-right shadow-sm transition ${
                       disabled
                         ? 'cursor-not-allowed border-slate-200 opacity-55'
                         : 'border-slate-200 hover:-translate-y-0.5 hover:border-emerald-300 hover:shadow-lg'
@@ -1207,7 +1238,7 @@ function ProductCatalog({ categories, activeCategory, setActiveCategory, items, 
             </div>
           ) : (
             <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 p-6 text-center">
-              <p className="font-black text-slate-700">لا توجد مواد داخل هذا القسم</p>
+              <p className="font-black text-slate-700">{activeCategoryData.store} فارغ حالياً</p>
               <p className="mt-1 text-sm font-bold text-slate-400">اختر قسماً آخر أو أضف المواد من صفحة المخزون.</p>
             </div>
           )
