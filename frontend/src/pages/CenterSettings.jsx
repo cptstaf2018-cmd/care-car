@@ -486,7 +486,8 @@ export default function CenterSettings() {
     queryKey: ['center-settings'],
     queryFn: () => getCenterSettings().then(r => r.data),
   })
-  const mobileCameraEnabled = hasPlanFeature(center?.plan, 'camera')
+  const isPartsStore = center?.specialty === 'multi_service'
+  const mobileCameraEnabled = !isPartsStore && hasPlanFeature(center?.plan, 'camera')
   const oilServiceReminders = (center?.specialty || 'quick_service') === 'quick_service'
   const { data: mobileCameraLink } = useQuery({
     queryKey: ['mobile-camera-link', 'settings'],
@@ -542,7 +543,11 @@ export default function CenterSettings() {
       <div className="mb-6">
         <p className="text-sm font-semibold text-cyan-700">إعدادات المركز</p>
         <h2 className="mt-1 text-2xl font-bold text-slate-950">الإعدادات والاشتراك</h2>
-        <p className="mt-2 text-sm text-slate-500">إدارة بيانات مركزك، الكاميرا، الواتساب، وخطة الاشتراك.</p>
+        <p className="mt-2 text-sm text-slate-500">
+          {isPartsStore
+            ? 'إدارة بيانات المتجر، الواتساب، المخزون، وخطة الاشتراك.'
+            : 'إدارة بيانات مركزك، الكاميرا، الواتساب، وخطة الاشتراك.'}
+        </p>
       </div>
 
       {/* Trial / Subscription status banner */}
@@ -572,6 +577,7 @@ export default function CenterSettings() {
           </div>
         </section>
 
+        {!isPartsStore && (
         <section className="surface rounded-lg p-6">
           <h3 className="font-bold text-slate-950">ربط كاميرا IP</h3>
           <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -624,6 +630,7 @@ export default function CenterSettings() {
             </div>
           )}
         </section>
+        )}
 
         <section className="surface rounded-lg p-6 xl:col-span-2">
           <h3 className="font-bold text-slate-950">واتساب ورسائل الديون</h3>
