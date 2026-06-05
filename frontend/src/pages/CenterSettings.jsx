@@ -486,9 +486,10 @@ export default function CenterSettings() {
     queryKey: ['center-settings'],
     queryFn: () => getCenterSettings().then(r => r.data),
   })
+  const isOilCenter = (center?.specialty || 'quick_service') === 'quick_service'
   const isPartsStore = center?.specialty === 'multi_service'
-  const mobileCameraEnabled = !isPartsStore && hasPlanFeature(center?.plan, 'camera')
-  const oilServiceReminders = (center?.specialty || 'quick_service') === 'quick_service'
+  const mobileCameraEnabled = isOilCenter && hasPlanFeature(center?.plan, 'camera')
+  const oilServiceReminders = isOilCenter
   const { data: mobileCameraLink } = useQuery({
     queryKey: ['mobile-camera-link', 'settings'],
     queryFn: () => getMobileCameraLink().then(r => r.data),
@@ -577,7 +578,7 @@ export default function CenterSettings() {
           </div>
         </section>
 
-        {!isPartsStore && (
+        {isOilCenter && (
         <section className="surface rounded-lg p-6">
           <h3 className="font-bold text-slate-950">ربط كاميرا IP</h3>
           <div className="mt-5 grid gap-4 md:grid-cols-2">

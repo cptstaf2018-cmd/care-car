@@ -322,8 +322,9 @@ export default function NewService() {
     queryFn: () => getCenterSettings().then(r => r.data),
   })
   const centerSpecialty = centerSettings?.specialty || DEFAULT_CENTER_SPECIALTY
+  const isOilCenter = centerSpecialty === 'quick_service'
   const isPartsStore = centerSpecialty === 'multi_service'
-  const cameraEnabled = centerSettings && hasPlanFeature(centerSettings.plan, 'camera')
+  const cameraEnabled = isOilCenter && centerSettings && hasPlanFeature(centerSettings.plan, 'camera')
   const inventoryAutomationEnabled = centerSettings && hasPlanFeature(centerSettings.plan, 'inventory_auto_deduct')
   const serviceTypes = SERVICE_TEMPLATES[centerSpecialty] || SERVICE_TEMPLATES[DEFAULT_CENTER_SPECIALTY]
   const defaultServiceType = serviceTypes[0]?.label || 'خدمة'
@@ -807,7 +808,7 @@ export default function NewService() {
         </div>
       </div>
 
-      {!isPartsStore && (
+      {isOilCenter && (
       <section className="mb-5 grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
         <div className="surface overflow-hidden rounded-lg">
           <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-white p-4">
