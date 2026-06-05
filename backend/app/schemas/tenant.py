@@ -5,6 +5,7 @@ from app.models.tenant import Plan
 class TenantCreate(BaseModel):
     name: str
     specialty: str = "quick_service"
+    specialty_configured: bool = True
     plan: Plan = Plan.basic
     contact_phone: str | None = None
     logo_url: str | None = None
@@ -25,6 +26,7 @@ class TenantCreate(BaseModel):
 class TenantUpdate(BaseModel):
     name: str | None = None
     specialty: str | None = None
+    specialty_configured: bool | None = None
     plan: Plan | None = None
     is_active: bool | None = None
     contact_phone: str | None = None
@@ -48,6 +50,7 @@ class TenantOut(BaseModel):
     id: int
     name: str
     specialty: str
+    specialty_configured: bool
     plan: str
     is_active: bool
     contact_phone: str | None

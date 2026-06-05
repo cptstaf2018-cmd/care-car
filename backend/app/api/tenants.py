@@ -264,7 +264,7 @@ def run_monthly_archives_now(
 # so approvePayment() in Subscriptions.jsx can clear them by sending null values.
 # Also: use exclude_unset=True (not exclude_none) in update_tenant to allow null clearing.
 SUPERADMIN_ALLOWED_FIELDS = {
-    'name', 'specialty', 'plan', 'is_active', 'contact_phone',
+    'name', 'specialty', 'specialty_configured', 'plan', 'is_active', 'contact_phone',
     'subscription_starts_at', 'subscription_ends_at', 'subscription_notes',
     'subscription_request_plan', 'subscription_request_ref',
 }

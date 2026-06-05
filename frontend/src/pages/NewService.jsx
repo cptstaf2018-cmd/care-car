@@ -137,6 +137,7 @@ const SERVICE_TEMPLATES = {
     { label: 'بولش خدوش', image: '/service-icons-3d/auto-pack/scratch-polish.webp', tone: 'cyan', hint: 'إزالة آثار' },
     { label: 'حماية طلاء', image: '/service-icons-3d/auto-pack/paint-protection.webp', tone: 'teal', hint: 'طبقة حماية' },
   ],
+  multi_service: QUICK_SERVICE_TYPES,
 }
 
 const SERVICE_TONES = {

@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import ProtectedRoute from './components/ProtectedRoute'
+import CenterSetupGate from './components/CenterSetupGate'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Cars from './pages/Cars'
@@ -10,6 +11,7 @@ import Debts from './pages/Debts'
 import Inventory from './pages/Inventory'
 import Reports from './pages/Reports'
 import CenterSettings from './pages/CenterSettings'
+import CenterOnboarding from './pages/CenterOnboarding'
 import InvoicePrint from './pages/InvoicePrint'
 import AdminOverview from './pages/superadmin/Overview'
 import AdminMonitoring from './pages/superadmin/Monitoring'
@@ -23,6 +25,14 @@ import { useAuthStore } from './store/auth'
 
 const qc = new QueryClient()
 const centerRoles = ['manager', 'employee']
+
+function CenterPage({ children }) {
+  return (
+    <ProtectedRoute allowedRoles={centerRoles}>
+      <CenterSetupGate>{children}</CenterSetupGate>
+    </ProtectedRoute>
+  )
+}
 
 function HomeRedirect() {
   const { token, user } = useAuthStore()
@@ -41,14 +51,15 @@ export default function App() {
           <Route path="/about" element={<LandingPage />} />
           <Route path="/mobile-camera/:token" element={<MobileCamera />} />
           <Route path="/" element={<HomeRedirect />} />
-          <Route path="/center" element={<ProtectedRoute allowedRoles={centerRoles}><Dashboard /></ProtectedRoute>} />
-          <Route path="/center/cars" element={<ProtectedRoute allowedRoles={centerRoles}><Cars /></ProtectedRoute>} />
-          <Route path="/center/services/new" element={<ProtectedRoute allowedRoles={centerRoles}><NewService /></ProtectedRoute>} />
-          <Route path="/center/invoices" element={<ProtectedRoute allowedRoles={centerRoles}><Invoices /></ProtectedRoute>} />
-          <Route path="/center/debts" element={<ProtectedRoute allowedRoles={centerRoles}><Debts /></ProtectedRoute>} />
-          <Route path="/center/inventory" element={<ProtectedRoute allowedRoles={centerRoles}><Inventory /></ProtectedRoute>} />
-          <Route path="/center/reports" element={<ProtectedRoute allowedRoles={centerRoles}><Reports /></ProtectedRoute>} />
-          <Route path="/center/settings" element={<ProtectedRoute allowedRoles={centerRoles}><CenterSettings /></ProtectedRoute>} />
+          <Route path="/center/onboarding" element={<ProtectedRoute allowedRoles={centerRoles}><CenterSetupGate><CenterOnboarding /></CenterSetupGate></ProtectedRoute>} />
+          <Route path="/center" element={<CenterPage><Dashboard /></CenterPage>} />
+          <Route path="/center/cars" element={<CenterPage><Cars /></CenterPage>} />
+          <Route path="/center/services/new" element={<CenterPage><NewService /></CenterPage>} />
+          <Route path="/center/invoices" element={<CenterPage><Invoices /></CenterPage>} />
+          <Route path="/center/debts" element={<CenterPage><Debts /></CenterPage>} />
+          <Route path="/center/inventory" element={<CenterPage><Inventory /></CenterPage>} />
+          <Route path="/center/reports" element={<CenterPage><Reports /></CenterPage>} />
+          <Route path="/center/settings" element={<CenterPage><CenterSettings /></CenterPage>} />
           <Route path="/center/reception" element={<Navigate to="/center/services/new" replace />} />
           <Route path="/center/camera" element={<Navigate to="/center/services/new" replace />} />
           <Route path="/center/invoices/:id/print" element={<ProtectedRoute allowedRoles={centerRoles}><InvoicePrint /></ProtectedRoute>} />

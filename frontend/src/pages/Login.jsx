@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowLeft, BarChart3, Camera, Car, CheckCircle2, Clock3, MessageCircle, ShieldCheck, Sparkles, Zap, Phone, Mail } from 'lucide-react'
 import { activate, confirmPasswordReset, login, register, requestPasswordReset } from '../api/auth'
 import { useAuthStore } from '../store/auth'
-import { CENTER_SPECIALTIES, DEFAULT_CENTER_SPECIALTY } from '../constants/centerSpecialties'
+import { DEFAULT_CENTER_SPECIALTY } from '../constants/centerSpecialties'
 import centerHero from '../assets/center-template-red.png'
 import loginCar from '../assets/login-car-real.png'
 
@@ -52,7 +52,6 @@ export default function Login({ initialMode = 'login' }) {
 
   // Register state
   const [centerName, setCenterName] = useState('')
-  const [specialty, setSpecialty] = useState(() => localStorage.getItem('register_specialty') || DEFAULT_CENTER_SPECIALTY)
   const [fullName, setFullName] = useState('')
   const [contactMethod, setContactMethod] = useState('whatsapp')
   const [whatsapp, setWhatsapp] = useState('')
@@ -85,10 +84,6 @@ export default function Login({ initialMode = 'login' }) {
     setResetError('')
     navigate(newMode === 'register' ? '/register' : '/login')
   }
-
-  useEffect(() => {
-    localStorage.setItem('register_specialty', specialty)
-  }, [specialty])
 
   const openForgotPassword = () => {
     setDir(-1)
@@ -127,12 +122,11 @@ export default function Login({ initialMode = 'login' }) {
     try {
       const res = await register({
         center_name: centerName,
-        specialty,
+        specialty: DEFAULT_CENTER_SPECIALTY,
         manager_name: fullName || null,
         phone: contactMethod === 'whatsapp' ? whatsapp : null,
         email: contactMethod === 'email' ? regEmail : null,
       })
-      localStorage.removeItem('register_specialty')
       setRegResult(res.data)
     } catch (err) {
       const detail = err.response?.data?.detail
@@ -189,12 +183,12 @@ export default function Login({ initialMode = 'login' }) {
     setCodeLoading(true)
     try {
       const res = await activate(regResult.manager_email, codeForm.code, codeForm.new_password)
-      setAuth(res.data.access_token, {
-        email: regResult.manager_email,
-        role: res.data.role,
-        tenant_id: res.data.tenant_id,
-      })
-      navigate('/center')
+        setAuth(res.data.access_token, {
+          email: regResult.manager_email,
+          role: res.data.role,
+          tenant_id: res.data.tenant_id,
+        })
+        navigate('/center/onboarding')
     } catch (err) {
       setCodeError(err.response?.data?.detail || 'كود التفعيل غير صحيح أو منتهي')
       setCodeLoading(false)
@@ -437,26 +431,6 @@ export default function Login({ initialMode = 'login' }) {
                               onChange={(e) => setCenterName(e.target.value)} required
                               className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
                           </label>
-                          <div>
-                            <span className="mb-2 block text-sm font-bold text-slate-200">اختصاص المركز</span>
-                            <div className="grid max-h-56 gap-2 overflow-y-auto rounded-xl border border-white/10 bg-slate-950/20 p-2 sm:grid-cols-2">
-                              {CENTER_SPECIALTIES.map(item => (
-                                <button
-                                  key={item.value}
-                                  type="button"
-                                  onClick={() => setSpecialty(item.value)}
-                                  className={`rounded-lg border px-3 py-2.5 text-right transition ${
-                                    specialty === item.value
-                                      ? 'border-cyan-300 bg-cyan-300/15 text-white shadow-lg shadow-cyan-950/20'
-                                      : 'border-white/10 bg-white/[0.04] text-slate-300 hover:border-white/20'
-                                  }`}
-                                >
-                                  <span className="block text-sm font-black">{item.label}</span>
-                                  <span className="mt-1 block text-[11px] font-semibold leading-5 text-slate-400">{item.description}</span>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
                           <label className="block">
                             <span className="mb-2 block text-sm font-bold text-slate-200">اسمك الكامل</span>
                             <input type="text" placeholder="أحمد محمد" value={fullName}

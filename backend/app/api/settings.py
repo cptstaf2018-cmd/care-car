@@ -62,7 +62,7 @@ def update_center_settings(
         raise HTTPException(status_code=404, detail="Center not found")
 
     allowed = {
-        "name", "contact_phone", "logo_url",
+        "name", "specialty", "contact_phone", "logo_url",
         "ip_camera_url", "ip_camera_username", "ip_camera_password",
         "wasnder_api_key", "whatsapp_number",
         "reminder_days", "reminder_message_template", "debt_message_template",
@@ -71,6 +71,8 @@ def update_center_settings(
     for key, value in updates.items():
         if key in allowed:
             setattr(tenant, key, value)
+            if key == "specialty":
+                tenant.specialty_configured = True
     db.commit()
     db.refresh(tenant)
     return tenant

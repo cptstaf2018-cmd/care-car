@@ -34,6 +34,11 @@ export const CENTER_SPECIALTIES = [
     label: 'سمكرة وصبغ',
     description: 'صبغ قطعة، تعديل ضربة، تلميع، بولش',
   },
+  {
+    value: 'multi_service',
+    label: 'متعدد الخدمات',
+    description: 'أكثر من خدمة في مركز واحد',
+  },
 ]
 
 export const DEFAULT_CENTER_SPECIALTY = 'quick_service'

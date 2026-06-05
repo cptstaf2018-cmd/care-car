@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { ArrowLeft, CheckCircle2, Clock3, Lock, Mail, MessageCircle, Phone } from 'lucide-react'
 import { activate, register } from '../api/auth'
 import { useAuthStore } from '../store/auth'
-import { CENTER_SPECIALTIES, DEFAULT_CENTER_SPECIALTY } from '../constants/centerSpecialties'
+import { DEFAULT_CENTER_SPECIALTY } from '../constants/centerSpecialties'
 
 export default function Register() {
   const navigate = useNavigate()
@@ -12,7 +12,6 @@ export default function Register() {
   const [contactType, setContactType] = useState('phone')
   const [form, setForm] = useState({
     center_name: '',
-    specialty: localStorage.getItem('register_specialty') || DEFAULT_CENTER_SPECIALTY,
     manager_name: '',
     email: '',
     phone: '',
@@ -26,10 +25,6 @@ export default function Register() {
 
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }))
 
-  useEffect(() => {
-    localStorage.setItem('register_specialty', form.specialty)
-  }, [form.specialty])
-
   async function handleSubmit(e) {
     e.preventDefault()
     setError('')
@@ -37,12 +32,11 @@ export default function Register() {
     try {
       const res = await register({
         center_name: form.center_name.trim(),
-        specialty: form.specialty,
+        specialty: DEFAULT_CENTER_SPECIALTY,
         manager_name: form.manager_name.trim() || null,
         email: contactType === 'email' ? form.email.trim() : null,
         phone: contactType === 'phone' ? form.phone.trim() : null,
       })
-      localStorage.removeItem('register_specialty')
       setResult(res.data)
     } catch (err) {
       setError(err.response?.data?.detail || 'حدث خطأ، تحقق من البيانات')
@@ -66,7 +60,7 @@ export default function Register() {
         role: res.data.role,
         tenant_id: res.data.tenant_id,
       })
-      navigate('/center')
+      navigate('/center/onboarding')
     } catch (err) {
       setCodeError(err.response?.data?.detail || 'كود خاطئ أو منتهي')
       setCodeLoading(false)
@@ -146,26 +140,6 @@ export default function Register() {
               onChange={(value) => update('center_name', value)}
               required
             />
-            <div>
-              <span className="mb-2 block text-sm font-bold text-slate-200">اختصاص المركز</span>
-              <div className="grid max-h-56 gap-2 overflow-y-auto rounded-xl border border-white/10 bg-slate-950/20 p-2 sm:grid-cols-2">
-                {CENTER_SPECIALTIES.map(item => (
-                  <button
-                    key={item.value}
-                    type="button"
-                    onClick={() => update('specialty', item.value)}
-                    className={`rounded-lg border px-3 py-2.5 text-right transition ${
-                      form.specialty === item.value
-                        ? 'border-cyan-300 bg-cyan-300/15 text-white shadow-lg shadow-cyan-950/20'
-                        : 'border-white/10 bg-white/[0.04] text-slate-300 hover:border-white/20'
-                    }`}
-                  >
-                    <span className="block text-sm font-black">{item.label}</span>
-                    <span className="mt-1 block text-[11px] font-semibold leading-5 text-slate-400">{item.description}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
             <Input
               label="اسمك الكامل"
               placeholder="أحمد محمد"

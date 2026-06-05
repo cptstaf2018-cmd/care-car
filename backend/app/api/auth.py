@@ -41,6 +41,7 @@ CENTER_SPECIALTIES = {
     "mechanic",
     "ac",
     "body_paint",
+    "multi_service",
 }
 
 _rate_buckets: dict[tuple[str, str], deque[float]] = defaultdict(deque)
@@ -314,7 +315,7 @@ def register(request: Request, body: RegisterRequest, db: Session = Depends(get_
         raise HTTPException(status_code=400, detail="اسم المركز مطلوب")
 
     center_name = body.center_name.strip()
-    specialty = body.specialty if body.specialty in CENTER_SPECIALTIES else "quick_service"
+    specialty = "quick_service"
     if db.query(Tenant).filter(Tenant.name == center_name).first():
         raise HTTPException(status_code=409, detail="اسم المركز مستخدم بالفعل، يرجى اختيار اسم آخر")
 
@@ -345,6 +346,7 @@ def _register_with_auto_login(body: RegisterRequest, db: Session, center_name: s
         tenant = Tenant(
             name=center_name,
             specialty=specialty,
+            specialty_configured=False,
             plan=Plan.basic,
             is_active=True,
             contact_phone=contact_phone,
@@ -394,6 +396,7 @@ def _register_with_activation_code(body: RegisterRequest, db: Session, center_na
     tenant = Tenant(
         name=center_name,
         specialty=specialty,
+        specialty_configured=False,
         plan=Plan.basic,
         is_active=True,
         contact_phone=body.phone,

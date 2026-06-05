@@ -12,6 +12,7 @@ class Tenant(Base, TimestampMixin):
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False, unique=True)
     specialty = Column(String(40), default="quick_service", nullable=False)
+    specialty_configured = Column(Boolean, default=True, nullable=False)
     plan = Column(Enum(Plan), default=Plan.basic, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)
     contact_phone = Column(String(20))
