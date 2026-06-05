@@ -33,6 +33,14 @@ DEBT_REMINDER_TEMPLATE = (
     "للتواصل: {center_phone}"
 )
 
+PARTS_DEBT_REMINDER_TEMPLATE = (
+    "أهلاً أستاذ {customer_name} 👋\n"
+    "نذكّركم بكل احترام بوجود مبلغ متبقي قدره {debt_amount} على فاتورة بيع قطع السيارات.\n"
+    "يمكنكم تسديد المبلغ أو التواصل معنا لترتيب الدفع في أقرب وقت.\n"
+    "{center_name}\n"
+    "للتواصل: {center_phone}"
+)
+
 
 def _render(template: str, tenant: Tenant, car: Car) -> str:
     values = {
@@ -56,7 +64,8 @@ def render_due_reminder(tenant: Tenant, car: Car) -> str:
 
 
 def render_debt_reminder(tenant: Tenant, car: Car, debt_amount: float | int | str) -> str:
-    message = _render(DEBT_REMINDER_TEMPLATE, tenant, car)
+    template = PARTS_DEBT_REMINDER_TEMPLATE if car.car_type == "بيع قطع" else DEBT_REMINDER_TEMPLATE
+    message = _render(template, tenant, car)
     return message.replace("{debt_amount}", f"{float(debt_amount):,.0f} د.ع" if isinstance(debt_amount, (int, float)) else str(debt_amount))
 
 

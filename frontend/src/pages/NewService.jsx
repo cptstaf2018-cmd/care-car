@@ -292,6 +292,7 @@ export default function NewService() {
   const [lineInventoryQty, setLineInventoryQty] = useState('1')
   const [activePartCategory, setActivePartCategory] = useState('all')
   const [invoiceLines, setInvoiceLines] = useState([])
+  const [partsCustomer, setPartsCustomer] = useState({ name: '', phone: '' })
   const [paymentMode, setPaymentMode] = useState('paid')
   const [paidAmount, setPaidAmount] = useState('')
   const [result, setResult] = useState(null)
@@ -519,14 +520,16 @@ export default function NewService() {
 
   const partsSaleMutation = useMutation({
     mutationFn: async (payload) => {
-      const existing = await getCars(DIRECT_SALE_PLATE).then(r => r.data || [])
-      const directSaleCustomer = existing.find(car => car.plate_number === DIRECT_SALE_PLATE)
+      const phoneDigits = partsCustomer.phone.replace(/\D/g, '')
+      const customerPlate = phoneDigits ? `POS-${phoneDigits.slice(-9)}` : DIRECT_SALE_PLATE
+      const existing = await getCars(customerPlate).then(r => r.data || [])
+      const directSaleCustomer = existing.find(car => car.plate_number === customerPlate)
         || await createCar({
-          plate_number: DIRECT_SALE_PLATE,
-          owner_name: 'زبون نقدي',
+          plate_number: customerPlate,
+          owner_name: partsCustomer.name.trim() || (phoneDigits ? 'زبون بيع قطع' : 'زبون نقدي'),
           car_type: 'بيع قطع',
           car_color: '',
-          phone: '',
+          phone: partsCustomer.phone.trim(),
         }).then(r => r.data)
       return createService({ ...payload, car_id: directSaleCustomer.id })
     },
@@ -590,8 +593,9 @@ export default function NewService() {
       ? 0
       : Math.min(Math.max(parseFloat(paidAmount) || 0, 0), normalizedNet)
   const remainingAmount = Math.max(normalizedNet - effectivePaidAmount, 0)
+  const partsSaleNeedsCustomerPhone = isPartsStore && remainingAmount > 0
   const canSubmit = isPartsStore
-    ? invoiceLines.length > 0 && !partsSaleMutation.isPending
+    ? invoiceLines.length > 0 && !partsSaleMutation.isPending && (!partsSaleNeedsCustomerPhone || partsCustomer.phone.trim())
     : selectedCar && invoiceLines.length > 0 && !mutation.isPending
   const serviceName = usesOilGrade ? `${serviceType} ${oilGrade}` : serviceType
   const filteredPartItems = useMemo(() => {
@@ -659,6 +663,10 @@ export default function NewService() {
 
   const submitPartsSale = () => {
     setSubmitError('')
+    if (partsSaleNeedsCustomerPhone && !partsCustomer.phone.trim()) {
+      setSubmitError('فاتورة الدين تحتاج رقم واتساب للزبون حتى تعمل المطالبة لاحقاً.')
+      return
+    }
     const deductions = invoiceLines
       .filter(l => l.inventoryItemId)
       .map(l => ({ item_id: l.inventoryItemId, quantity: l.inventoryQty }))
@@ -727,7 +735,7 @@ export default function NewService() {
             className="flex items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-8 py-3 text-sm font-black text-cyan-700 hover:bg-cyan-100">
             تعديل أو حذف الفاتورة
           </button>
-          <button onClick={() => { setResult(null); setSelectedCar(null); setSearch(''); setServiceType(defaultServiceType); setOilGrade('15W40'); setInvoiceLines([]); setPaymentMode('paid'); setPaidAmount(''); setForm({ amount: '', discount: '0', mileage: '', notes: '' }) }}
+          <button onClick={() => { setResult(null); setSelectedCar(null); setSearch(''); setServiceType(defaultServiceType); setOilGrade('15W40'); setInvoiceLines([]); setPartsCustomer({ name: '', phone: '' }); setPaymentMode('paid'); setPaidAmount(''); setForm({ amount: '', discount: '0', mileage: '', notes: '' }) }}
             className="rounded-xl border border-slate-200 px-8 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
             خدمة جديدة
           </button>
@@ -967,6 +975,9 @@ export default function NewService() {
             normalizedNet={normalizedNet}
             effectivePaidAmount={effectivePaidAmount}
             remainingAmount={remainingAmount}
+            partsCustomer={partsCustomer}
+            setPartsCustomer={setPartsCustomer}
+            needsCustomerPhone={partsSaleNeedsCustomerPhone}
             submitError={submitError}
             onSubmit={submitPartsSale}
             isPending={partsSaleMutation.isPending}
@@ -1248,6 +1259,9 @@ function PartsSaleCart({
   normalizedNet,
   effectivePaidAmount,
   remainingAmount,
+  partsCustomer,
+  setPartsCustomer,
+  needsCustomerPhone,
   submitError,
   onSubmit,
   isPending,
@@ -1332,6 +1346,27 @@ function PartsSaleCart({
               onChange={e => setPaidAmount(e.target.value)}
               className="mt-3 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-white outline-none focus:border-cyan-300"
             />
+          )}
+          {needsCustomerPhone && (
+            <div className="mt-3 rounded-lg border border-amber-300/30 bg-amber-500/10 p-3">
+              <p className="mb-2 text-xs font-black text-amber-100">بيانات الزبون مطلوبة للمطالبة بالدين</p>
+              <div className="space-y-2">
+                <input
+                  type="text"
+                  placeholder="اسم الزبون"
+                  value={partsCustomer.name}
+                  onChange={e => setPartsCustomer(prev => ({ ...prev, name: e.target.value }))}
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-white outline-none placeholder:text-slate-400 focus:border-cyan-300"
+                />
+                <input
+                  type="tel"
+                  placeholder="رقم واتساب الزبون *"
+                  value={partsCustomer.phone}
+                  onChange={e => setPartsCustomer(prev => ({ ...prev, phone: e.target.value }))}
+                  className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-white outline-none placeholder:text-slate-400 focus:border-cyan-300"
+                />
+              </div>
+            </div>
           )}
           <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
             <div className="rounded-md bg-emerald-500/10 px-2 py-2">

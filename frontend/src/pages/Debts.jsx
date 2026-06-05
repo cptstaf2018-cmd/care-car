@@ -113,7 +113,9 @@ export default function Debts() {
                     <p className="mt-1 flex items-center gap-1 text-xs font-bold text-slate-400"><Phone size={12} /> {debt.phone || 'لا يوجد رقم'}</p>
                   </td>
                   <td className="px-4 py-4">
-                    <p className="font-mono font-black text-slate-950">{debt.plate_number || '-'}</p>
+                    <p className="font-mono font-black text-slate-950">
+                      {debt.car_type === 'بيع قطع' ? 'بيع قطع' : (debt.plate_number || '-')}
+                    </p>
                     <p className="mt-1 text-xs text-slate-500">{debt.car_type || 'نوع غير محدد'}</p>
                   </td>
                   <td className="px-4 py-4 font-black text-rose-700">{money(debt.amount)}</td>
