@@ -6,7 +6,9 @@ class DebtOut(BaseModel):
     id: int
     tenant_id: int
     invoice_id: int
-    car_id: int
+    car_id: int | None
+    customer_name: str | None = None
+    customer_phone: str | None = None
     amount: float
     due_date: date | None
     notes: str | None

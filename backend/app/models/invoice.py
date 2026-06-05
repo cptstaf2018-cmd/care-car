@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Column, Integer, ForeignKey, Numeric, Enum, Date
+from sqlalchemy import Column, Integer, String, ForeignKey, Numeric, Enum, Date
 from app.models.base import Base, TimestampMixin
 
 class InvoiceStatus(str, enum.Enum):
@@ -11,7 +11,10 @@ class Invoice(Base, TimestampMixin):
     __tablename__ = "invoices"
     id = Column(Integer, primary_key=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
-    service_id = Column(Integer, ForeignKey("services.id"), nullable=False, index=True)
+    service_id = Column(Integer, ForeignKey("services.id"), nullable=True, index=True)
+    invoice_type = Column(String(20), nullable=False, server_default="service")
+    customer_name = Column(String(120))
+    customer_phone = Column(String(40))
     amount = Column(Numeric(12, 2), nullable=False)
     discount = Column(Numeric(12, 2), server_default="0")
     status = Column(Enum(InvoiceStatus), default=InvoiceStatus.unpaid, nullable=False)

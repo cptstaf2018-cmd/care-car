@@ -13,6 +13,7 @@ import {
 import Layout from '../components/Layout'
 import { getCars, createCar } from '../api/cars'
 import { createService } from '../api/services'
+import { createSaleInvoice } from '../api/invoices'
 import { getInventory } from '../api/inventory'
 import { getCenterSettings, readLatestMobilePlate } from '../api/settings'
 import { DEFAULT_CENTER_SPECIALTY, getSpecialtyLabel } from '../constants/centerSpecialties'
@@ -23,7 +24,6 @@ const WS_CAMERA_BASE = window.location.protocol === 'https:'
   ? `wss://${window.location.host}/ws/camera`
   : `ws://${window.location.host}/ws/camera`
 
-const DIRECT_SALE_PLATE = 'POS-SALES'
 const OIL_GRADES = ['15W40', '10W30', '5W30', '5W20', '0W20']
 const SERVICE_ICON_MAP = {
   oil: Droplets,
@@ -531,20 +531,7 @@ export default function NewService() {
   })
 
   const partsSaleMutation = useMutation({
-    mutationFn: async (payload) => {
-      const phoneDigits = partsCustomer.phone.replace(/\D/g, '')
-      const customerPlate = phoneDigits ? `POS-${phoneDigits.slice(-9)}` : DIRECT_SALE_PLATE
-      const existing = await getCars(customerPlate).then(r => r.data || [])
-      const directSaleCustomer = existing.find(car => car.plate_number === customerPlate)
-        || await createCar({
-          plate_number: customerPlate,
-          owner_name: partsCustomer.name.trim() || (phoneDigits ? 'زبون بيع قطع' : 'زبون نقدي'),
-          car_type: 'بيع قطع',
-          car_color: '',
-          phone: partsCustomer.phone.trim(),
-        }).then(r => r.data)
-      return createService({ ...payload, car_id: directSaleCustomer.id })
-    },
+    mutationFn: createSaleInvoice,
     onSuccess: (res) => {
       setSubmitError('')
       navigate(`/center/invoices/${res.data.invoice_id}/print`, { replace: true })
@@ -708,11 +695,10 @@ export default function NewService() {
       category: line.category || '',
     }))
     partsSaleMutation.mutate({
-      oil_type: invoiceLines.map(line => line.name).join(' + '),
+      customer_name: partsCustomer.name.trim() || 'زبون نقدي',
+      customer_phone: partsCustomer.phone.trim() || null,
       amount: invoiceTotal,
       discount: parseFloat(form.discount) || 0,
-      mileage: null,
-      notes: `INVOICE_LINES:${JSON.stringify(invoiceDetails)}`,
       invoice_lines: invoiceDetails,
       inventory_deductions: deductions,
       payment_status: paymentMode,

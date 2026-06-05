@@ -16,13 +16,15 @@ from app.services.wasnder_service import send_whatsapp_message
 router = APIRouter(prefix="/debts", tags=["debts"])
 
 def _scope_debt_query(db: Session, user: User):
-    q = db.query(Debt, Car, Invoice).join(Car, Debt.car_id == Car.id).join(Invoice, Debt.invoice_id == Invoice.id)
+    q = db.query(Debt, Car, Invoice).outerjoin(Car, Debt.car_id == Car.id).join(Invoice, Debt.invoice_id == Invoice.id)
     if user.role != Role.superadmin:
         q = q.filter(Debt.tenant_id == user.tenant_id)
     return q
 
 
-def _last_debt_message(db: Session, tenant_id: int, car_id: int):
+def _last_debt_message(db: Session, tenant_id: int, car_id: int | None):
+    if not car_id:
+        return None
     return db.query(MessageLog).filter(
         MessageLog.tenant_id == tenant_id,
         MessageLog.car_id == car_id,
@@ -30,21 +32,25 @@ def _last_debt_message(db: Session, tenant_id: int, car_id: int):
     ).order_by(MessageLog.sent_at.desc(), MessageLog.id.desc()).first()
 
 
-def _serialize_debt(db: Session, debt: Debt, car: Car, invoice: Invoice) -> DebtListOut:
+def _serialize_debt(db: Session, debt: Debt, car: Car | None, invoice: Invoice) -> DebtListOut:
     last = _last_debt_message(db, debt.tenant_id, debt.car_id)
+    customer_name = debt.customer_name or invoice.customer_name or (car.owner_name if car else None)
+    phone = debt.customer_phone or invoice.customer_phone or (car.phone if car else None)
+    is_sale = invoice.invoice_type == "sale"
     return DebtListOut(
         id=debt.id,
         tenant_id=debt.tenant_id,
         invoice_id=debt.invoice_id,
         car_id=debt.car_id,
+        customer_name=customer_name,
+        customer_phone=phone,
         amount=float(debt.amount or 0),
         due_date=debt.due_date,
         notes=debt.notes,
         auto_reminder_enabled=debt.auto_reminder_enabled,
-        customer_name=car.owner_name,
-        phone=car.phone,
-        plate_number=car.plate_number,
-        car_type=car.car_type,
+        phone=phone,
+        plate_number=None if is_sale else (car.plate_number if car else None),
+        car_type="بيع قطع" if is_sale else (car.car_type if car else None),
         invoice_date=invoice.invoice_date,
         invoice_amount=float(invoice.amount or 0),
         last_message_at=last.sent_at.isoformat() if last else None,
@@ -74,14 +80,27 @@ def send_debt_reminder_now(debt_id: int, db: Session = Depends(get_db), user: Us
     row = _scope_debt_query(db, user).filter(Debt.id == debt_id).first()
     if not row:
         raise HTTPException(status_code=404, detail="Not found")
-    debt, car, _invoice = row
+    debt, car, invoice = row
     tenant = db.get(Tenant, debt.tenant_id)
     if not tenant:
         raise HTTPException(status_code=404, detail="Center not found")
-    if not car.phone:
+    phone = (car.phone if car else None) or debt.customer_phone or invoice.customer_phone
+    if not phone:
         raise HTTPException(status_code=400, detail="لا يوجد رقم واتساب للزبون")
 
-    message = render_debt_reminder(tenant, car, float(debt.amount or 0))
-    status, response = send_whatsapp_message(tenant, car.phone, message)
-    log_reminder_message(db, tenant, car, "debt_reminder", status, response, float(debt.amount or 0))
+    if car:
+        message = render_debt_reminder(tenant, car, float(debt.amount or 0))
+    else:
+        customer_name = debt.customer_name or invoice.customer_name or "عميلنا العزيز"
+        contact = tenant.contact_phone or tenant.whatsapp_number or ""
+        message = "\n".join([
+            f"أهلاً {customer_name}",
+            f"نذكركم بوجود مبلغ متبقي قدره {float(debt.amount or 0):,.0f} IQD على فاتورة بيع قطع السيارات.",
+            "يمكنكم التسديد أو التواصل معنا لترتيب الدفع.",
+            tenant.name or "",
+            f"للتواصل: {contact}" if contact else "",
+        ]).strip()
+    status, response = send_whatsapp_message(tenant, phone, message)
+    if car:
+        log_reminder_message(db, tenant, car, "debt_reminder", status, response, float(debt.amount or 0))
     return DebtReminderOut(status=status, message=message, provider_response=response)

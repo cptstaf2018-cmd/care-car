@@ -11,9 +11,38 @@ from app.models.car import Car
 from app.models.tenant import Tenant
 from app.models.user import User, Role
 from app.models.debt import Debt
-from app.schemas.invoice import InvoiceOut, InvoiceUpdate
+from app.schemas.invoice import InvoiceOut, InvoiceUpdate, SaleCreate
+from app.services.pos_service import create_sale_invoice
 
 router = APIRouter(prefix="/invoices", tags=["invoices"])
+
+
+def _resolve_meta(db: Session, inv: Invoice) -> dict:
+    """Customer/car/sale fields for an invoice — works for both service and standalone sale."""
+    service = db.get(Service, inv.service_id) if inv.service_id else None
+    car = db.get(Car, service.car_id) if service and service.car_id else None
+    is_sale = inv.invoice_type == "sale" or (car.car_type == "بيع قطع" if car else False)
+    service_name = service.oil_type if service else None
+    if is_sale and not service_name:
+        names = [
+            row.name
+            for row in db.query(InvoiceLine.name)
+            .filter(InvoiceLine.invoice_id == inv.id)
+            .order_by(InvoiceLine.id.asc())
+            .limit(3)
+            .all()
+            if row.name
+        ]
+        service_name = " + ".join(names) or "بيع قطع"
+    return {
+        "service": service,
+        "car": car,
+        "is_sale": is_sale,
+        "customer_name": inv.customer_name or (car.owner_name if car else None),
+        "plate_number": None if is_sale else (car.plate_number if car else None),
+        "car_type": None if is_sale else (car.car_type if car else None),
+        "service_name": service_name,
+    }
 
 
 def _logo_url(tenant: Tenant | None) -> str:
@@ -87,9 +116,7 @@ def _stored_invoice_lines(db: Session, invoice_id: int) -> list[dict]:
 
 
 def _sync_invoice_debt(db: Session, inv: Invoice):
-    service = db.get(Service, inv.service_id)
-    if not service:
-        return
+    service = db.get(Service, inv.service_id) if inv.service_id else None
     total = max(float(inv.amount or 0) - float(inv.discount or 0), 0)
     debt = db.query(Debt).filter(Debt.invoice_id == inv.id).first()
     if inv.status == InvoiceStatus.paid or total <= 0:
@@ -99,7 +126,23 @@ def _sync_invoice_debt(db: Session, inv: Invoice):
     remaining = total
     if debt:
         debt.amount = remaining
+        if inv.invoice_type == "sale":
+            debt.customer_name = inv.customer_name
+            debt.customer_phone = inv.customer_phone
     else:
+        if inv.invoice_type == "sale":
+            db.add(Debt(
+                tenant_id=inv.tenant_id,
+                invoice_id=inv.id,
+                car_id=None,
+                customer_name=inv.customer_name,
+                customer_phone=inv.customer_phone,
+                amount=remaining,
+                notes="دين من تعديل حالة فاتورة بيع",
+            ))
+            return
+        if not service:
+            return
         db.add(Debt(
             tenant_id=inv.tenant_id,
             invoice_id=inv.id,
@@ -107,6 +150,23 @@ def _sync_invoice_debt(db: Session, inv: Invoice):
             amount=remaining,
             notes="دين من تعديل حالة الفاتورة",
         ))
+
+@router.post("/sale", status_code=201)
+def create_sale(body: SaleCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    if user.role == Role.superadmin or not user.tenant_id:
+        raise HTTPException(status_code=403, detail="Only center accounts can create sales")
+    data = body.model_dump()
+    data["invoice_lines"] = [line for line in data.get("invoice_lines", [])]
+    inv = create_sale_invoice(db, user.tenant_id, data)
+    total, paid, remaining = _invoice_amounts(db, inv)
+    return {
+        "invoice_id": inv.id,
+        "amount": float(inv.amount),
+        "status": inv.status,
+        "paid_amount": paid,
+        "remaining_amount": remaining,
+    }
+
 
 @router.get("/", response_model=list[InvoiceOut])
 def list_invoices(status: str | None = None, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
@@ -118,10 +178,8 @@ def list_invoices(status: str | None = None, db: Session = Depends(get_db), user
     invoices = q.order_by(Invoice.invoice_date.desc()).all()
     result = []
     for inv in invoices:
-      service = db.get(Service, inv.service_id)
-      car = db.get(Car, service.car_id) if service else None
+      meta = _resolve_meta(db, inv)
       total, paid, remaining = _invoice_amounts(db, inv)
-      is_sale = car.car_type == "بيع قطع" if car else False
       result.append({
           "id": inv.id,
           "tenant_id": inv.tenant_id,
@@ -130,11 +188,11 @@ def list_invoices(status: str | None = None, db: Session = Depends(get_db), user
           "discount": float(inv.discount or 0),
           "status": inv.status,
           "invoice_date": inv.invoice_date,
-          "customer_name": car.owner_name if car else None,
-          "plate_number": car.plate_number if car else None,
-          "car_type": car.car_type if car else None,
-          "service_name": service.oil_type if service else None,
-          "invoice_type": "sale" if is_sale else "service",
+          "customer_name": meta["customer_name"],
+          "plate_number": meta["plate_number"],
+          "car_type": meta["car_type"],
+          "service_name": meta["service_name"],
+          "invoice_type": "sale" if meta["is_sale"] else "service",
           "paid_amount": paid,
           "remaining_amount": remaining,
       })
@@ -145,13 +203,12 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db), user: User = Dep
     inv = db.get(Invoice, invoice_id)
     if not inv or (user.role != Role.superadmin and inv.tenant_id != user.tenant_id):
         raise HTTPException(status_code=404, detail="Invoice not found")
-    service = db.get(Service, inv.service_id)
-    car = db.get(Car, service.car_id) if service else None
+    meta = _resolve_meta(db, inv)
+    service = meta["service"]
     tenant = db.get(Tenant, inv.tenant_id)
     total, paid, remaining = _invoice_amounts(db, inv)
     stored_lines = _stored_invoice_lines(db, inv.id)
     invoice_lines = stored_lines or _invoice_lines(service)
-    is_sale = car.car_type == "بيع قطع" if car else False
     return {
         "id": inv.id,
         "invoice_date": str(inv.invoice_date),
@@ -163,12 +220,12 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db), user: User = Dep
         "remaining_amount": remaining,
         "service_lines": [line["name"] for line in invoice_lines],
         "invoice_lines": invoice_lines,
-        "invoice_type": "sale" if is_sale else "service",
+        "invoice_type": "sale" if meta["is_sale"] else "service",
         "notes": "" if service and (service.notes or "").startswith("INVOICE_LINES:") else (service.notes if service else None),
         "mileage": service.mileage if service else None,
-        "customer_name": car.owner_name if car else None,
-        "plate_number": car.plate_number if car else None,
-        "car_type": car.car_type if car else None,
+        "customer_name": meta["customer_name"],
+        "plate_number": meta["plate_number"],
+        "car_type": meta["car_type"],
         "center_name": tenant.name if tenant else "",
         "center_phone": tenant.contact_phone if tenant else "",
         "center_logo": _logo_url(tenant),
