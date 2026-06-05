@@ -65,12 +65,18 @@ export default function Dashboard() {
   const daily = dailyQuery.data
   const monthly = monthlyQuery.data
   const cars = carsQuery.data || []
-  const inventory = inventoryQuery.data || []
+  const inventory = Array.isArray(inventoryQuery.data) ? inventoryQuery.data : []
   const invoices = invoicesQuery.data || []
   const centerName = centerQuery.data?.name || 'مركزك'
   const isOilCenter = (centerQuery.data?.specialty || 'quick_service') === 'quick_service'
   const isPartsStore = centerQuery.data?.specialty === 'multi_service'
-  const lowStock = inventory.filter(item => item.low_stock)
+  const inventoryUnavailable = inventoryQuery.isError
+  const lowStock = inventory.filter(item => {
+    const quantity = Number(item.quantity || 0)
+    const threshold = Number(item.min_threshold ?? 0)
+    return item.low_stock || quantity <= 0 || quantity <= threshold
+  })
+  const inventoryAlert = inventoryUnavailable || inventory.length === 0 || lowStock.length > 0
   const unpaidInvoices = invoices.filter(inv => inv.status !== 'paid')
   const dueCars = isOilCenter ? cars
     .map(car => ({ ...car, days_left: daysUntilReminder(car) }))
@@ -242,9 +248,9 @@ export default function Dashboard() {
       <section className="grid gap-4 xl:grid-cols-[1fr_1fr]">
         <Panel title="تنبيهات اليوم" icon={AlertTriangle}>
           <ActionAlert
-            tone={lowStock.length ? 'amber' : 'green'}
-            title={lowStock.length ? 'قطع ومواد ناقصة' : 'المخزون كافٍ'}
-            text={lowStock.length ? `${lowStock.length} مواد وصلت للحد الأدنى` : 'جميع قطع الغيار والمواد متوفرة'}
+            tone={inventoryUnavailable ? 'rose' : inventoryAlert ? 'amber' : 'green'}
+            title={inventoryUnavailable ? 'تعذر قراءة المخزون' : inventory.length === 0 ? 'المخزون فارغ' : lowStock.length ? 'قطع ومواد ناقصة' : 'المخزون كافٍ'}
+            text={inventoryUnavailable ? 'افتح صفحة المخزون للتأكد من صلاحية الوصول والبيانات' : inventory.length === 0 ? 'لا توجد مواد مسجلة في المخزون' : lowStock.length ? `${lowStock.length} مواد وصلت للحد الأدنى أو نفدت` : 'جميع قطع الغيار والمواد متوفرة'}
             to="/center/inventory"
           />
           <ActionAlert
