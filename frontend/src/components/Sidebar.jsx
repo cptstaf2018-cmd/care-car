@@ -54,6 +54,15 @@ function SidebarContent({ collapsed, setCollapsed, onClose }) {
   })
   const centerName = center?.name || 'تشغيل المركز'
   const isAdmin = user?.role === 'superadmin'
+  const isPartsStore = !isAdmin && center?.specialty === 'multi_service'
+  const visibleGroups = isPartsStore
+    ? centerGroups.map(group => ({
+        ...group,
+        links: group.links
+          .filter(link => link.to !== '/center/cars')
+          .map(link => link.to === '/center/services/new' ? { ...link, label: 'نقطة بيع' } : link),
+      }))
+    : groups
   const userContact = displayUserContact(user, center)
   const canUpgrade = !isAdmin && center?.plan && (PLAN_RANK[center.plan] || 1) < PLAN_RANK.enterprise
 
@@ -89,7 +98,7 @@ function SidebarContent({ collapsed, setCollapsed, onClose }) {
       </div>
 
       <nav className="flex-1 space-y-5 overflow-y-auto p-4">
-        {groups.map(group => (
+        {visibleGroups.map(group => (
           <div key={group.title}>
             {!collapsed && <p className="mb-2 px-3 text-xs font-bold text-slate-500">{group.title}</p>}
             <div className="space-y-1">

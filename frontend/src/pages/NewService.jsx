@@ -23,6 +23,7 @@ const WS_CAMERA_BASE = window.location.protocol === 'https:'
   ? `wss://${window.location.host}/ws/camera`
   : `ws://${window.location.host}/ws/camera`
 
+const DIRECT_SALE_PLATE = 'POS-SALES'
 const OIL_GRADES = ['15W40', '10W30', '5W30', '5W20', '0W20']
 const SERVICE_ICON_MAP = {
   oil: Droplets,
@@ -516,6 +517,28 @@ export default function NewService() {
     },
   })
 
+  const partsSaleMutation = useMutation({
+    mutationFn: async (payload) => {
+      const existing = await getCars(DIRECT_SALE_PLATE).then(r => r.data || [])
+      const directSaleCustomer = existing.find(car => car.plate_number === DIRECT_SALE_PLATE)
+        || await createCar({
+          plate_number: DIRECT_SALE_PLATE,
+          owner_name: 'زبون نقدي',
+          car_type: 'بيع قطع',
+          car_color: '',
+          phone: '',
+        }).then(r => r.data)
+      return createService({ ...payload, car_id: directSaleCustomer.id })
+    },
+    onSuccess: (res) => {
+      setSubmitError('')
+      navigate(`/center/invoices/${res.data.invoice_id}/print`, { replace: true })
+    },
+    onError: (err) => {
+      setSubmitError(err.response?.data?.detail || 'تعذر اعتماد فاتورة البيع. راجع السلة وحاول مرة أخرى.')
+    },
+  })
+
   const createCarMutation = useMutation({
     mutationFn: createCar,
     onSuccess: (res) => {
@@ -567,7 +590,9 @@ export default function NewService() {
       ? 0
       : Math.min(Math.max(parseFloat(paidAmount) || 0, 0), normalizedNet)
   const remainingAmount = Math.max(normalizedNet - effectivePaidAmount, 0)
-  const canSubmit = selectedCar && invoiceLines.length > 0 && !mutation.isPending
+  const canSubmit = isPartsStore
+    ? invoiceLines.length > 0 && !partsSaleMutation.isPending
+    : selectedCar && invoiceLines.length > 0 && !mutation.isPending
   const serviceName = usesOilGrade ? `${serviceType} ${oilGrade}` : serviceType
   const filteredPartItems = useMemo(() => {
     if (!isPartsStore) return []
@@ -632,6 +657,30 @@ export default function NewService() {
     })
   }
 
+  const submitPartsSale = () => {
+    setSubmitError('')
+    const deductions = invoiceLines
+      .filter(l => l.inventoryItemId)
+      .map(l => ({ item_id: l.inventoryItemId, quantity: l.inventoryQty }))
+    const invoiceDetails = invoiceLines.map(line => ({
+      name: line.name,
+      amount: Number(line.amount || 0),
+      notes: line.notes || '',
+      inventory_item_name: line.inventoryItemName || '',
+      inventory_quantity: line.inventoryQty || null,
+    }))
+    partsSaleMutation.mutate({
+      oil_type: invoiceLines.map(line => line.name).join(' + '),
+      amount: invoiceTotal,
+      discount: parseFloat(form.discount) || 0,
+      mileage: null,
+      notes: `INVOICE_LINES:${JSON.stringify(invoiceDetails)}`,
+      inventory_deductions: deductions,
+      payment_status: paymentMode,
+      paid_amount: effectivePaidAmount,
+    })
+  }
+
   useEffect(() => {
     if (!invoiceNeedsMileage && form.mileage) {
       setForm(prev => ({ ...prev, mileage: '' }))
@@ -647,13 +696,14 @@ export default function NewService() {
   useEffect(() => {
     const onKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && canSubmit) {
-        submitService()
+        if (isPartsStore) submitPartsSale()
+        else submitService()
       }
       if (e.key === 'Escape') setSelectedCar(null)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [canSubmit, selectedCar, form, mutation, serviceName])
+  }, [canSubmit, selectedCar, form, mutation, serviceName, isPartsStore, invoiceLines, paymentMode, paidAmount])
 
   if (result) return (
     <Layout>
@@ -865,6 +915,64 @@ export default function NewService() {
       </section>
       )}
 
+      {isPartsStore ? (
+        <div className="grid gap-5 xl:grid-cols-[1fr_340px]">
+          <div className="space-y-4">
+            <ProductCatalog
+              categories={PARTS_CATEGORIES}
+              activeCategory={activePartCategory}
+              setActiveCategory={setActivePartCategory}
+              items={filteredPartItems}
+              allItemsCount={inventoryItems.length}
+              onAddProduct={addInventoryProductToInvoice}
+            />
+            <div className="surface rounded-lg p-4">
+              <p className="mb-3 text-sm font-black text-slate-700">منتج غير مسجل في المخزون</p>
+              <div className="grid gap-3 md:grid-cols-[1fr_180px_auto]">
+                <input
+                  type="text"
+                  placeholder="اسم المنتج"
+                  value={form.notes}
+                  onChange={e => setForm({ ...form, notes: e.target.value })}
+                  className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                />
+                <input
+                  type="number"
+                  placeholder="السعر (IQD)"
+                  value={form.amount}
+                  onChange={e => setForm({ ...form, amount: e.target.value })}
+                  className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+                />
+                <button
+                  onClick={addLineToInvoice}
+                  disabled={!form.amount || !form.notes}
+                  className="rounded-lg bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-300 disabled:opacity-50"
+                >
+                  إضافة
+                </button>
+              </div>
+            </div>
+          </div>
+          <PartsSaleCart
+            invoiceLines={invoiceLines}
+            setInvoiceLines={setInvoiceLines}
+            invoiceTotal={invoiceTotal}
+            discount={form.discount}
+            setDiscount={value => setForm({ ...form, discount: value })}
+            netAmount={netAmount}
+            paymentMode={paymentMode}
+            setPaymentMode={setPaymentMode}
+            paidAmount={paidAmount}
+            setPaidAmount={setPaidAmount}
+            normalizedNet={normalizedNet}
+            effectivePaidAmount={effectivePaidAmount}
+            remainingAmount={remainingAmount}
+            submitError={submitError}
+            onSubmit={submitPartsSale}
+            isPending={partsSaleMutation.isPending}
+          />
+        </div>
+      ) : (
       <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
         {/* Service form */}
         <div className="space-y-4">
@@ -1121,7 +1229,135 @@ export default function NewService() {
           )}
         </div>
       </div>
+      )}
     </Layout>
+  )
+}
+
+function PartsSaleCart({
+  invoiceLines,
+  setInvoiceLines,
+  invoiceTotal,
+  discount,
+  setDiscount,
+  netAmount,
+  paymentMode,
+  setPaymentMode,
+  paidAmount,
+  setPaidAmount,
+  normalizedNet,
+  effectivePaidAmount,
+  remainingAmount,
+  submitError,
+  onSubmit,
+  isPending,
+}) {
+  return (
+    <div className="sticky top-24 h-fit rounded-lg border border-slate-200 bg-slate-950 p-5 text-white shadow-2xl">
+      <div className="mb-4 flex items-center gap-2 text-cyan-300">
+        <Zap size={18} />
+        <span className="font-black">سلة البيع النهائية</span>
+      </div>
+      <div className="space-y-3 text-sm">
+        <div className="flex justify-between">
+          <span className="text-slate-400">نوع البيع</span>
+          <span className="font-black">بيع مباشر</span>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-white/5">
+          {invoiceLines.length ? invoiceLines.map(line => (
+            <div key={line.id} className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2 last:border-0">
+              <button
+                onClick={() => setInvoiceLines(prev => prev.filter(item => item.id !== line.id))}
+                className="text-rose-300 transition hover:text-rose-200"
+              >
+                <Trash2 size={15} />
+              </button>
+              <div className="flex-1 text-right">
+                <p className="font-black text-white">{line.name}</p>
+                {line.inventoryItemName && (
+                  <p className="text-xs text-amber-300">📦 {line.inventoryQty} × {line.inventoryItemName}</p>
+                )}
+              </div>
+              <span className="font-black">{Number(line.amount).toLocaleString()}</span>
+            </div>
+          )) : (
+            <p className="px-3 py-8 text-center text-sm font-bold text-slate-400">
+              اختر مادة من المتجر لتظهر هنا
+            </p>
+          )}
+        </div>
+        <input
+          type="number"
+          placeholder="خصم الفاتورة (IQD)"
+          value={discount}
+          onChange={e => setDiscount(e.target.value)}
+          className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-white outline-none focus:border-cyan-300"
+        />
+        <div className="flex justify-between"><span className="text-slate-400">الإجمالي</span><span>{invoiceTotal.toLocaleString()}</span></div>
+        <div className="flex justify-between"><span className="text-slate-400">الخصم</span><span>{(Number(discount) || 0).toLocaleString()}</span></div>
+        <div className="border-t border-white/10 pt-3">
+          <p className="text-xs text-slate-400">الصافي</p>
+          <p className="mt-1 text-3xl font-black">{netAmount.toLocaleString()} IQD</p>
+        </div>
+        <div className="rounded-lg border border-white/10 bg-white/5 p-3">
+          <div className="mb-3 flex items-center gap-2 text-cyan-300">
+            <Wallet size={16} />
+            <span className="text-sm font-black">طريقة الدفع</span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            {[
+              ['paid', 'دفع كامل'],
+              ['partial', 'دفع جزء'],
+              ['unpaid', 'لم يدفع'],
+            ].map(([key, label]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setPaymentMode(key)}
+                className={`rounded-lg px-2 py-2 text-xs font-black transition ${
+                  paymentMode === key ? 'bg-cyan-400 text-slate-950' : 'bg-white/10 text-slate-300 hover:bg-white/15'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {paymentMode === 'partial' && (
+            <input
+              type="number"
+              min="0"
+              max={normalizedNet}
+              placeholder="كم دفع الزبون؟"
+              value={paidAmount}
+              onChange={e => setPaidAmount(e.target.value)}
+              className="mt-3 w-full rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-white outline-none focus:border-cyan-300"
+            />
+          )}
+          <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+            <div className="rounded-md bg-emerald-500/10 px-2 py-2">
+              <p className="text-emerald-200">المدفوع</p>
+              <p className="mt-1 font-black text-white">{effectivePaidAmount.toLocaleString()} IQD</p>
+            </div>
+            <div className="rounded-md bg-rose-500/10 px-2 py-2">
+              <p className="text-rose-200">الدين</p>
+              <p className="mt-1 font-black text-white">{remainingAmount.toLocaleString()} IQD</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      {submitError && (
+        <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold leading-6 text-rose-700">
+          {submitError}
+        </div>
+      )}
+      <button
+        onClick={onSubmit}
+        disabled={!invoiceLines.length || isPending}
+        className="mt-5 w-full rounded-lg bg-emerald-500 px-6 py-4 text-lg font-black text-white transition hover:bg-emerald-600 disabled:opacity-50"
+      >
+        {isPending ? 'جاري...' : 'اعتماد فاتورة البيع'}
+      </button>
+    </div>
   )
 }
 
