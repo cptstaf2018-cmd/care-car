@@ -424,7 +424,7 @@ export default function NewService() {
   const { data: inventoryItems = [] } = useQuery({
     queryKey: ['inventory'],
     queryFn: () => getInventory().then(r => r.data),
-    enabled: !!selectedCar && (!!inventoryAutomationEnabled || isPartsStore),
+    enabled: isPartsStore || (!!selectedCar && !!inventoryAutomationEnabled),
   })
 
   // Auto-match inventory item when service type or oil grade changes
@@ -870,14 +870,30 @@ export default function NewService() {
         <div className="space-y-4">
           {!selectedCar ? (
             <>
-              <ServiceTypePicker
-                serviceType={serviceType}
-                setServiceType={setServiceType}
-                oilGrade={oilGrade}
-                setOilGrade={setOilGrade}
-                serviceTypes={serviceTypes}
-                specialtyLabel={getSpecialtyLabel(centerSpecialty)}
-              />
+              {isPartsStore ? (
+                <ProductCatalog
+                  categories={PARTS_CATEGORIES}
+                  activeCategory={activePartCategory}
+                  setActiveCategory={setActivePartCategory}
+                  items={filteredPartItems}
+                  allItemsCount={inventoryItems.length}
+                  onAddProduct={addInventoryProductToInvoice}
+                />
+              ) : (
+                <ServiceTypePicker
+                  serviceType={serviceType}
+                  setServiceType={setServiceType}
+                  oilGrade={oilGrade}
+                  setOilGrade={setOilGrade}
+                  serviceTypes={serviceTypes}
+                  specialtyLabel={getSpecialtyLabel(centerSpecialty)}
+                />
+              )}
+              {isPartsStore && invoiceLines.length > 0 && (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-800">
+                  تمت إضافة {invoiceLines.length} مادة إلى السلة. اختر الزبون أو أضف مرجعاً للفاتورة حتى تعتمد البيع.
+                </div>
+              )}
               <div className="relative">
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={19} />
                 <input value={search} onChange={e => setSearch(e.target.value)}
