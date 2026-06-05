@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router-dom'
 import QRCode from 'qrcode'
 import Layout from '../components/Layout'
 import { getCenterSettings, updateCenterSettings, requestSubscription, uploadLogo, getMobileCameraLink } from '../api/settings'
-import { getCenterUsers, createCenterUser, updateCenterUser } from '../api/users'
+import { getCenterUsers, createCenterUser, updateCenterUser, deleteCenterUser } from '../api/users'
 import { PLAN_DETAILS, PLAN_ORDER, hasPlanFeature, isHigherPlan, nextPlan, planShortName, planUserLimit } from '../constants/plans'
 
 const PLAN_COLORS = { basic: 'slate', pro: 'cyan', enterprise: 'violet' }
@@ -352,6 +352,8 @@ function LogoUpload({ currentUrl, onUploaded }) {
 function CenterUsersSection({ center }) {
   const qc = useQueryClient()
   const [form, setForm] = useState({ email: '', full_name: '', password: '' })
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({ email: '', full_name: '', password: '' })
   const { data, isLoading } = useQuery({
     queryKey: ['center-users'],
     queryFn: () => getCenterUsers().then(r => r.data),
@@ -369,8 +371,33 @@ function CenterUsersSection({ center }) {
   })
   const updateUser = useMutation({
     mutationFn: ({ id, data }) => updateCenterUser(id, data),
+    onSuccess: () => {
+      setEditingId(null)
+      setEditForm({ email: '', full_name: '', password: '' })
+      qc.invalidateQueries({ queryKey: ['center-users'] })
+    },
+  })
+  const deleteUser = useMutation({
+    mutationFn: deleteCenterUser,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['center-users'] }),
   })
+  const startEdit = (item) => {
+    setEditingId(item.id)
+    setEditForm({ email: item.email || '', full_name: item.full_name || '', password: '' })
+  }
+  const saveEdit = () => {
+    const payload = {
+      email: editForm.email,
+      full_name: editForm.full_name,
+    }
+    if (editForm.password) payload.password = editForm.password
+    updateUser.mutate({ id: editingId, data: payload })
+  }
+  const confirmDelete = (item) => {
+    if (window.confirm(`حذف المستخدم "${item.full_name || item.email}"؟`)) {
+      deleteUser.mutate(item.id)
+    }
+  }
 
   return (
     <section className="surface mt-5 rounded-lg p-6">
@@ -428,24 +455,96 @@ function CenterUsersSection({ center }) {
       <div className="mt-5 overflow-hidden rounded-lg border border-slate-200">
         {isLoading ? (
           <p className="bg-slate-50 px-4 py-4 text-sm font-bold text-slate-500">جاري تحميل المستخدمين...</p>
-        ) : users.map(item => (
-          <div key={item.id} className="flex flex-col gap-3 border-b border-slate-100 bg-white px-4 py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="font-black text-slate-950">{item.full_name || item.email}</p>
-              <p className="mt-1 text-xs font-bold text-slate-500">{item.email} · {item.role === 'manager' ? 'مدير' : 'موظف'}</p>
+        ) : users.map(item => {
+          const isEmployee = item.role === 'employee'
+          const isEditing = editingId === item.id
+          return (
+          <div key={item.id} className={`border-b border-slate-100 bg-white px-4 py-3 last:border-0 ${isEditing ? 'bg-amber-50/60' : ''}`}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                {isEditing ? (
+                  <div className="grid gap-2 md:grid-cols-3">
+                    <input
+                      value={editForm.full_name}
+                      onChange={e => setEditForm({ ...editForm, full_name: e.target.value })}
+                      placeholder="اسم الموظف"
+                      className="rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm outline-none focus:border-cyan-400"
+                    />
+                    <input
+                      value={editForm.email}
+                      onChange={e => setEditForm({ ...editForm, email: e.target.value })}
+                      placeholder="بريد الدخول"
+                      className="rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm outline-none focus:border-cyan-400"
+                    />
+                    <input
+                      value={editForm.password}
+                      onChange={e => setEditForm({ ...editForm, password: e.target.value })}
+                      placeholder="كلمة مرور جديدة اختياري"
+                      type="password"
+                      className="rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm outline-none focus:border-cyan-400"
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <p className="font-black text-slate-950">{item.full_name || item.email}</p>
+                    <p className="mt-1 text-xs font-bold text-slate-500">{item.email} · {item.role === 'manager' ? 'مدير' : 'موظف'}</p>
+                  </>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {isEditing ? (
+                  <>
+                    <button
+                      onClick={saveEdit}
+                      disabled={!editForm.email || updateUser.isPending}
+                      className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-black text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                    >
+                      حفظ
+                    </button>
+                    <button
+                      onClick={() => setEditingId(null)}
+                      className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-50"
+                    >
+                      إلغاء
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      disabled={!isEmployee || updateUser.isPending}
+                      onClick={() => updateUser.mutate({ id: item.id, data: { is_active: !item.is_active } })}
+                      className={`rounded-lg px-4 py-2 text-xs font-black transition disabled:opacity-50 ${
+                        item.is_active ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {item.is_active ? 'نشط' : 'متوقف'}
+                    </button>
+                    <button
+                      disabled={!isEmployee}
+                      onClick={() => startEdit(item)}
+                      className="rounded-lg bg-cyan-50 px-4 py-2 text-xs font-black text-cyan-700 transition hover:bg-cyan-100 disabled:opacity-50"
+                    >
+                      تعديل
+                    </button>
+                    <button
+                      disabled={!isEmployee || deleteUser.isPending}
+                      onClick={() => confirmDelete(item)}
+                      className="rounded-lg bg-rose-50 px-4 py-2 text-xs font-black text-rose-700 transition hover:bg-rose-100 disabled:opacity-50"
+                    >
+                      حذف
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
-            <button
-              disabled={item.role === 'manager' || updateUser.isPending}
-              onClick={() => updateUser.mutate({ id: item.id, data: { is_active: !item.is_active } })}
-              className={`rounded-lg px-4 py-2 text-xs font-black transition disabled:opacity-50 ${
-                item.is_active ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {item.is_active ? 'نشط' : 'متوقف'}
-            </button>
           </div>
-        ))}
+        )})}
       </div>
+      {(updateUser.isError || deleteUser.isError) && (
+        <p className="mt-3 text-sm font-bold text-rose-600">
+          {updateUser.error?.response?.data?.detail || deleteUser.error?.response?.data?.detail || 'تعذر تنفيذ العملية'}
+        </p>
+      )}
     </section>
   )
 }

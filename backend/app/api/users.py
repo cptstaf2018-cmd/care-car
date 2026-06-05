@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr, ConfigDict
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -34,7 +35,9 @@ class CenterUserCreate(BaseModel):
 
 
 class CenterUserUpdate(BaseModel):
+    email: EmailStr | None = None
     full_name: str | None = None
+    password: str | None = None
     is_active: bool | None = None
 
 
@@ -108,11 +111,46 @@ def update_center_user(
     target = db.get(User, user_id)
     if not target or target.tenant_id != user.tenant_id:
         raise HTTPException(status_code=404, detail="User not found")
+    if target.role != Role.employee:
+        raise HTTPException(status_code=400, detail="يمكن تعديل حسابات الموظفين فقط من هنا")
     if target.role == Role.manager and body.is_active is False:
         raise HTTPException(status_code=400, detail="لا يمكن إيقاف حساب المدير")
     updates = body.model_dump(exclude_none=True)
+    if "password" in updates:
+        password = updates.pop("password")
+        if password:
+            if len(password) < 6:
+                raise HTTPException(status_code=400, detail="كلمة المرور يجب أن تكون 6 أحرف على الأقل")
+            target.hashed_password = hash_password(password)
+    if "email" in updates:
+        email = str(updates["email"])
+        existing = db.query(User).filter(User.email == email, User.id != target.id).first()
+        if existing:
+            raise HTTPException(status_code=409, detail="هذا البريد مستخدم مسبقاً")
+        target.email = email
+        updates.pop("email")
     for key, value in updates.items():
         setattr(target, key, value)
     db.commit()
     db.refresh(target)
     return target
+
+
+@router.delete("/{user_id}", status_code=204)
+def delete_center_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_manager_or_above),
+):
+    target = db.get(User, user_id)
+    if not target or target.tenant_id != user.tenant_id:
+        raise HTTPException(status_code=404, detail="User not found")
+    if target.role != Role.employee:
+        raise HTTPException(status_code=400, detail="يمكن حذف حسابات الموظفين فقط")
+    try:
+        db.delete(target)
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        target.is_active = False
+        db.commit()
