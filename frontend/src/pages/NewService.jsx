@@ -259,6 +259,7 @@ export default function NewService() {
   const serviceTypes = SERVICE_TEMPLATES[centerSpecialty] || SERVICE_TEMPLATES[DEFAULT_CENTER_SPECIALTY]
   const defaultServiceType = serviceTypes[0]?.label || 'خدمة'
   const usesOilGrade = serviceType === 'تبديل زيت'
+  const invoiceNeedsMileage = usesOilGrade || invoiceLines.some(line => line.name?.includes('تبديل زيت'))
 
   const stopReception = useCallback((nextStatus = 'idle') => {
     if (receptionTimerRef.current) window.clearTimeout(receptionTimerRef.current)
@@ -545,13 +546,19 @@ export default function NewService() {
       oil_type: invoiceLines.map(line => line.name).join(' + '),
       amount: invoiceTotal,
       discount: parseFloat(form.discount) || 0,
-      mileage: form.mileage ? parseFloat(form.mileage) : null,
+      mileage: invoiceNeedsMileage && form.mileage ? parseFloat(form.mileage) : null,
       notes: `INVOICE_LINES:${JSON.stringify(invoiceDetails)}`,
       inventory_deductions: deductions,
       payment_status: paymentMode,
       paid_amount: effectivePaidAmount,
     })
   }
+
+  useEffect(() => {
+    if (!invoiceNeedsMileage && form.mileage) {
+      setForm(prev => ({ ...prev, mileage: '' }))
+    }
+  }, [invoiceNeedsMileage, form.mileage])
 
   useEffect(() => {
     const onKeyDown = (e) => {
@@ -908,9 +915,11 @@ export default function NewService() {
                       <p className="px-3 py-6 text-center text-sm font-bold text-slate-400">أضف خدمة واحدة على الأقل</p>
                     )}
                   </div>
-                  <input type="number" placeholder="عداد المسافة (كم)" value={form.mileage}
-                    onChange={e => setForm({ ...form, mileage: e.target.value })}
-                    className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-white outline-none focus:border-cyan-300" />
+                  {invoiceNeedsMileage && (
+                    <input type="number" placeholder="عداد المسافة (كم)" value={form.mileage}
+                      onChange={e => setForm({ ...form, mileage: e.target.value })}
+                      className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-white outline-none focus:border-cyan-300" />
+                  )}
                   <input type="number" placeholder="خصم الفاتورة (IQD)" value={form.discount}
                     onChange={e => setForm({ ...form, discount: e.target.value })}
                     className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-3 text-white outline-none focus:border-cyan-300" />

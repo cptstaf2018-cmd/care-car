@@ -21,6 +21,7 @@ export default function InvoicePrint() {
   const invoiceLines = inv.invoice_lines?.length
     ? inv.invoice_lines
     : inv.service_lines.filter(Boolean).map(line => ({ name: line, amount: 0, notes: '', inventory_item_name: '', inventory_quantity: null }))
+  const showMileage = Boolean(inv.mileage && invoiceLines.some(line => line.name?.includes('تبديل زيت')))
 
   const shareInvoiceImage = async () => {
     if (!invoiceRef.current) return
@@ -129,7 +130,7 @@ export default function InvoicePrint() {
             <p className="invoice-info-label">نوع السيارة</p>
             <p className="invoice-info-value">{inv.car_type || '—'}</p>
           </div>
-          {inv.mileage && (
+          {showMileage && (
             <div className="invoice-info-card">
               <p className="invoice-info-label">عداد المسافة</p>
               <p className="invoice-info-value">{Number(inv.mileage).toLocaleString()} كم</p>
