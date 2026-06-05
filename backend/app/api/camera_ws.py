@@ -25,6 +25,7 @@ VOTE_WINDOW_SECONDS = 4.5
 MIN_PLATE_VOTES = 2
 MIN_AVG_CONFIDENCE = 0.35
 HIGH_CONFIDENCE_SINGLE_READ = 0.68
+MAX_CAMERA_SESSION_SECONDS = 120
 
 try:
     import supervision as sv
@@ -218,6 +219,13 @@ async def _send_plate_event(websocket: WebSocket, db: Session, tenant_id: int, f
     })
 
 
+async def _finish_camera_session(websocket: WebSocket, reason: str, message: str):
+    try:
+        await websocket.send_json({"type": "completed", "reason": reason, "message": message})
+    finally:
+        await websocket.close()
+
+
 @router.websocket("/ws/camera/{tenant_id}")
 async def camera_stream(websocket: WebSocket, tenant_id: int, db: Session = Depends(get_db)):
     # Auth check
@@ -247,6 +255,7 @@ async def camera_stream(websocket: WebSocket, tenant_id: int, db: Session = Depe
 
     if prefer_mobile:
         await websocket.send_json({"type": "connected", "message": "✓ بانتظار كاميرا الموبايل"})
+        started_at = time.time()
         seen_plates: dict[str, float] = {}
         seen_candidates: dict[str, float] = {}
         plate_votes = defaultdict(deque)
@@ -254,6 +263,9 @@ async def camera_stream(websocket: WebSocket, tenant_id: int, db: Session = Depe
         last_frame_time = 0.0
         try:
             while True:
+                if time.time() - started_at >= MAX_CAMERA_SESSION_SECONDS:
+                    await _finish_camera_session(websocket, "timeout", "انتهت مهلة قراءة اللوحة")
+                    return
                 latest = get_latest_mobile_frame(tenant_id)
                 if latest and latest.received_at != last_frame_time:
                     last_frame_time = latest.received_at
@@ -276,6 +288,8 @@ async def camera_stream(websocket: WebSocket, tenant_id: int, db: Session = Depe
                                 if now - last_time >= PLATE_COOLDOWN:
                                     seen_plates[plate] = now
                                     await _send_plate_event(websocket, db, tenant_id, frame, confirmed, "plate_detected")
+                                    await _finish_camera_session(websocket, "plate_detected", "تمت قراءة اللوحة وإيقاف الكاميرا")
+                                    return
                         await websocket.send_json({"type": "frame", "data": _frame_to_b64(display_frame)})
                 await asyncio.sleep(0.2)
         except WebSocketDisconnect:
@@ -313,9 +327,13 @@ async def camera_stream(websocket: WebSocket, tenant_id: int, db: Session = Depe
     seen_candidates: dict[str, float] = {}
     plate_votes = defaultdict(deque)
     frame_count = 0
+    started_at = time.time()
 
     try:
         while True:
+            if time.time() - started_at >= MAX_CAMERA_SESSION_SECONDS:
+                await _finish_camera_session(websocket, "timeout", "انتهت مهلة قراءة اللوحة")
+                return
             ret, frame = cap.read()
             if not ret:
                 await websocket.send_json({"type": "error", "message": "انقطع بث الكاميرا"})
@@ -365,6 +383,10 @@ async def camera_stream(websocket: WebSocket, tenant_id: int, db: Session = Depe
                                         marked_frame = _annotate_frame(frame, confirmed)
                                         processed_frame = marked_frame
                                         await _send_plate_event(websocket, db, tenant_id, frame, confirmed, "plate_detected")
+                                        if processed_frame is not None:
+                                            await websocket.send_json({"type": "frame", "data": _frame_to_b64(processed_frame)})
+                                        await _finish_camera_session(websocket, "plate_detected", "تمت قراءة اللوحة وإيقاف الكاميرا")
+                                        return
                     except Exception:
                         pass
                 else:
@@ -384,6 +406,9 @@ async def camera_stream(websocket: WebSocket, tenant_id: int, db: Session = Depe
                             marked_frame = _annotate_frame(frame, confirmed)
                             processed_frame = marked_frame
                             await _send_plate_event(websocket, db, tenant_id, frame, confirmed, "plate_detected")
+                            await websocket.send_json({"type": "frame", "data": _frame_to_b64(processed_frame)})
+                            await _finish_camera_session(websocket, "plate_detected", "تمت قراءة اللوحة وإيقاف الكاميرا")
+                            return
                 if processed_frame is not None:
                     await websocket.send_json({"type": "frame", "data": _frame_to_b64(processed_frame)})
 

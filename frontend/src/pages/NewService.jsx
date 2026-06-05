@@ -247,6 +247,7 @@ export default function NewService() {
   const [receptionPlates, setReceptionPlates] = useState([])
   const [receptionCount, setReceptionCount] = useState(0)
   const receptionWsRef = useRef(null)
+  const receptionTimerRef = useRef(null)
 
   const { data: centerSettings, isLoading: centerSettingsLoading } = useQuery({
     queryKey: ['center-settings'],
@@ -259,15 +260,18 @@ export default function NewService() {
   const defaultServiceType = serviceTypes[0]?.label || 'خدمة'
   const usesOilGrade = serviceType === 'تبديل زيت'
 
-  const stopReception = useCallback(() => {
+  const stopReception = useCallback((nextStatus = 'idle') => {
+    if (receptionTimerRef.current) window.clearTimeout(receptionTimerRef.current)
+    receptionTimerRef.current = null
     receptionWsRef.current?.close()
     receptionWsRef.current = null
-    setReceptionStatus('idle')
+    setReceptionStatus(nextStatus)
     setReceptionActive(false)
     setReceptionFrame('')
   }, [])
 
   const chooseReceptionPlate = useCallback((item) => {
+    stopReception('completed')
     setSearch(item.plate)
     setSubmitError('')
     if (item.car) {
@@ -283,7 +287,7 @@ export default function NewService() {
       owner_name: '',
       phone: '',
     })
-  }, [])
+  }, [stopReception])
 
   const startReception = useCallback(() => {
     if (!user?.tenant_id) return
@@ -293,6 +297,11 @@ export default function NewService() {
     const token = useAuthStore.getState().token
     const ws = new WebSocket(`${WS_CAMERA_BASE}/${user.tenant_id}?token=${encodeURIComponent(token || '')}`)
     receptionWsRef.current = ws
+    if (receptionTimerRef.current) window.clearTimeout(receptionTimerRef.current)
+    receptionTimerRef.current = window.setTimeout(() => {
+      setReceptionError('توقفت القراءة تلقائياً بعد دقيقتين')
+      stopReception('timeout')
+    }, 120000)
 
     ws.onmessage = (e) => {
       const msg = JSON.parse(e.data)
@@ -318,29 +327,33 @@ export default function NewService() {
           ...prev.filter(item => item.plate !== msg.plate).slice(0, 7)
         ])
       } else if (msg.type === 'error') {
-        setReceptionStatus('error')
         setReceptionError(msg.message || 'تعذر تشغيل استقبال السيارة')
-        setReceptionActive(false)
+        stopReception('error')
+      } else if (msg.type === 'completed') {
+        setReceptionError(msg.message || '')
+        stopReception(msg.reason === 'timeout' ? 'timeout' : 'completed')
       }
     }
 
     ws.onclose = () => {
-      setReceptionStatus(prev => prev === 'error' ? prev : 'idle')
+      setReceptionStatus(prev => ['error', 'completed', 'timeout'].includes(prev) ? prev : 'idle')
     }
 
     ws.onerror = () => {
-      setReceptionStatus('error')
       setReceptionError('تعذر الاتصال بالكاميرا')
-      setReceptionActive(false)
+      stopReception('error')
     }
-  }, [user?.tenant_id])
+  }, [stopReception, user?.tenant_id])
 
   useEffect(() => {
     if (receptionActive) startReception()
     else if (receptionWsRef.current) stopReception()
   }, [receptionActive, startReception, stopReception])
 
-  useEffect(() => () => receptionWsRef.current?.close(), [])
+  useEffect(() => () => {
+    if (receptionTimerRef.current) window.clearTimeout(receptionTimerRef.current)
+    receptionWsRef.current?.close()
+  }, [])
 
   useEffect(() => {
     if (centerSettingsLoading) return
@@ -477,7 +490,7 @@ export default function NewService() {
       setReceptionPlates(prev => [item, ...prev.filter(row => row.plate !== plate).slice(0, 7)])
       setReceptionCount(n => n + 1)
       chooseReceptionPlate(item)
-      setReceptionStatus('active')
+      setReceptionStatus('completed')
       setReceptionError('')
     },
     onError: (err) => {
@@ -659,6 +672,8 @@ export default function NewService() {
             <div className="mt-3 min-h-[26px] text-center text-sm font-bold">
               {receptionStatus === 'connecting' && <span className="text-amber-600">جاري الاتصال بالكاميرا...</span>}
               {receptionStatus === 'active' && <span className="text-emerald-700">النظام يقرأ اللوحات الآن</span>}
+              {receptionStatus === 'completed' && <span className="text-emerald-700">تمت قراءة اللوحة وتوقفت الكاميرا</span>}
+              {receptionStatus === 'timeout' && <span className="text-amber-600">توقفت القراءة تلقائياً بعد دقيقتين</span>}
               {receptionStatus === 'error' && <span className="text-rose-600">{receptionError}</span>}
               {receptionStatus === 'idle' && cameraEnabled && <span className="text-slate-500">افتح رابط كاميرا الموبايل ثم شغّل الكاميرا هنا</span>}
               {receptionStatus === 'idle' && !cameraEnabled && (

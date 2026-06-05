@@ -1,4 +1,5 @@
 import base64
+import hashlib
 import time
 from dataclasses import dataclass
 from threading import Lock
@@ -23,9 +24,11 @@ router = APIRouter(prefix="/mobile-camera", tags=["mobile-camera"])
 class MobileFrame:
     data: bytes
     received_at: float
+    signature: str
 
 
 _frames: dict[int, MobileFrame] = {}
+_plate_read_cache: dict[int, tuple[str, dict]] = {}
 _frames_lock = Lock()
 _MAX_FRAME_BYTES = 900_000
 _PLAN_RANK = {Plan.basic.value: 1, Plan.pro.value: 2, Plan.enterprise.value: 3}
@@ -101,15 +104,24 @@ def read_latest_mobile_plate(
     if not frame:
         raise HTTPException(status_code=404, detail="لا توجد صورة حديثة من كاميرا الموبايل. افتح الباركود واضغط تشغيل الكاميرا.")
 
+    with _frames_lock:
+        cached = _plate_read_cache.get(user.tenant_id)
+    if cached and cached[0] == frame.signature:
+        return {**cached[1], "cached": True}
+
     reads = fast_alpr_plate_reads(frame.data)
     best = reads[0] if reads else {}
     plate = best.get("plate", "")
-    return {
+    result = {
         "plate_number": plate,
         "confidence": float(best.get("confidence", 0) or 0),
         "candidates": [read.get("plate", "") for read in reads if read.get("plate")],
         "message": "" if plate else "لم نتمكن من قراءة اللوحة من آخر صورة. قرّب الهاتف من اللوحة واضغط قراءة مرة أخرى.",
+        "cached": False,
     }
+    with _frames_lock:
+        _plate_read_cache[user.tenant_id] = (frame.signature, result)
+    return result
 
 
 @router.get("/{token}/info")
@@ -138,6 +150,10 @@ def push_mobile_camera_frame(token: str, body: MobileFrameBody, db: Session = De
     if not data or len(data) > _MAX_FRAME_BYTES:
         raise HTTPException(status_code=400, detail="Invalid image size")
 
+    signature = hashlib.sha256(data).hexdigest()
     with _frames_lock:
-        _frames[tenant_id] = MobileFrame(data=data, received_at=time.time())
-    return {"ok": True}
+        current = _frames.get(tenant_id)
+        if current and current.signature == signature:
+            return {"ok": True, "duplicate": True}
+        _frames[tenant_id] = MobileFrame(data=data, received_at=time.time(), signature=signature)
+    return {"ok": True, "duplicate": False}
