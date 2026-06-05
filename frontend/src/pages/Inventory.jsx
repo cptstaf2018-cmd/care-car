@@ -11,6 +11,9 @@ import { hasPlanFeature } from '../constants/plans'
 const emptyLine = {
   oil_type: '',
   category: '',
+  product_category: '',
+  sku: '',
+  barcode: '',
   quantity: '',
   unit_cost: '',
   sale_price: '',
@@ -20,6 +23,9 @@ const emptyLine = {
 const initialManual = {
   oil_type: '',
   category: '',
+  product_category: '',
+  sku: '',
+  barcode: '',
   supplier_name: '',
   quantity: '',
   min_threshold: '10',
@@ -28,6 +34,18 @@ const initialManual = {
 }
 
 const money = value => Number(value || 0).toLocaleString()
+const STORE_CATEGORIES = [
+  ['oils', 'الزيوت'],
+  ['filters', 'الفلاتر'],
+  ['spark', 'البلكات'],
+  ['engine', 'المحرك'],
+  ['transmission', 'الكير'],
+  ['brakes', 'الفرامل'],
+  ['cooling', 'التبريد'],
+  ['electrical', 'الكهرباء'],
+  ['tires', 'الإطارات'],
+  ['accessories', 'الإكسسوارات'],
+]
 
 export default function Inventory() {
   const qc = useQueryClient()
@@ -120,7 +138,7 @@ export default function Inventory() {
 
   const startEdit = (item) => {
     setEditingId(item.id)
-    setEditForm({ oil_type: item.oil_type, category: item.category || '', supplier_name: item.supplier_name || '' })
+    setEditForm({ oil_type: item.oil_type, category: item.category || '', product_category: item.product_category || '', sku: item.sku || '', barcode: item.barcode || '', supplier_name: item.supplier_name || '' })
   }
 
   const confirmDelete = (item) => {
@@ -133,7 +151,7 @@ export default function Inventory() {
   const filteredItems = useMemo(() => {
     const q = filters.search.trim().toLowerCase()
     const data = items.filter(item => {
-      const matchesSearch = !q || [item.oil_type, item.category, item.supplier_name].filter(Boolean).some(v => String(v).toLowerCase().includes(q))
+      const matchesSearch = !q || [item.oil_type, item.category, item.product_category, item.sku, item.barcode, item.supplier_name].filter(Boolean).some(v => String(v).toLowerCase().includes(q))
       const matchesCategory = filters.category === 'all' || item.category === filters.category
       const matchesSupplier = filters.supplier === 'all' || item.supplier_name === filters.supplier
       const matchesStock = !filters.lowStock || item.low_stock
@@ -168,6 +186,9 @@ export default function Inventory() {
       .map(line => ({
         oil_type: line.oil_type,
         category: line.category || null,
+        product_category: line.product_category || null,
+        sku: line.sku || null,
+        barcode: line.barcode || null,
         quantity: Number(line.quantity),
         unit_cost: line.unit_cost ? Number(line.unit_cost) : null,
         sale_price: line.sale_price ? Number(line.sale_price) : null,
@@ -180,6 +201,9 @@ export default function Inventory() {
     create.mutate({
       ...manual,
       category: manual.category || null,
+      product_category: manual.product_category || null,
+      sku: manual.sku || null,
+      barcode: manual.barcode || null,
       supplier_name: manual.supplier_name || null,
       quantity: Number(manual.quantity),
       min_threshold: Number(manual.min_threshold) || 10,
@@ -210,16 +234,23 @@ export default function Inventory() {
 
       <section className="surface mb-5 rounded-lg p-5">
         {mode === 'manual' ? (
-          <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-7">
+          <div className="grid gap-3 md:grid-cols-4 xl:grid-cols-8">
             <InventoryInput value={manual.oil_type} onChange={v => setManual({ ...manual, oil_type: v })} placeholder="المنتج *" />
-            <InventoryInput value={manual.category} onChange={v => setManual({ ...manual, category: v })} placeholder="التصنيف" />
+            <select value={manual.product_category} onChange={e => setManual({ ...manual, product_category: e.target.value })}
+              className="rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 outline-none focus:border-cyan-400">
+              <option value="">قسم المتجر</option>
+              {STORE_CATEGORIES.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+            </select>
+            <InventoryInput value={manual.sku} onChange={v => setManual({ ...manual, sku: v })} placeholder="SKU" />
+            <InventoryInput value={manual.barcode} onChange={v => setManual({ ...manual, barcode: v })} placeholder="باركود" />
+            <InventoryInput value={manual.category} onChange={v => setManual({ ...manual, category: v })} placeholder="تصنيف نصي" />
             <InventoryInput value={manual.supplier_name} onChange={v => setManual({ ...manual, supplier_name: v })} placeholder="المورد" />
             <InventoryInput value={manual.quantity} onChange={v => setManual({ ...manual, quantity: v })} placeholder="الكمية *" type="number" />
             <InventoryInput value={manual.unit_cost} onChange={v => setManual({ ...manual, unit_cost: v })} placeholder="شراء" type="number" />
             <InventoryInput value={manual.sale_price} onChange={v => setManual({ ...manual, sale_price: v })} placeholder="بيع" type="number" />
             <InventoryInput value={manual.min_threshold} onChange={v => setManual({ ...manual, min_threshold: v })} placeholder="التنبيه" type="number" />
             <button onClick={saveManual} disabled={!manual.oil_type || !manual.quantity || create.isPending}
-              className="rounded-lg bg-emerald-600 px-6 py-3 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-50 md:col-span-4 xl:col-span-7">
+              className="rounded-lg bg-emerald-600 px-6 py-3 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-50 md:col-span-4 xl:col-span-8">
               حفظ المنتج في المخزون
             </button>
           </div>
@@ -272,13 +303,16 @@ export default function Inventory() {
               <div className="overflow-x-auto rounded-lg border border-slate-200">
                 <table className="min-w-[900px] w-full text-right text-sm">
                   <thead className="bg-slate-50 text-slate-500">
-                    <tr>{['المنتج', 'التصنيف', 'الكمية', 'شراء', 'بيع', 'التنبيه', ''].map(h => <th key={h} className="px-3 py-3 font-black">{h}</th>)}</tr>
+                    <tr>{['المنتج', 'قسم المتجر', 'SKU', 'باركود', 'التصنيف', 'الكمية', 'شراء', 'بيع', 'التنبيه', ''].map(h => <th key={h} className="px-3 py-3 font-black">{h}</th>)}</tr>
                   </thead>
                   <tbody>
                     {lines.map((line, index) => (
                       <tr key={index} className="border-t border-slate-100">
                         {[
                           ['oil_type', 'text'],
+                          ['product_category', 'select'],
+                          ['sku', 'text'],
+                          ['barcode', 'text'],
                           ['category', 'text'],
                           ['quantity', 'number'],
                           ['unit_cost', 'number'],
@@ -286,7 +320,13 @@ export default function Inventory() {
                           ['min_threshold', 'number'],
                         ].map(([key, type]) => (
                           <td key={key} className="px-2 py-2">
-                            <InventoryInput type={type} value={line[key]} onChange={v => setLine(index, key, v)} />
+                            {type === 'select' ? (
+                              <select value={line[key]} onChange={e => setLine(index, key, e.target.value)}
+                                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
+                                <option value="">قسم</option>
+                                {STORE_CATEGORIES.map(([catKey, label]) => <option key={catKey} value={catKey}>{label}</option>)}
+                              </select>
+                            ) : <InventoryInput type={type} value={line[key]} onChange={v => setLine(index, key, v)} />}
                           </td>
                         ))}
                         <td className="px-2 py-2">
@@ -346,7 +386,7 @@ export default function Inventory() {
           <table className="min-w-[1100px] w-full text-right text-sm">
             <thead className="bg-slate-50 text-slate-500">
               <tr>
-                {['المنتج', 'الكمية', 'شراء', 'بيع', 'الربح', 'التنبيه', 'المورد', ''].map(h => (
+                {['المنتج', 'SKU/باركود', 'الكمية', 'شراء', 'بيع', 'الربح', 'التنبيه', 'المورد', ''].map(h => (
                   <th key={h} className="border-b border-slate-200 px-4 py-3 font-black">{h}</th>
                 ))}
               </tr>
@@ -366,12 +406,34 @@ export default function Inventory() {
                           <input value={editForm.category} onChange={e => setEditForm({ ...editForm, category: e.target.value })}
                             placeholder="التصنيف"
                             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-amber-300" />
+                          <select value={editForm.product_category} onChange={e => setEditForm({ ...editForm, product_category: e.target.value })}
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-amber-300">
+                            <option value="">قسم المتجر</option>
+                            {STORE_CATEGORIES.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                          </select>
                         </div>
                       ) : (
                         <>
                           <p className="font-black text-slate-950">{item.oil_type}</p>
-                          <p className="mt-1 text-xs text-slate-500">{item.category || 'بدون تصنيف'}</p>
+                          <p className="mt-1 text-xs text-slate-500">{STORE_CATEGORIES.find(([key]) => key === item.product_category)?.[1] || item.category || 'بدون تصنيف'}</p>
                         </>
+                      )}
+                    </td>
+                    <td className="px-4 py-4">
+                      {isEditing ? (
+                        <div className="space-y-2">
+                          <input value={editForm.sku} onChange={e => setEditForm({ ...editForm, sku: e.target.value })}
+                            placeholder="SKU"
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-amber-300" />
+                          <input value={editForm.barcode} onChange={e => setEditForm({ ...editForm, barcode: e.target.value })}
+                            placeholder="باركود"
+                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-amber-300" />
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="font-mono text-xs font-black text-slate-700">{item.sku || '-'}</p>
+                          <p className="mt-1 font-mono text-xs text-slate-400">{item.barcode || ''}</p>
+                        </div>
                       )}
                     </td>
                     <td className="px-4 py-4">

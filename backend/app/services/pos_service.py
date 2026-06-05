@@ -1,7 +1,9 @@
 from datetime import date
+import json
 from sqlalchemy.orm import Session
 from app.models.service import Service
 from app.models.invoice import Invoice, InvoiceStatus
+from app.models.invoice_line import InvoiceLine
 from app.models.inventory import InventoryItem
 from app.models.debt import Debt
 
@@ -23,6 +25,20 @@ def _payment_amounts(data: dict) -> tuple[float, float, InvoiceStatus]:
     if payment_status == "unpaid":
         return net, 0, InvoiceStatus.unpaid
     return net, 0, InvoiceStatus.unpaid
+
+
+def _extract_invoice_lines(data: dict) -> list[dict]:
+    lines = data.get("invoice_lines") or []
+    if lines:
+        return lines
+    notes = data.get("notes") or ""
+    if isinstance(notes, str) and notes.startswith("INVOICE_LINES:"):
+        try:
+            parsed = json.loads(notes.removeprefix("INVOICE_LINES:"))
+            return parsed if isinstance(parsed, list) else []
+        except (TypeError, ValueError, json.JSONDecodeError):
+            return []
+    return []
 
 def create_service_with_invoice(db: Session, tenant_id: int, data: dict) -> tuple[Service, Invoice]:
     svc_date = data.get("service_date") or date.today()
@@ -47,6 +63,28 @@ def create_service_with_invoice(db: Session, tenant_id: int, data: dict) -> tupl
     )
     db.add(invoice)
     db.flush()
+
+    for line in _extract_invoice_lines(data):
+        if not isinstance(line, dict):
+            continue
+        name = str(line.get("name") or line.get("inventory_item_name") or "").strip()
+        if not name:
+            continue
+        qty = float(line.get("quantity") or line.get("inventory_quantity") or 1)
+        line_total = float(line.get("amount") or 0)
+        unit_price = float(line.get("unit_price") or (line_total / qty if qty else line_total) or 0)
+        db.add(InvoiceLine(
+            tenant_id=tenant_id,
+            invoice_id=invoice.id,
+            inventory_item_id=line.get("inventory_item_id") or line.get("inventoryItemId"),
+            name=name,
+            sku=line.get("sku") or "",
+            category=line.get("category") or "",
+            quantity=qty,
+            unit_price=unit_price,
+            line_total=line_total,
+            notes=line.get("notes") or "",
+        ))
 
     remaining = max(net_owed - paid_amount, 0)
     if remaining > 0:

@@ -69,13 +69,14 @@ export default function Dashboard() {
   const invoices = invoicesQuery.data || []
   const centerName = centerQuery.data?.name || 'مركزك'
   const isOilCenter = (centerQuery.data?.specialty || 'quick_service') === 'quick_service'
+  const isPartsStore = centerQuery.data?.specialty === 'multi_service'
   const lowStock = inventory.filter(item => item.low_stock)
   const unpaidInvoices = invoices.filter(inv => inv.status !== 'paid')
   const dueCars = isOilCenter ? cars
     .map(car => ({ ...car, days_left: daysUntilReminder(car) }))
     .filter(car => car.days_left <= 5)
     .slice(0, 6) : []
-  const apiAds = adsQuery.data || []
+  const apiAds = Array.isArray(adsQuery.data) ? adsQuery.data : []
   const promoItems = apiAds.length > 0
     ? apiAds.map(a => a.url)
     : FALLBACK_IMAGES
@@ -150,15 +151,15 @@ export default function Dashboard() {
                 <p className="mt-0.5 text-xs font-bold text-slate-400">نشاط اليوم</p>
               </div>
               <div className="hidden gap-3 sm:flex">
-                <HeroMetric label="خدمات منجزة" value={daily?.service_count ?? '—'} />
+                <HeroMetric label={isPartsStore ? 'فواتير بيع' : 'خدمات منجزة'} value={daily?.service_count ?? '—'} />
                 <HeroMetric label="فواتير معلقة" value={unpaidInvoices.length} alert={unpaidInvoices.length > 0} />
                 <HeroMetric label="مواد ناقصة" value={lowStock.length} alert={lowStock.length > 0} />
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <QuickLink to="/center/cars" icon={Car} text="سيارة" compact />
+              {!isPartsStore && <QuickLink to="/center/cars" icon={Car} text="سيارة" compact />}
               <QuickLink to="/center/inventory" icon={Package} text="مخزون" compact />
-              <QuickLink to="/center/services/new" icon={PlusCircle} text="خدمة جديدة" primary compact />
+              <QuickLink to="/center/services/new" icon={PlusCircle} text={isPartsStore ? 'نقطة بيع' : 'خدمة جديدة'} primary compact />
             </div>
           </div>
 
@@ -224,7 +225,7 @@ export default function Dashboard() {
 
       {/* Stat cards */}
       <div className="mb-5 grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <StatCard icon={Wrench}        label="خدمات اليوم"   value={daily?.service_count}  color="blue"   helper="سيارات تمت خدمتها اليوم"  loading={dailyQuery.isLoading} />
+        <StatCard icon={Wrench}        label={isPartsStore ? 'مبيعات اليوم' : 'خدمات اليوم'}   value={daily?.service_count}  color="blue"   helper={isPartsStore ? 'فواتير بيع تمت اليوم' : 'سيارات تمت خدمتها اليوم'}  loading={dailyQuery.isLoading} />
         <StatCard icon={Receipt}       label="إيرادات اليوم" value={daily?.total_sales != null ? `${daily.total_sales.toLocaleString()} IQD` : null} color="green" helper="إجمالي الفواتير المدفوعة" loading={dailyQuery.isLoading} />
         <StatCard
           icon={MessageCircle}
@@ -269,7 +270,7 @@ export default function Dashboard() {
           )}
         </Panel>
 
-        <Panel title="آخر فواتير الخدمة" icon={Receipt}>
+        <Panel title={isPartsStore ? 'آخر فواتير البيع' : 'آخر فواتير الخدمة'} icon={Receipt}>
           {invoices.slice(0, 6).map(inv => (
             <div key={inv.id} className="grid grid-cols-[64px_1fr_auto] items-center gap-3 border-b border-slate-100 py-2.5 last:border-0">
               <span className="font-mono text-sm font-black text-slate-400">#{inv.id}</span>
@@ -318,7 +319,7 @@ export default function Dashboard() {
           )}
         </Panel>
 
-        <Panel title="آخر السيارات المخدومة" icon={Car}>
+        {!isPartsStore && <Panel title="آخر السيارات المخدومة" icon={Car}>
           {cars.slice(0, 6).map(car => (
             <div key={car.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5">
               <div>
@@ -329,7 +330,7 @@ export default function Dashboard() {
             </div>
           ))}
           {!cars.length && <EmptyState text="لا توجد سيارات مسجلة بعد" />}
-        </Panel>
+        </Panel>}
       </section>
     </Layout>
   )

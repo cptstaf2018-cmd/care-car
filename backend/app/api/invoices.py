@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.invoice import Invoice, InvoiceStatus
+from app.models.invoice_line import InvoiceLine
 from app.models.service import Service
 from app.models.car import Car
 from app.models.tenant import Tenant
@@ -65,6 +66,26 @@ def _invoice_lines(service: Service | None) -> list[dict]:
     ]
 
 
+def _stored_invoice_lines(db: Session, invoice_id: int) -> list[dict]:
+    rows = db.query(InvoiceLine).filter(InvoiceLine.invoice_id == invoice_id).order_by(InvoiceLine.id.asc()).all()
+    return [
+        {
+            "id": row.id,
+            "name": row.name,
+            "amount": float(row.line_total or 0),
+            "quantity": float(row.quantity or 0),
+            "unit_price": float(row.unit_price or 0),
+            "notes": row.notes or "",
+            "inventory_item_id": row.inventory_item_id,
+            "inventory_item_name": row.name,
+            "inventory_quantity": float(row.quantity or 0),
+            "sku": row.sku or "",
+            "category": row.category or "",
+        }
+        for row in rows
+    ]
+
+
 def _sync_invoice_debt(db: Session, inv: Invoice):
     service = db.get(Service, inv.service_id)
     if not service:
@@ -100,6 +121,7 @@ def list_invoices(status: str | None = None, db: Session = Depends(get_db), user
       service = db.get(Service, inv.service_id)
       car = db.get(Car, service.car_id) if service else None
       total, paid, remaining = _invoice_amounts(db, inv)
+      is_sale = car.car_type == "بيع قطع" if car else False
       result.append({
           "id": inv.id,
           "tenant_id": inv.tenant_id,
@@ -112,6 +134,7 @@ def list_invoices(status: str | None = None, db: Session = Depends(get_db), user
           "plate_number": car.plate_number if car else None,
           "car_type": car.car_type if car else None,
           "service_name": service.oil_type if service else None,
+          "invoice_type": "sale" if is_sale else "service",
           "paid_amount": paid,
           "remaining_amount": remaining,
       })
@@ -126,7 +149,9 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db), user: User = Dep
     car = db.get(Car, service.car_id) if service else None
     tenant = db.get(Tenant, inv.tenant_id)
     total, paid, remaining = _invoice_amounts(db, inv)
-    invoice_lines = _invoice_lines(service)
+    stored_lines = _stored_invoice_lines(db, inv.id)
+    invoice_lines = stored_lines or _invoice_lines(service)
+    is_sale = car.car_type == "بيع قطع" if car else False
     return {
         "id": inv.id,
         "invoice_date": str(inv.invoice_date),
@@ -138,6 +163,7 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db), user: User = Dep
         "remaining_amount": remaining,
         "service_lines": [line["name"] for line in invoice_lines],
         "invoice_lines": invoice_lines,
+        "invoice_type": "sale" if is_sale else "service",
         "notes": "" if service and (service.notes or "").startswith("INVOICE_LINES:") else (service.notes if service else None),
         "mileage": service.mileage if service else None,
         "customer_name": car.owner_name if car else None,

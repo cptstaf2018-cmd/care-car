@@ -27,6 +27,7 @@ export default function Invoices() {
     queryKey: ['invoices'],
     queryFn: () => getInvoices().then(r => r.data),
   })
+  const isPartsStore = invoices.some(inv => inv.invoice_type === 'sale' || inv.car_type === 'بيع قطع')
 
   const changeStatus = useMutation({
     mutationFn: ({ id, status }) => updateInvoice(id, { status }),
@@ -89,11 +90,11 @@ export default function Invoices() {
   }, [filteredInvoices])
 
   const exportCsv = () => {
-    const headers = ['رقم', 'العميل', 'السيارة', 'الخدمات', 'الإجمالي', 'المدفوع', 'المتبقي', 'الحالة']
+    const headers = ['رقم', 'العميل', isPartsStore ? 'النوع' : 'السيارة', isPartsStore ? 'المواد' : 'الخدمات', 'الإجمالي', 'المدفوع', 'المتبقي', 'الحالة']
     const rows = filteredInvoices.map(inv => [
       inv.id,
       inv.customer_name || '',
-      inv.plate_number || '',
+      inv.car_type === 'بيع قطع' ? 'بيع قطع' : (inv.plate_number || ''),
       inv.service_name || '',
       Number(inv.amount || 0) - Number(inv.discount || 0),
       inv.paid_amount || 0,
@@ -114,8 +115,8 @@ export default function Invoices() {
       <div className="mb-5 flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
         <div>
           <p className="text-sm font-black text-cyan-700">إدارة الفواتير</p>
-          <h2 className="mt-1 text-2xl font-black text-slate-950">فواتير الخدمة</h2>
-          <p className="mt-2 text-sm text-slate-500">كل فاتورة خدمة مع السيارة، المبلغ، المدفوع، المتبقي والحالة.</p>
+          <h2 className="mt-1 text-2xl font-black text-slate-950">{isPartsStore ? 'فواتير البيع' : 'فواتير الخدمة'}</h2>
+          <p className="mt-2 text-sm text-slate-500">{isPartsStore ? 'كل فاتورة بيع مع العميل، المواد، المدفوع، المتبقي والحالة.' : 'كل فاتورة خدمة مع السيارة، المبلغ، المدفوع، المتبقي والحالة.'}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <QuickAction to="/center/services/new" icon={PlusCircle} label="فاتورة جديدة" primary />
@@ -158,7 +159,7 @@ export default function Invoices() {
           <table className="min-w-[1050px] w-full text-right text-sm">
             <thead className="bg-slate-50 text-slate-500">
               <tr>
-                {['رقم', 'العميل', 'السيارة', 'الخدمات', 'الإجمالي', 'المدفوع', 'المتبقي', 'الحالة', 'إجراء'].map(h => (
+                {['رقم', 'العميل', isPartsStore ? 'النوع' : 'السيارة', isPartsStore ? 'المواد' : 'الخدمات', 'الإجمالي', 'المدفوع', 'المتبقي', 'الحالة', 'إجراء'].map(h => (
                   <th key={h} className="border-b border-slate-200 px-4 py-3 font-black">{h}</th>
                 ))}
               </tr>
@@ -174,7 +175,7 @@ export default function Invoices() {
                       <p className="mt-1 text-xs text-slate-400">{inv.invoice_date}</p>
                     </td>
                     <td className="px-4 py-4">
-                      <p className="font-mono font-black text-slate-950">{inv.plate_number || '-'}</p>
+                      <p className="font-mono font-black text-slate-950">{inv.car_type === 'بيع قطع' ? 'بيع قطع' : (inv.plate_number || '-')}</p>
                       <p className="mt-1 text-xs text-slate-500">{inv.car_type || 'نوع غير محدد'}</p>
                     </td>
                     <td className="px-4 py-4 font-bold text-slate-700">{inv.service_name || '-'}</td>

@@ -171,6 +171,13 @@ const PARTS_CATEGORIES = [
   { key: 'accessories', label: 'الإكسسوارات', store: 'متجر الإكسسوارات', hint: 'مساحات ومواد عامة', image: '/service-icons-3d/auto-pack/wipers.webp', tone: 'teal' },
 ]
 
+const PARTS_CATEGORY_ALIASES = PARTS_CATEGORIES.reduce((acc, category) => {
+  acc[category.key] = category.key
+  acc[category.label] = category.key
+  acc[normalizeArabicText(category.label)] = category.key
+  return acc
+}, {})
+
 function normalizeArabicText(value = '') {
   return String(value)
     .toLowerCase()
@@ -180,6 +187,10 @@ function normalizeArabicText(value = '') {
 }
 
 function getPartCategory(item) {
+  if (item.product_category) {
+    const rawCategory = String(item.product_category).trim()
+    return PARTS_CATEGORY_ALIASES[rawCategory] || PARTS_CATEGORY_ALIASES[normalizeArabicText(rawCategory)] || rawCategory
+  }
   const text = normalizeArabicText(`${item.oil_type || ''} ${item.category || ''}`)
   if (/كير|قير|gear|transmission/.test(text)) return 'transmission'
   if (/فلتر|filter/.test(text)) return 'filters'
@@ -546,6 +557,7 @@ export default function NewService() {
     mutationFn: createCar,
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['cars'] })
+      if (isPartsStore) setPartsCustomer({ name: res.data.owner_name || '', phone: res.data.phone || '' })
       setSelectedCar(res.data)
       setNewCarForm(null)
     },
@@ -615,6 +627,9 @@ export default function NewService() {
       inventoryItemId: item.id,
       inventoryItemName: item.oil_type,
       inventoryQty: quantity,
+      unitPrice,
+      sku: item.sku || item.barcode || '',
+      category: getPartCategory(item),
     }])
   }
   const addLineToInvoice = () => {
@@ -630,6 +645,9 @@ export default function NewService() {
       inventoryItemId: invItem ? invItem.id : null,
       inventoryItemName: invItem ? invItem.oil_type : null,
       inventoryQty: invItem ? parseFloat(lineInventoryQty) || 1 : null,
+      unitPrice: invItem ? Number(form.amount || 0) / Number(lineInventoryQty || 1) : Number(form.amount || 0),
+      sku: invItem ? (invItem.sku || invItem.barcode || '') : '',
+      category: invItem ? getPartCategory(invItem) : '',
     }])
     setForm(prev => ({ ...prev, amount: '', notes: '' }))
     setLineInventoryId('')
@@ -644,9 +662,14 @@ export default function NewService() {
     const invoiceDetails = invoiceLines.map(line => ({
       name: line.name,
       amount: Number(line.amount || 0),
+      quantity: line.inventoryQty || 1,
+      unit_price: Number(line.unitPrice ?? (Number(line.amount || 0) / Number(line.inventoryQty || 1))),
       notes: line.notes || '',
+      inventory_item_id: line.inventoryItemId || null,
       inventory_item_name: line.inventoryItemName || '',
       inventory_quantity: line.inventoryQty || null,
+      sku: line.sku || '',
+      category: line.category || '',
     }))
     mutation.mutate({
       car_id: selectedCar.id,
@@ -655,6 +678,7 @@ export default function NewService() {
       discount: parseFloat(form.discount) || 0,
       mileage: invoiceNeedsMileage && form.mileage ? parseFloat(form.mileage) : null,
       notes: `INVOICE_LINES:${JSON.stringify(invoiceDetails)}`,
+      invoice_lines: invoiceDetails,
       inventory_deductions: deductions,
       payment_status: paymentMode,
       paid_amount: effectivePaidAmount,
@@ -673,9 +697,14 @@ export default function NewService() {
     const invoiceDetails = invoiceLines.map(line => ({
       name: line.name,
       amount: Number(line.amount || 0),
+      quantity: line.inventoryQty || 1,
+      unit_price: Number(line.unitPrice ?? (Number(line.amount || 0) / Number(line.inventoryQty || 1))),
       notes: line.notes || '',
+      inventory_item_id: line.inventoryItemId || null,
       inventory_item_name: line.inventoryItemName || '',
       inventory_quantity: line.inventoryQty || null,
+      sku: line.sku || '',
+      category: line.category || '',
     }))
     partsSaleMutation.mutate({
       oil_type: invoiceLines.map(line => line.name).join(' + '),
@@ -683,6 +712,7 @@ export default function NewService() {
       discount: parseFloat(form.discount) || 0,
       mileage: null,
       notes: `INVOICE_LINES:${JSON.stringify(invoiceDetails)}`,
+      invoice_lines: invoiceDetails,
       inventory_deductions: deductions,
       payment_status: paymentMode,
       paid_amount: effectivePaidAmount,
@@ -1021,7 +1051,7 @@ export default function NewService() {
               </div>
               <div className="space-y-2">
                 {cars.map(c => (
-                  <div key={c.id} onClick={() => { setSelectedCar(c); setNewCarForm(null) }}
+                  <div key={c.id} onClick={() => { setSelectedCar(c); setNewCarForm(null); if (isPartsStore) setPartsCustomer({ name: c.owner_name || '', phone: c.phone || '' }) }}
                     className="surface flex cursor-pointer items-center justify-between rounded-lg px-5 py-4 transition hover:border-cyan-300 hover:bg-cyan-50">
                     <span className="font-mono text-xl font-black text-slate-950">{c.plate_number}</span>
                     <span className="text-slate-500 text-sm">{c.owner_name} {c.car_type ? `— ${c.car_type}` : ''} {c.car_color ? `· ${c.car_color}` : ''}</span>
@@ -1223,6 +1253,27 @@ export default function NewService() {
                         <p className="mt-1 font-black text-white">{remainingAmount.toLocaleString()} IQD</p>
                       </div>
                     </div>
+                    {isPartsStore && partsSaleNeedsCustomerPhone && (
+                      <div className="mt-3 rounded-lg border border-amber-300/30 bg-amber-500/10 p-3">
+                        <p className="mb-2 text-xs font-black text-amber-100">بيانات الزبون مطلوبة للمطالبة بالدين</p>
+                        <div className="space-y-2">
+                          <input
+                            type="text"
+                            placeholder="اسم الزبون"
+                            value={partsCustomer.name}
+                            onChange={e => setPartsCustomer(prev => ({ ...prev, name: e.target.value }))}
+                            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-white outline-none placeholder:text-slate-400 focus:border-cyan-300"
+                          />
+                          <input
+                            type="tel"
+                            placeholder="رقم واتساب الزبون *"
+                            value={partsCustomer.phone}
+                            onChange={e => setPartsCustomer(prev => ({ ...prev, phone: e.target.value }))}
+                            className="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-white outline-none placeholder:text-slate-400 focus:border-cyan-300"
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 {submitError && (
@@ -1230,10 +1281,10 @@ export default function NewService() {
                     {submitError}
                   </div>
                 )}
-                <button onClick={submitService}
-                  disabled={!invoiceLines.length || mutation.isPending}
+                <button onClick={isPartsStore ? submitPartsSale : submitService}
+                  disabled={!invoiceLines.length || (isPartsStore ? partsSaleMutation.isPending : mutation.isPending)}
                   className="mt-5 w-full rounded-lg bg-emerald-500 px-6 py-4 text-lg font-black text-white transition hover:bg-emerald-600 disabled:opacity-50">
-                  {mutation.isPending ? 'جاري...' : (isPartsStore ? 'اعتماد فاتورة البيع' : 'اعتماد الفاتورة النهائية')}
+                  {(isPartsStore ? partsSaleMutation.isPending : mutation.isPending) ? 'جاري...' : (isPartsStore ? 'اعتماد فاتورة البيع' : 'اعتماد الفاتورة النهائية')}
                 </button>
               </div>
             </div>
@@ -1266,6 +1317,25 @@ function PartsSaleCart({
   onSubmit,
   isPending,
 }) {
+  const updateLine = (lineId, patch) => {
+    setInvoiceLines(prev => prev.map(line => {
+      if (line.id !== lineId) return line
+      const next = { ...line, ...patch }
+      const qty = Math.max(Number(next.inventoryQty || 1), 0.1)
+      const unitPrice = Number(line.unitPrice ?? (Number(line.amount || 0) / Math.max(Number(line.inventoryQty || 1), 1)))
+      if (patch.inventoryQty !== undefined) {
+        next.inventoryQty = qty
+        next.unitPrice = unitPrice
+        next.amount = Math.round(unitPrice * qty)
+      }
+      if (patch.unitPrice !== undefined) {
+        next.unitPrice = Number(patch.unitPrice || 0)
+        next.amount = Math.round(next.unitPrice * qty)
+      }
+      return next
+    }))
+  }
+
   return (
     <div className="sticky top-24 h-fit rounded-lg border border-slate-200 bg-slate-950 p-5 text-white shadow-2xl">
       <div className="mb-4 flex items-center gap-2 text-cyan-300">
@@ -1289,8 +1359,27 @@ function PartsSaleCart({
               <div className="flex-1 text-right">
                 <p className="font-black text-white">{line.name}</p>
                 {line.inventoryItemName && (
-                  <p className="text-xs text-amber-300">📦 {line.inventoryQty} × {line.inventoryItemName}</p>
+                  <p className="text-xs text-amber-300">{line.inventoryQty} × {line.inventoryItemName}</p>
                 )}
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <input
+                    type="number"
+                    min="0.1"
+                    step="0.1"
+                    value={line.inventoryQty || 1}
+                    onChange={e => updateLine(line.id, { inventoryQty: e.target.value })}
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs font-bold text-white outline-none focus:border-cyan-300"
+                    title="الكمية"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    value={line.unitPrice ?? Math.round(Number(line.amount || 0) / Math.max(Number(line.inventoryQty || 1), 1))}
+                    onChange={e => updateLine(line.id, { unitPrice: e.target.value })}
+                    className="w-full rounded-lg border border-white/10 bg-white/5 px-2 py-1.5 text-xs font-bold text-white outline-none focus:border-cyan-300"
+                    title="سعر الوحدة"
+                  />
+                </div>
               </div>
               <span className="font-black">{Number(line.amount).toLocaleString()}</span>
             </div>

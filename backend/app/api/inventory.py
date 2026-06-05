@@ -55,6 +55,9 @@ def add_receipt_items(body: InventoryReceiptCreate, db: Session = Depends(get_db
         if item:
             item.quantity = float(item.quantity) + line.quantity
             item.category = line.category or item.category
+            item.product_category = line.product_category or item.product_category
+            item.sku = line.sku or item.sku
+            item.barcode = line.barcode or item.barcode
             item.supplier_name = body.supplier_name or item.supplier_name
             if line.unit_cost is not None:
                 item.unit_cost = line.unit_cost
@@ -66,6 +69,9 @@ def add_receipt_items(body: InventoryReceiptCreate, db: Session = Depends(get_db
                 tenant_id=user.tenant_id,
                 oil_type=line.oil_type,
                 category=line.category,
+                product_category=line.product_category,
+                sku=line.sku,
+                barcode=line.barcode,
                 supplier_name=body.supplier_name,
                 quantity=line.quantity,
                 min_threshold=line.min_threshold,

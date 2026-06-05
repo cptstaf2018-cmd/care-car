@@ -21,6 +21,7 @@ export default function InvoicePrint() {
   const invoiceLines = inv.invoice_lines?.length
     ? inv.invoice_lines
     : inv.service_lines.filter(Boolean).map(line => ({ name: line, amount: 0, notes: '', inventory_item_name: '', inventory_quantity: null }))
+  const isSaleInvoice = inv.invoice_type === 'sale' || inv.car_type === 'بيع قطع'
   const showMileage = Boolean(inv.mileage && invoiceLines.some(line => line.name?.includes('تبديل زيت')))
 
   const shareInvoiceImage = async () => {
@@ -88,7 +89,7 @@ export default function InvoicePrint() {
         <header className="invoice-header">
           <div className="invoice-title-box">
             <div>
-              <p className="invoice-label">فاتورة خدمة</p>
+              <p className="invoice-label">{isSaleInvoice ? 'فاتورة بيع' : 'فاتورة خدمة'}</p>
               <p className="invoice-number">#{String(inv.id).padStart(5, '0')}</p>
             </div>
             <span className="invoice-status-badge" style={{ background: STATUS_COLOR[inv.status] }}>
@@ -104,7 +105,7 @@ export default function InvoicePrint() {
             )}
           </div>
           <div className="invoice-brand-text">
-            <p className="invoice-brand-label">مركز خدمة سيارات</p>
+            <p className="invoice-brand-label">{isSaleInvoice ? 'متجر قطع سيارات' : 'مركز خدمة سيارات'}</p>
             <h1 className="invoice-center-name">{inv.center_name || 'مركز الخدمة'}</h1>
             <div className="invoice-contact-row">
               {(inv.center_phone || inv.center_whatsapp) && (
@@ -116,20 +117,29 @@ export default function InvoicePrint() {
 
         <div className="invoice-divider" />
 
-        {/* Customer + Car info */}
+        {/* Customer + invoice info */}
         <section className="invoice-info-grid">
           <div className="invoice-info-card">
             <p className="invoice-info-label">العميل</p>
             <p className="invoice-info-value">{inv.customer_name || 'عميل كريم'}</p>
           </div>
-          <div className="invoice-info-card">
-            <p className="invoice-info-label">رقم اللوحة</p>
-            <p className="invoice-info-value invoice-plate">{inv.plate_number || '—'}</p>
-          </div>
-          <div className="invoice-info-card">
-            <p className="invoice-info-label">نوع السيارة</p>
-            <p className="invoice-info-value">{inv.car_type || '—'}</p>
-          </div>
+          {isSaleInvoice ? (
+            <div className="invoice-info-card">
+              <p className="invoice-info-label">نوع الفاتورة</p>
+              <p className="invoice-info-value">بيع قطع سيارات</p>
+            </div>
+          ) : (
+            <>
+              <div className="invoice-info-card">
+                <p className="invoice-info-label">رقم اللوحة</p>
+                <p className="invoice-info-value invoice-plate">{inv.plate_number || '—'}</p>
+              </div>
+              <div className="invoice-info-card">
+                <p className="invoice-info-label">نوع السيارة</p>
+                <p className="invoice-info-value">{inv.car_type || '—'}</p>
+              </div>
+            </>
+          )}
           {showMileage && (
             <div className="invoice-info-card">
               <p className="invoice-info-label">عداد المسافة</p>
@@ -138,15 +148,16 @@ export default function InvoicePrint() {
           )}
         </section>
 
-        {/* Services table */}
+        {/* Lines table */}
         <table className="invoice-table">
           <thead>
             <tr>
               <th>#</th>
-              <th>الخدمة</th>
-              <th>المادة / التفاصيل</th>
+              <th>{isSaleInvoice ? 'المادة' : 'الخدمة'}</th>
+              <th>{isSaleInvoice ? 'الكود / التفاصيل' : 'المادة / التفاصيل'}</th>
               <th>الكمية</th>
-              <th>المبلغ</th>
+              {isSaleInvoice && <th>سعر الوحدة</th>}
+              <th>الإجمالي</th>
             </tr>
           </thead>
           <tbody>
@@ -155,10 +166,11 @@ export default function InvoicePrint() {
                 <td>{i + 1}</td>
                 <td>{line.name}</td>
                 <td>
-                  {line.inventory_item_name || line.notes || '—'}
-                  {line.inventory_item_name && line.notes ? <span className="invoice-line-note"> · {line.notes}</span> : null}
+                  {line.sku || line.category || line.notes || '—'}
+                  {(line.sku || line.category) && line.notes ? <span className="invoice-line-note"> · {line.notes}</span> : null}
                 </td>
-                <td>{line.inventory_quantity || '—'}</td>
+                <td>{line.quantity || line.inventory_quantity || '—'}</td>
+                {isSaleInvoice && <td>{line.unit_price ? `${Number(line.unit_price).toLocaleString()} IQD` : '—'}</td>}
                 <td>{line.amount ? `${Number(line.amount).toLocaleString()} IQD` : '—'}</td>
               </tr>
             ))}
@@ -194,7 +206,7 @@ export default function InvoicePrint() {
         {/* Footer */}
         <footer className="invoice-footer">
           <div className="invoice-footer-line" />
-          <p className="invoice-footer-thanks">شكراً لثقتكم بنا — نتطلع لخدمتكم دائماً</p>
+          <p className="invoice-footer-thanks">{isSaleInvoice ? 'شكراً لتسوقكم معنا' : 'شكراً لثقتكم بنا — نتطلع لخدمتكم دائماً'}</p>
           <p className="invoice-footer-brand">{inv.center_name} · care-car-saas</p>
         </footer>
       </div>

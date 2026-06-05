@@ -3,6 +3,9 @@ from pydantic import BaseModel, ConfigDict
 class InventoryCreate(BaseModel):
     oil_type: str
     category: str | None = None
+    product_category: str | None = None
+    sku: str | None = None
+    barcode: str | None = None
     supplier_name: str | None = None
     quantity: float
     min_threshold: float = 10.0
@@ -15,12 +18,18 @@ class InventoryUpdate(BaseModel):
     unit_cost: float | None = None
     sale_price: float | None = None
     category: str | None = None
+    product_category: str | None = None
+    sku: str | None = None
+    barcode: str | None = None
     supplier_name: str | None = None
     total_sold: float | None = None
 
 class InventoryReceiptLine(BaseModel):
     oil_type: str
     category: str | None = None
+    product_category: str | None = None
+    sku: str | None = None
+    barcode: str | None = None
     quantity: float
     unit_cost: float | None = None
     sale_price: float | None = None
@@ -37,6 +46,9 @@ class InventoryOut(BaseModel):
     tenant_id: int
     oil_type: str
     category: str | None = None
+    product_category: str | None = None
+    sku: str | None = None
+    barcode: str | None = None
     supplier_name: str | None = None
     quantity: float
     min_threshold: float

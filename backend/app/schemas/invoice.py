@@ -15,6 +15,7 @@ class InvoiceOut(BaseModel):
     plate_number: str | None = None
     car_type: str | None = None
     service_name: str | None = None
+    invoice_type: str = "service"
     paid_amount: float = 0
     remaining_amount: float = 0
 
