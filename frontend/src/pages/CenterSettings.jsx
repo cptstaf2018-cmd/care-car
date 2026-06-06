@@ -17,6 +17,30 @@ const PLANS = PLAN_ORDER.map(id => ({
   badge: PLAN_BADGES[id],
 }))
 
+const CAMERA_FEATURE_WORDS = ['كاميرا', 'قراءة اللوحة', 'استقبال السيارة']
+
+function isPartsStoreCenter(center) {
+  return center?.specialty === 'multi_service'
+}
+
+function planDisplayForCenter(plan, center) {
+  const isPartsStore = isPartsStoreCenter(center)
+  if (!isPartsStore) return plan
+
+  const hideCameraFeature = (feature) => !CAMERA_FEATURE_WORDS.some(word => feature.includes(word))
+  const replacementFeatures = {
+    basic: ['الفواتير ونقطة البيع', 'المخزون مع الخصم التلقائي', 'الديون ومطالبة واتساب', 'مستخدم واحد'],
+    pro: ['كل مميزات الأساسية', 'مستخدمان', 'قراءة وصل الشراء', 'تنبيهات مخزون', 'تقارير أفضل ومساعد المركز'],
+    enterprise: ['كل مميزات المتوسطة', '3 مستخدمين', 'أرشفة Excel شهرية', 'دعم خاص لمتجر القطع', 'مساعد المركز مفعل'],
+  }
+
+  return {
+    ...plan,
+    features: replacementFeatures[plan.id] || plan.features.filter(hideCameraFeature),
+    noFeatures: plan.noFeatures.filter(hideCameraFeature),
+  }
+}
+
 function TrialBanner({ trialEndsAt, subscriptionEndsAt }) {
   if (subscriptionEndsAt) {
     const end = new Date(subscriptionEndsAt)
@@ -145,7 +169,7 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
   const sectionHint = subscriptionActive
     ? `خطتك الحالية ${planShortName(currentPlan)}. اختر خطة أعلى لتفعيل الميزات المقفلة.`
     : 'اختر الخطة المناسبة لمركزك — الدفع شهري بالدينار العراقي'
-  const currentPlanDetails = PLAN_DETAILS[currentPlan]
+  const currentPlanDetails = planDisplayForCenter({ id: currentPlan, ...PLAN_DETAILS[currentPlan] }, center)
   const daysLeft = center?.subscription_ends_at
     ? Math.ceil((new Date(center.subscription_ends_at) - new Date()) / 86400000)
     : null
@@ -206,7 +230,9 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
 
       {/* Plans grid */}
       <div className="mt-5 grid gap-4 md:grid-cols-3">
-        {visiblePlans.map(plan => (
+        {visiblePlans.map(plan => {
+          const displayPlan = planDisplayForCenter(plan, center)
+          return (
           <button
             key={plan.id}
             onClick={() => setSelectedPlan(plan.id)}
@@ -233,23 +259,23 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
             {selectedPlan === plan.id && (
               <span className="absolute left-4 top-4 text-lg">✓</span>
             )}
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{plan.name}</p>
-            <p className="mt-1 text-2xl font-black text-slate-950">{plan.price}</p>
+            <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{displayPlan.name}</p>
+            <p className="mt-1 text-2xl font-black text-slate-950">{displayPlan.price}</p>
             <p className="text-xs text-slate-500">دينار / شهر</p>
             <ul className="mt-4 space-y-1.5 text-right">
-              {plan.features.map(f => (
+              {displayPlan.features.map(f => (
                 <li key={f} className="flex items-center gap-2 text-xs text-slate-700">
                   <span className="text-emerald-500">✓</span> {f}
                 </li>
               ))}
-              {plan.noFeatures.map(f => (
+              {displayPlan.noFeatures.map(f => (
                 <li key={f} className="flex items-center gap-2 text-xs text-slate-400 line-through">
                   <span>✗</span> {f}
                 </li>
               ))}
             </ul>
           </button>
-        ))}
+        )})}
       </div>
 
       {/* Payment section */}
@@ -609,25 +635,42 @@ function CenterUsersSection({ center }) {
 
 function AssistantSection({ center }) {
   const enabled = hasPlanFeature(center?.plan, 'assistant')
+  const isPartsStore = isPartsStoreCenter(center)
+  if (enabled) {
+    return (
+      <section className="surface mt-5 rounded-lg border-cyan-100 bg-cyan-50/40 px-5 py-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-black text-cyan-700">مساعد المركز</p>
+            <h3 className="mt-1 font-bold text-slate-950">المساعد مفعل</h3>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              {isPartsStore
+                ? 'يظهر كأيقونة عائمة لمساعدة متجر القطع في البيع، المخزون، الديون، والاشتراك.'
+                : 'يظهر كأيقونة عائمة لمتابعة الأسئلة وتجهيز خطوات العمل داخل المركز.'}
+            </p>
+          </div>
+          <span className="rounded-lg bg-white px-4 py-2 text-sm font-black text-cyan-700 ring-1 ring-cyan-200">
+            مفعل
+          </span>
+        </div>
+      </section>
+    )
+  }
   return (
-    <section className={`surface mt-5 rounded-lg p-6 ${enabled ? 'border-cyan-100 bg-cyan-50/40' : ''}`}>
+    <section className="surface mt-5 rounded-lg p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-sm font-black text-cyan-700">مساعد المركز</p>
           <h3 className="mt-1 font-bold text-slate-950">شات بوت احترافي للمركز</h3>
           <p className="mt-2 text-sm leading-7 text-slate-500">
-            {enabled
-              ? 'مساعد ذكي لمتابعة الأسئلة، فهم الميزات، وتجهيز رسائل وخطوات العمل داخل المركز.'
-              : 'هذه الميزة ضمن الخطة المتوسطة فما فوق، وتظهر للمركز كمساعد احترافي عند الترقية.'}
+            هذه الميزة ضمن الخطة المتوسطة فما فوق، وتظهر للمركز كمساعد احترافي عند الترقية.
           </p>
         </div>
         <a
-          href={enabled ? '/center/settings#subscription-upgrade' : '/center/settings?upgrade=1'}
-          className={`rounded-lg px-5 py-3 text-sm font-black transition ${
-            enabled ? 'bg-white text-cyan-700 ring-1 ring-cyan-200 hover:bg-cyan-50' : 'bg-cyan-400 text-slate-950 hover:bg-cyan-300'
-          }`}
+          href="/center/settings?upgrade=1"
+          className="rounded-lg bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-300"
         >
-          {enabled ? 'المساعد مفعل' : 'طلب الترقية'}
+          طلب الترقية
         </a>
       </div>
     </section>
