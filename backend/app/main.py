@@ -1,6 +1,7 @@
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.api import auth, tenants, cars, services, invoices, inventory, debts, reports, settings, vision, platform, camera_ws, webhook, mobile_camera, users
@@ -65,4 +66,21 @@ def health():
 
 
 os.makedirs(os.path.join(app_settings.UPLOADS_DIR, "ads"), exist_ok=True)
+
+
+@app.get("/uploads/monthly_exports/{filename}", tags=["exports"])
+def download_monthly_export(filename: str):
+    if "/" in filename or "\\" in filename or not filename.endswith(".xlsx"):
+        raise HTTPException(status_code=404, detail="Export not found")
+    export_dir = os.path.realpath(os.path.join(app_settings.UPLOADS_DIR, "monthly_exports"))
+    path = os.path.realpath(os.path.join(export_dir, filename))
+    if not path.startswith(export_dir + os.sep) or not os.path.exists(path):
+        raise HTTPException(status_code=404, detail="Export not found")
+    return FileResponse(
+        path,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        filename=filename,
+    )
+
+
 app.mount("/uploads", StaticFiles(directory=app_settings.UPLOADS_DIR), name="uploads")
