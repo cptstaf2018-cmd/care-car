@@ -12,10 +12,10 @@ const ABOUT_T = {
     dir: 'rtl', lang: 'ar',
     nav: { features: 'المميزات', pricing: 'الأسعار', about: 'من نحن', faq: 'الأسئلة', login: 'دخول', register: 'ابدأ مجاناً', toggle: 'EN' },
     hero: {
-      badge: 'من نحن — قصة CearCar',
+      badge: 'من نحن — قصة Care Car',
       title1: 'بنينا النظام الذي',
       titleAccent: 'تمنّينا وجوده',
-      sub: 'CearCar وُلد داخل ورش العراق، لا في غرفة اجتماعات بعيدة. مهمتنا واحدة: أن يدير صاحب المركز عمله بثقة، بأدوات بسيطة بقدر ما هي قوية — من أول سيارة تدخل حتى آخر فاتورة في اليوم.',
+      sub: 'Care Car وُلد داخل ورش العراق، لا في غرفة اجتماعات بعيدة. مهمتنا واحدة: أن يدير صاحب المركز عمله بثقة، بأدوات بسيطة بقدر ما هي قوية — من أول سيارة تدخل حتى آخر فاتورة في اليوم.',
       cta1: 'ابدأ الآن مجاناً',
       cta2: 'تعرّف على المنصة',
       trust: 'يثق بنا أكثر من ٢٠٠ مركز في العراق',
@@ -32,13 +32,13 @@ const ABOUT_T = {
       p1: 'في مركز لتغيير الزيت في بغداد، كان كل شيء يُكتب بخط اليد: أرقام اللوحات على ورقة، الأسعار في رأس صاحب المحل، وموعد الزيت القادم… ينساه الزبون غالباً. عند آخر النهار، لا أحد يعرف بدقة كم دخل ولا كم بقي في المخزن.',
       p2: 'رأينا المشكلة عن قرب، فقررنا ألّا نبيع برنامجاً معقّداً مستورداً، بل أن نبني أداة عراقية يفهمها أي موظف من أول يوم: تسجّل السيارة، تحسب الفاتورة، تنبّه الزبون، وتقول لك بصدق أين تذهب أرباحك.',
       quote: 'لم نُرد أن نُعلّم المراكز كيف تعمل — أردنا أن نمنحها الوقت لتعمل أكثر.',
-      quoteBy: 'فريق CearCar',
+      quoteBy: 'فريق Care Car',
     },
     mv: {
       eyebrow: 'رسالتنا ورؤيتنا',
       title: 'لماذا نستيقظ كل صباح',
       mission: { tag: 'الرسالة', title: 'نُبسّط إدارة المراكز', desc: 'أن نضع بين يدي كل مركز في العراق نظاماً واحداً يدير السيارات والخدمات والفواتير والمخزون بثقة — بلغته، وبسعر يقدر عليه.' },
-      vision: { tag: 'الرؤية', title: 'مستوى عالمي بهوية محلية', desc: 'أن يصبح CearCar المعيار الذي تُدار به ورش ومراكز السيارات في العراق والمنطقة، حيث تتساوى البساطة مع القوة، والتقنية مع الواقع اليومي.' },
+      vision: { tag: 'الرؤية', title: 'مستوى عالمي بهوية محلية', desc: 'أن يصبح Care Car المعيار الذي تُدار به ورش ومراكز السيارات في العراق والمنطقة، حيث تتساوى البساطة مع القوة، والتقنية مع الواقع اليومي.' },
     },
     values: {
       eyebrow: 'قيمنا',
@@ -54,11 +54,11 @@ const ABOUT_T = {
       ],
     },
     why: {
-      eyebrow: 'لماذا CearCar',
+      eyebrow: 'لماذا Care Car',
       title: 'الفرق بين أن «تشتغل» وأن «تدير»',
-      sub: 'هكذا يبدو يومك قبل CearCar وبعده.',
+      sub: 'هكذا يبدو يومك قبل Care Car وبعده.',
       oldTitle: 'الطريقة التقليدية',
-      newTitle: 'مع CearCar',
+      newTitle: 'مع Care Car',
       rows: [
         { old: 'دفاتر وأوراق تضيع وتتلف', neu: 'كل شيء محفوظ سحابياً ومنظّم' },
         { old: 'الزبون ينسى موعد الزيت', neu: 'تذكير واتساب يصله تلقائياً' },
@@ -72,15 +72,15 @@ const ABOUT_T = {
       title: 'من فكرة إلى ٢٠٠ مركز',
       items: [
         { year: '٢٠٢٤', title: 'الشرارة الأولى', desc: 'انطلقت الفكرة من ورشة حقيقية، وبُنيت أول نسخة تجريبية مع ثلاثة مراكز في بغداد.' },
-        { year: '٢٠٢٤', title: 'الإطلاق الرسمي', desc: 'أطلقنا CearCar بواجهة عربية كاملة، فواتير فورية، وإدارة سيارات وخدمات.' },
+        { year: '٢٠٢٤', title: 'الإطلاق الرسمي', desc: 'أطلقنا Care Car بواجهة عربية كاملة، فواتير فورية، وإدارة سيارات وخدمات.' },
         { year: '٢٠٢٥', title: 'الذكاء يدخل الورشة', desc: 'أضفنا قراءة اللوحة بالكاميرا، تذكيرات واتساب، والمخزون الذكي.' },
         { year: 'اليوم', title: '+٢٠٠ مركز ونكبر', desc: 'منصة يعتمد عليها مئات المراكز يومياً، ونعمل على دعم الفروع المتعددة والمنطقة.' },
       ],
     },
     studio: {
-      eyebrow: 'من يقف خلف CearCar',
+      eyebrow: 'من يقف خلف Care Car',
       title: 'صُنع بفخر في العراق',
-      desc: 'CearCar من تطوير وتشغيل Baghdad Future AI — فريق هندسي عراقي يبني أدوات ذكاء اصطناعي وبرمجيات تخدم السوق المحلي بمعايير عالمية. نؤمن أن التقنية الجادة تُبنى قريباً من الناس الذين تخدمهم، لا بعيداً عنهم.',
+      desc: 'Care Car من تطوير وتشغيل Baghdad Future AI — فريق هندسي عراقي يبني أدوات ذكاء اصطناعي وبرمجيات تخدم السوق المحلي بمعايير عالمية. نؤمن أن التقنية الجادة تُبنى قريباً من الناس الذين تخدمهم، لا بعيداً عنهم.',
       cta: 'زيارة Baghdad Future AI',
       pills: ['هندسة محلية', 'ذكاء اصطناعي تطبيقي', 'دعم باللغة العربية', 'بنية سحابية آمنة'],
     },
@@ -93,27 +93,27 @@ const ABOUT_T = {
       cta: 'ابدأ بهذه الخطة',
       plans: [
         { name: 'الأساسية', price: '100,000', popular: false,
-          features: ['سيارات الزبائن وتاريخ الخدمة', 'خدمة سريعة وفواتير', 'تقارير أساسية', 'إعدادات المركز والشعار'],
-          no: ['تذكيرات واتساب', 'إدارة المخزون', 'كاميرا IP', 'قراءة اللوحة'] },
-        { name: 'الاحترافية', price: '150,000', popular: true,
-          features: ['كل مميزات الأساسية', 'المخزون مع خصم تلقائي', 'تذكيرات واتساب التلقائية', 'تقارير متقدمة'],
-          no: ['كاميرا IP', 'قراءة اللوحة OCR'] },
-        { name: 'المؤسسية', price: '250,000', popular: false,
-          features: ['كل مميزات الاحترافية', 'ربط كاميرا IP', 'قراءة اللوحة بالكاميرا', 'دعم متقدم وإعداد مخصص'],
+          features: ['سيارات الزبائن وتاريخ الخدمة', 'خدمة سريعة وفواتير وتقارير', 'إدارة المخزون مع الخصم التلقائي', 'الديون ومطالبة واتساب', 'مستخدم واحد'],
+          no: ['قراءة وصل الشراء', 'تذكيرات واتساب التلقائية', 'كاميرا قراءة اللوحة'] },
+        { name: 'المتوسطة', price: '150,000', popular: true,
+          features: ['كل مميزات الأساسية', 'مستخدمان', 'قراءة وصل الشراء', 'تذكيرات واتساب التلقائية', 'تنبيهات مخزون وتقارير متقدمة', 'مساعد المركز'],
+          no: ['كاميرا قراءة اللوحة', 'استقبال السيارة بالكاميرا', 'أرشفة Excel شهرية'] },
+        { name: 'المميزة', price: '250,000', popular: false,
+          features: ['كل مميزات المتوسطة', '3 مستخدمين', 'كاميرا وقراءة اللوحة', 'استقبال السيارة داخل خدمة جديدة', 'أرشفة Excel شهرية ودعم خاص'],
           no: [] },
       ],
     },
     cta: { title: 'جاهز ترفع مستوى مركزك؟', sub: 'انضم لمئات المراكز التي تدير عملها باحتراف — وابدأ اليوم مجاناً.', btn: 'ابدأ مجاناً الآن' },
-    footer: { desc: 'منصة الإدارة الأذكى لمراكز تغيير الزيت في العراق.', product: 'المنتج', company: 'الشركة', contact: 'تواصل معنا', dev: 'تطوير وتشغيل', rights: 'جميع الحقوق محفوظة' },
+    footer: { desc: 'منصة الإدارة الأذكى لمراكز ومحلات خدمات السيارات في العراق — زيوت، إطارات، غسيل، كهرباء، ميكانيك، تكييف، سمكرة، وبيع قطع.', product: 'المنتج', company: 'الشركة', contact: 'تواصل معنا', dev: 'تطوير وتشغيل', rights: 'جميع الحقوق محفوظة' },
   },
   en: {
     dir: 'ltr', lang: 'en',
     nav: { features: 'Features', pricing: 'Pricing', about: 'About', faq: 'FAQ', login: 'Login', register: 'Start Free', toggle: 'عربي' },
     hero: {
-      badge: 'About — the CearCar story',
+      badge: 'About — the Care Car story',
       title1: 'We built the system',
       titleAccent: 'we wished existed',
-      sub: "CearCar was born inside Iraqi workshops, not in a distant boardroom. Our mission is singular: let a center owner run the business with confidence, using tools as simple as they are powerful — from the first car in to the last invoice of the day.",
+      sub: "Care Car was born inside Iraqi workshops, not in a distant boardroom. Our mission is singular: let a center owner run the business with confidence, using tools as simple as they are powerful — from the first car in to the last invoice of the day.",
       cta1: 'Start Free Now',
       cta2: 'Explore the platform',
       trust: 'Trusted by 200+ centers across Iraq',
@@ -130,13 +130,13 @@ const ABOUT_T = {
       p1: "At an oil-change center in Baghdad, everything was handwritten: plate numbers on a scrap of paper, prices in the owner's head, and the next oil date… usually forgotten by the customer. At day's end, nobody knew exactly how much came in or what was left in stock.",
       p2: 'We saw the problem up close, so we decided not to sell a complex imported program, but to build an Iraqi tool any employee understands on day one: it logs the car, totals the invoice, reminds the customer, and tells you honestly where your profit goes.',
       quote: 'We never wanted to teach centers how to work — we wanted to give them the time to work more.',
-      quoteBy: 'The CearCar team',
+      quoteBy: 'The Care Car team',
     },
     mv: {
       eyebrow: 'Mission & Vision',
       title: 'Why we get up every morning',
       mission: { tag: 'Mission', title: 'Make center management simple', desc: "To put in every Iraqi center's hands one system that runs cars, services, invoices, and inventory with confidence — in their language, at a price they can afford." },
-      vision: { tag: 'Vision', title: 'World-class, locally rooted', desc: 'For CearCar to become the standard by which car workshops and centers are run across Iraq and the region, where simplicity meets power and technology meets daily reality.' },
+      vision: { tag: 'Vision', title: 'World-class, locally rooted', desc: 'For Care Car to become the standard by which car workshops and centers are run across Iraq and the region, where simplicity meets power and technology meets daily reality.' },
     },
     values: {
       eyebrow: 'Our values',
@@ -152,11 +152,11 @@ const ABOUT_T = {
       ],
     },
     why: {
-      eyebrow: 'Why CearCar',
+      eyebrow: 'Why Care Car',
       title: 'The difference between "working" and "running"',
-      sub: "Here's what your day looks like before CearCar and after.",
+      sub: "Here's what your day looks like before Care Car and after.",
       oldTitle: 'The traditional way',
-      newTitle: 'With CearCar',
+      newTitle: 'With Care Car',
       rows: [
         { old: 'Notebooks and papers that get lost or damaged', neu: 'Everything stored in the cloud and organized' },
         { old: 'The customer forgets the oil date', neu: 'A WhatsApp reminder reaches them automatically' },
@@ -170,15 +170,15 @@ const ABOUT_T = {
       title: 'From an idea to 200 centers',
       items: [
         { year: '2024', title: 'The first spark', desc: 'The idea began in a real workshop, and a first beta was built with three centers in Baghdad.' },
-        { year: '2024', title: 'Official launch', desc: 'We launched CearCar with a fully Arabic interface, instant invoices, and car & service management.' },
+        { year: '2024', title: 'Official launch', desc: 'We launched Care Car with a fully Arabic interface, instant invoices, and car & service management.' },
         { year: '2025', title: 'Intelligence enters the workshop', desc: 'We added camera plate-reading, WhatsApp reminders, and smart inventory.' },
         { year: 'Today', title: '200+ centers and growing', desc: 'A platform hundreds of centers rely on daily, while we work on multi-branch and regional support.' },
       ],
     },
     studio: {
-      eyebrow: 'Who stands behind CearCar',
+      eyebrow: 'Who stands behind Care Car',
       title: 'Proudly made in Iraq',
-      desc: 'CearCar is built and operated by Baghdad Future AI — an Iraqi engineering team building AI tools and software for the local market to global standards. We believe serious technology is built close to the people it serves, not far from them.',
+      desc: 'Care Car is built and operated by Baghdad Future AI — an Iraqi engineering team building AI tools and software for the local market to global standards. We believe serious technology is built close to the people it serves, not far from them.',
       cta: 'Visit Baghdad Future AI',
       pills: ['Local engineering', 'Applied AI', 'Arabic-language support', 'Secure cloud infrastructure'],
     },
@@ -191,18 +191,18 @@ const ABOUT_T = {
       cta: 'Start with this plan',
       plans: [
         { name: 'Basic', price: '100,000', popular: false,
-          features: ['Customer cars & service history', 'Fast service & invoices', 'Basic reports', 'Center settings & logo'],
-          no: ['WhatsApp reminders', 'Inventory management', 'IP camera', 'Plate reading'] },
+          features: ['Customer cars & service history', 'Fast service, invoices & reports', 'Inventory with auto-deduction', 'Debt tracking & WhatsApp claims', 'One user'],
+          no: ['Purchase receipt OCR', 'Automatic WhatsApp reminders', 'Camera plate reading'] },
         { name: 'Pro', price: '150,000', popular: true,
-          features: ['Everything in Basic', 'Inventory with auto-deduction', 'Automatic WhatsApp reminders', 'Advanced reports'],
-          no: ['IP camera', 'OCR plate reading'] },
+          features: ['Everything in Basic', 'Two users', 'Purchase receipt OCR', 'Automatic WhatsApp reminders', 'Stock alerts & advanced reports', 'Center assistant'],
+          no: ['Camera plate reading', 'Camera vehicle check-in', 'Monthly Excel archive'] },
         { name: 'Enterprise', price: '250,000', popular: false,
-          features: ['Everything in Pro', 'IP camera integration', 'Camera plate reading', 'Advanced support & custom setup'],
+          features: ['Everything in Pro', 'Three users', 'Camera plate reading', 'Vehicle check-in inside new service', 'Monthly Excel archive & priority support'],
           no: [] },
       ],
     },
     cta: { title: 'Ready to level up your center?', sub: 'Join hundreds of centers running professionally — and start today, free.', btn: 'Start Free Now' },
-    footer: { desc: 'The smartest management platform for oil-change centers in Iraq.', product: 'Product', company: 'Company', contact: 'Contact', dev: 'Built & operated by', rights: 'All rights reserved' },
+    footer: { desc: 'The smartest management platform for car service centers in Iraq — oil, tires, wash, electrical, mechanic, AC, body & paint, and parts sales.', product: 'Product', company: 'Company', contact: 'Contact', dev: 'Built & operated by', rights: 'All rights reserved' },
   },
 }
 
@@ -214,7 +214,7 @@ function Logo() {
       <span className="w-8 h-8 rounded-lg accent-grad flex items-center justify-center shadow-md" style={{ boxShadow: '0 4px 12px rgba(37,99,235,0.35)' }}>
         <Sparkles size={16} className="text-white" />
       </span>
-      <span className="font-black text-lg tracking-tight text-slate-900">CearCar</span>
+      <span className="font-black text-lg tracking-tight text-slate-900">Care Car</span>
     </div>
   )
 }
@@ -410,7 +410,7 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* ── Why CearCar ── */}
+      {/* ── Why Care Car ── */}
       <section id="why" className="relative px-5 py-28 bg-slate-50 border-y border-slate-100">
         <div className="max-w-4xl mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-14">
@@ -602,7 +602,7 @@ export default function LandingPage() {
           </div>
         </div>
         <div className="max-w-6xl mx-auto border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
-          © {new Date().getFullYear()} CearCar — {c.footer.rights}.
+          © {new Date().getFullYear()} Care Car — {c.footer.rights}.
         </div>
       </footer>
     </div>
