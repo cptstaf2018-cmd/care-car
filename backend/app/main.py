@@ -1,4 +1,5 @@
 import os
+import mimetypes
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
@@ -18,6 +19,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="care-car-saas", lifespan=lifespan)
+mimetypes.add_type("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", ".xlsx")
 
 
 @app.middleware("http")
