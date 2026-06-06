@@ -163,7 +163,7 @@ def export_tenant_monthly_archive(db: Session, tenant: Tenant, year: int, month:
         "tenant_name": tenant.name,
         "filename": filename,
         "path": str(path),
-        "url": f"{settings.PUBLIC_BASE_URL.rstrip('/')}/uploads/monthly_exports/{filename}",
+        "url": f"{settings.PUBLIC_BASE_URL.rstrip('/')}/reports/monthly-exports/{filename}",
         "counts": {
             "cars": len(cars),
             "services": len(services),
