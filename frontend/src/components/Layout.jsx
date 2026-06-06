@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
 import FloatingAssistant from './FloatingAssistant'
+import OfflineBanner from './OfflineBanner'
 import { useAuthStore } from '../store/auth'
 import { getCenterSettings } from '../api/settings'
 import { displayUserContact } from '../utils/displayIdentity'
@@ -20,6 +21,7 @@ export default function Layout({ children, hideHeader = false, compact = false }
 
   return (
     <div className="flex min-h-screen bg-[#f4f7fb]">
+      <OfflineBanner />
       <Sidebar mobileOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="flex-1 overflow-auto">
         {!hideHeader && (
