@@ -15,10 +15,10 @@ const ABOUT_T = {
       badge: 'من نحن — قصة Care Car',
       title1: 'بنينا النظام الذي',
       titleAccent: 'تمنّينا وجوده',
-      sub: 'Care Car وُلد داخل ورش العراق، لا في غرفة اجتماعات بعيدة. مهمتنا واحدة: أن يدير صاحب المركز عمله بثقة، بأدوات بسيطة بقدر ما هي قوية — من أول سيارة تدخل حتى آخر فاتورة في اليوم.',
+      sub: 'Care Car وُلد داخل ورشة حقيقية، لا في غرفة اجتماعات بعيدة. مهمتنا واحدة: أن يدير صاحب أي مركز خدمة سيارات عمله بثقة، بأدوات بسيطة بقدر ما هي قوية — من أول سيارة تدخل حتى آخر فاتورة في اليوم.',
       cta1: 'ابدأ الآن مجاناً',
       cta2: 'تعرّف على المنصة',
-      trust: 'يثق بنا أكثر من ٢٠٠ مركز في العراق',
+      trust: 'يثق بنا أكثر من ٢٠٠ مركز خدمة سيارات',
     },
     stats: [
       { val: '+٢٠٠', label: 'مركز يعتمد علينا' },
@@ -30,15 +30,15 @@ const ABOUT_T = {
       eyebrow: 'قصتنا',
       title: 'بدأت من دفتر ممزّق وزحمة آخر النهار',
       p1: 'في مركز لتغيير الزيت في بغداد، كان كل شيء يُكتب بخط اليد: أرقام اللوحات على ورقة، الأسعار في رأس صاحب المحل، وموعد الزيت القادم… ينساه الزبون غالباً. عند آخر النهار، لا أحد يعرف بدقة كم دخل ولا كم بقي في المخزن.',
-      p2: 'رأينا المشكلة عن قرب، فقررنا ألّا نبيع برنامجاً معقّداً مستورداً، بل أن نبني أداة عراقية يفهمها أي موظف من أول يوم: تسجّل السيارة، تحسب الفاتورة، تنبّه الزبون، وتقول لك بصدق أين تذهب أرباحك.',
+      p2: 'رأينا المشكلة عن قرب، فقررنا ألّا نبيع برنامجاً معقّداً مستورداً، بل أن نبني أداة يفهمها أي موظف من أول يوم: تسجّل السيارة، تحسب الفاتورة، تنبّه الزبون، وتقول لك بصدق أين تذهب أرباحك.',
       quote: 'لم نُرد أن نُعلّم المراكز كيف تعمل — أردنا أن نمنحها الوقت لتعمل أكثر.',
       quoteBy: 'فريق Care Car',
     },
     mv: {
       eyebrow: 'رسالتنا ورؤيتنا',
       title: 'لماذا نستيقظ كل صباح',
-      mission: { tag: 'الرسالة', title: 'نُبسّط إدارة المراكز', desc: 'أن نضع بين يدي كل مركز في العراق نظاماً واحداً يدير السيارات والخدمات والفواتير والمخزون بثقة — بلغته، وبسعر يقدر عليه.' },
-      vision: { tag: 'الرؤية', title: 'مستوى عالمي بهوية محلية', desc: 'أن يصبح Care Car المعيار الذي تُدار به ورش ومراكز السيارات في العراق والمنطقة، حيث تتساوى البساطة مع القوة، والتقنية مع الواقع اليومي.' },
+      mission: { tag: 'الرسالة', title: 'نُبسّط إدارة المراكز', desc: 'أن نضع بين يدي كل مركز خدمة سيارات نظاماً واحداً يدير السيارات والخدمات والفواتير والمخزون بثقة — بلغته، وبعملته، وبسعر يقدر عليه.' },
+      vision: { tag: 'الرؤية', title: 'بساطة بمستوى عالمي', desc: 'أن يصبح Care Car المعيار الذي تُدار به ورش ومراكز السيارات في كل مكان، حيث تتساوى البساطة مع القوة، والتقنية مع الواقع اليومي.' },
     },
     values: {
       eyebrow: 'قيمنا',
@@ -46,10 +46,10 @@ const ABOUT_T = {
       sub: 'ليست شعارات على الجدار — هي القرارات التي نتخذها في كل شاشة.',
       items: [
         { icon: 'Lightbulb', title: 'بساطة قبل كل شيء', desc: 'إن احتاجت الميزة إلى شرح طويل، فهي غير جاهزة بعد. نختصر حتى يفهمها أي موظف فوراً.' },
-        { icon: 'MapPin', title: 'عراقي حتى النخاع', desc: 'بالدينار العراقي، بالعربية، وبفهمٍ لواقع الورشة — لا ترجمة باهتة لمنتج أجنبي.' },
+        { icon: 'MapPin', title: 'مبني من واقع الورشة', desc: 'بلغتك، وبعملتك المحلية، وبفهمٍ لتفاصيل يومك — لا ترجمة باهتة لمنتج جاهز بعيد عن الواقع.' },
         { icon: 'ShieldCheck', title: 'بياناتك ملكك', desc: 'قاعدة بيانات معزولة لكل مركز، تشفير، ونسخ احتياطي تلقائي. أمانك ليس خياراً إضافياً.' },
         { icon: 'Zap', title: 'السرعة احترام للوقت', desc: 'فاتورة في ثانية، وسيارة تُسجَّل قبل أن يُغلق الزبون باب سيارته.' },
-        { icon: 'Headphones', title: 'دعم بشري حقيقي', desc: 'فريق عراقي يردّ عليك بلسانك، لا روبوت ولا رسائل آلية باردة.' },
+        { icon: 'Headphones', title: 'دعم بشري حقيقي', desc: 'فريق دعم حقيقي يردّ عليك بلغتك، لا روبوت ولا رسائل آلية باردة.' },
         { icon: 'TrendingUp', title: 'ننمو معك', desc: 'من مركز واحد إلى عدة فروع — النظام يكبر بقدر طموحك دون أن يتعثّر.' },
       ],
     },
@@ -74,37 +74,37 @@ const ABOUT_T = {
         { year: '٢٠٢٤', title: 'الشرارة الأولى', desc: 'انطلقت الفكرة من ورشة حقيقية، وبُنيت أول نسخة تجريبية مع ثلاثة مراكز في بغداد.' },
         { year: '٢٠٢٤', title: 'الإطلاق الرسمي', desc: 'أطلقنا Care Car بواجهة عربية كاملة، فواتير فورية، وإدارة سيارات وخدمات.' },
         { year: '٢٠٢٥', title: 'الذكاء يدخل الورشة', desc: 'أضفنا قراءة اللوحة بالكاميرا، تذكيرات واتساب، والمخزون الذكي.' },
-        { year: 'اليوم', title: '+٢٠٠ مركز ونكبر', desc: 'منصة يعتمد عليها مئات المراكز يومياً، ونعمل على دعم الفروع المتعددة والمنطقة.' },
+        { year: 'اليوم', title: '+٢٠٠ مركز ونكبر', desc: 'منصة يعتمد عليها مئات المراكز يومياً، ونعمل على دعم الفروع المتعددة والأسواق الجديدة حول العالم.' },
       ],
     },
     studio: {
       eyebrow: 'من يقف خلف Care Car',
-      title: 'صُنع بفخر في العراق',
-      desc: 'Care Car من تطوير وتشغيل Baghdad Future AI — فريق هندسي عراقي يبني أدوات ذكاء اصطناعي وبرمجيات تخدم السوق المحلي بمعايير عالمية. نؤمن أن التقنية الجادة تُبنى قريباً من الناس الذين تخدمهم، لا بعيداً عنهم.',
+      title: 'صُنع في بغداد، لمراكز السيارات في كل مكان',
+      desc: 'Care Car من تطوير وتشغيل Baghdad Future AI — فريق هندسي يبني أدوات ذكاء اصطناعي وبرمجيات بمعايير عالمية. نؤمن أن التقنية الجادة تُبنى قريباً من الناس الذين تخدمهم، أينما كانوا.',
       cta: 'زيارة Baghdad Future AI',
-      pills: ['هندسة محلية', 'ذكاء اصطناعي تطبيقي', 'دعم باللغة العربية', 'بنية سحابية آمنة'],
+      pills: ['هندسة بمعايير عالمية', 'ذكاء اصطناعي تطبيقي', 'دعم بالعربية والإنجليزية', 'بنية سحابية آمنة'],
     },
     pricing: {
       eyebrow: 'أسعار واضحة',
       title: 'اختر الخطة التي تناسب مركزك',
-      sub: 'بالدينار العراقي. بدون رسوم خفية. ألغِ في أي وقت.',
+      sub: 'أسعار شفافة بالدينار العراقي والدولار. بدون رسوم خفية. ألغِ في أي وقت.',
       currency: 'د.ع / شهرياً',
       popular: 'الأكثر طلباً',
       cta: 'ابدأ بهذه الخطة',
       plans: [
-        { name: 'الأساسية', price: '100,000', popular: false,
+        { name: 'الأساسية', price: '100,000', usd: '≈ 70$ شهرياً', popular: false,
           features: ['سيارات الزبائن وتاريخ الخدمة', 'خدمة سريعة وفواتير وتقارير', 'إدارة المخزون مع الخصم التلقائي', 'الديون ومطالبة واتساب', 'مستخدم واحد'],
           no: ['قراءة وصل الشراء', 'تذكيرات واتساب التلقائية', 'كاميرا قراءة اللوحة'] },
-        { name: 'المتوسطة', price: '150,000', popular: true,
+        { name: 'المتوسطة', price: '150,000', usd: '≈ 110$ شهرياً', popular: true,
           features: ['كل مميزات الأساسية', 'مستخدمان', 'قراءة وصل الشراء', 'تذكيرات واتساب التلقائية', 'تنبيهات مخزون وتقارير متقدمة', 'مساعد المركز'],
           no: ['كاميرا قراءة اللوحة', 'استقبال السيارة بالكاميرا', 'أرشفة Excel شهرية'] },
-        { name: 'المميزة', price: '250,000', popular: false,
+        { name: 'المميزة', price: '250,000', usd: '≈ 170$ شهرياً', popular: false,
           features: ['كل مميزات المتوسطة', '3 مستخدمين', 'كاميرا وقراءة اللوحة', 'استقبال السيارة داخل خدمة جديدة', 'أرشفة Excel شهرية ودعم خاص'],
           no: [] },
       ],
     },
     cta: { title: 'جاهز ترفع مستوى مركزك؟', sub: 'انضم لمئات المراكز التي تدير عملها باحتراف — وابدأ اليوم مجاناً.', btn: 'ابدأ مجاناً الآن' },
-    footer: { desc: 'منصة الإدارة الأذكى لمراكز ومحلات خدمات السيارات في العراق — زيوت، إطارات، غسيل، كهرباء، ميكانيك، تكييف، سمكرة، وبيع قطع.', product: 'المنتج', company: 'الشركة', contact: 'تواصل معنا', dev: 'تطوير وتشغيل', rights: 'جميع الحقوق محفوظة' },
+    footer: { desc: 'منصة الإدارة الأذكى لمراكز ومحلات خدمات السيارات — زيوت، إطارات، غسيل، كهرباء، ميكانيك، تكييف، سمكرة، وبيع قطع.', product: 'المنتج', company: 'الشركة', contact: 'تواصل معنا', dev: 'تطوير وتشغيل', rights: 'جميع الحقوق محفوظة' },
   },
   en: {
     dir: 'ltr', lang: 'en',
@@ -113,10 +113,10 @@ const ABOUT_T = {
       badge: 'About — the Care Car story',
       title1: 'We built the system',
       titleAccent: 'we wished existed',
-      sub: "Care Car was born inside Iraqi workshops, not in a distant boardroom. Our mission is singular: let a center owner run the business with confidence, using tools as simple as they are powerful — from the first car in to the last invoice of the day.",
+      sub: "Care Car was born inside a real workshop, not a distant boardroom. Our mission is singular: let any car-service center owner run the business with confidence, using tools as simple as they are powerful — from the first car in to the last invoice of the day.",
       cta1: 'Start Free Now',
       cta2: 'Explore the platform',
-      trust: 'Trusted by 200+ centers across Iraq',
+      trust: 'Trusted by 200+ car-service centers',
     },
     stats: [
       { val: '200+', label: 'Centers rely on us' },
@@ -128,15 +128,15 @@ const ABOUT_T = {
       eyebrow: 'Our story',
       title: 'It started with a torn notebook and end-of-day chaos',
       p1: "At an oil-change center in Baghdad, everything was handwritten: plate numbers on a scrap of paper, prices in the owner's head, and the next oil date… usually forgotten by the customer. At day's end, nobody knew exactly how much came in or what was left in stock.",
-      p2: 'We saw the problem up close, so we decided not to sell a complex imported program, but to build an Iraqi tool any employee understands on day one: it logs the car, totals the invoice, reminds the customer, and tells you honestly where your profit goes.',
+      p2: 'We saw the problem up close, so we decided not to sell a complex imported program, but to build a tool any employee understands on day one: it logs the car, totals the invoice, reminds the customer, and tells you honestly where your profit goes.',
       quote: 'We never wanted to teach centers how to work — we wanted to give them the time to work more.',
       quoteBy: 'The Care Car team',
     },
     mv: {
       eyebrow: 'Mission & Vision',
       title: 'Why we get up every morning',
-      mission: { tag: 'Mission', title: 'Make center management simple', desc: "To put in every Iraqi center's hands one system that runs cars, services, invoices, and inventory with confidence — in their language, at a price they can afford." },
-      vision: { tag: 'Vision', title: 'World-class, locally rooted', desc: 'For Care Car to become the standard by which car workshops and centers are run across Iraq and the region, where simplicity meets power and technology meets daily reality.' },
+      mission: { tag: 'Mission', title: 'Make center management simple', desc: "To put in every car-service center's hands one system that runs cars, services, invoices, and inventory with confidence — in their language, in their currency, at a price they can afford." },
+      vision: { tag: 'Vision', title: 'Simplicity, world-class', desc: 'For Care Car to become the standard by which car workshops and centers are run everywhere, where simplicity meets power and technology meets daily reality.' },
     },
     values: {
       eyebrow: 'Our values',
@@ -144,10 +144,10 @@ const ABOUT_T = {
       sub: 'Not slogans on a wall — the decisions we make on every screen.',
       items: [
         { icon: 'Lightbulb', title: 'Simplicity first', desc: "If a feature needs a long explanation, it isn't ready yet. We trim until any employee gets it instantly." },
-        { icon: 'MapPin', title: 'Iraqi to the core', desc: 'In Iraqi Dinar, in Arabic, with a real grasp of the workshop — not a faded translation of a foreign product.' },
+        { icon: 'MapPin', title: 'Built from the workshop floor', desc: 'In your language, in your local currency, with a real grasp of your day — not a faded translation of an off-the-shelf product.' },
         { icon: 'ShieldCheck', title: 'Your data is yours', desc: 'An isolated database per center, encryption, and automatic backups. Your safety is not an add-on.' },
         { icon: 'Zap', title: 'Speed respects time', desc: 'An invoice in a second, and a car logged before the customer shuts their door.' },
-        { icon: 'Headphones', title: 'Real human support', desc: 'An Iraqi team that answers in your language — no bots, no cold automated replies.' },
+        { icon: 'Headphones', title: 'Real human support', desc: 'A real team that answers in your language — no bots, no cold automated replies.' },
         { icon: 'TrendingUp', title: 'We grow with you', desc: 'From a single center to multiple branches — the system scales with your ambition without stumbling.' },
       ],
     },
@@ -172,37 +172,37 @@ const ABOUT_T = {
         { year: '2024', title: 'The first spark', desc: 'The idea began in a real workshop, and a first beta was built with three centers in Baghdad.' },
         { year: '2024', title: 'Official launch', desc: 'We launched Care Car with a fully Arabic interface, instant invoices, and car & service management.' },
         { year: '2025', title: 'Intelligence enters the workshop', desc: 'We added camera plate-reading, WhatsApp reminders, and smart inventory.' },
-        { year: 'Today', title: '200+ centers and growing', desc: 'A platform hundreds of centers rely on daily, while we work on multi-branch and regional support.' },
+        { year: 'Today', title: '200+ centers and growing', desc: 'A platform hundreds of centers rely on daily, while we expand to multi-branch support and new markets worldwide.' },
       ],
     },
     studio: {
       eyebrow: 'Who stands behind Care Car',
-      title: 'Proudly made in Iraq',
-      desc: 'Care Car is built and operated by Baghdad Future AI — an Iraqi engineering team building AI tools and software for the local market to global standards. We believe serious technology is built close to the people it serves, not far from them.',
+      title: 'Made in Baghdad, for car centers everywhere',
+      desc: 'Care Car is built and operated by Baghdad Future AI — an engineering team building AI tools and software to global standards. We believe serious technology is built close to the people it serves, wherever they are.',
       cta: 'Visit Baghdad Future AI',
-      pills: ['Local engineering', 'Applied AI', 'Arabic-language support', 'Secure cloud infrastructure'],
+      pills: ['World-class engineering', 'Applied AI', 'Arabic & English support', 'Secure cloud infrastructure'],
     },
     pricing: {
       eyebrow: 'Clear pricing',
       title: 'Pick the plan that fits your center',
-      sub: 'In Iraqi Dinar. No hidden fees. Cancel anytime.',
+      sub: 'Transparent pricing in IQD and USD. No hidden fees. Cancel anytime.',
       currency: 'IQD / month',
       popular: 'Most Popular',
       cta: 'Start with this plan',
       plans: [
-        { name: 'Basic', price: '100,000', popular: false,
+        { name: 'Basic', price: '100,000', usd: '≈ $70 / month', popular: false,
           features: ['Customer cars & service history', 'Fast service, invoices & reports', 'Inventory with auto-deduction', 'Debt tracking & WhatsApp claims', 'One user'],
           no: ['Purchase receipt OCR', 'Automatic WhatsApp reminders', 'Camera plate reading'] },
-        { name: 'Pro', price: '150,000', popular: true,
+        { name: 'Pro', price: '150,000', usd: '≈ $110 / month', popular: true,
           features: ['Everything in Basic', 'Two users', 'Purchase receipt OCR', 'Automatic WhatsApp reminders', 'Stock alerts & advanced reports', 'Center assistant'],
           no: ['Camera plate reading', 'Camera vehicle check-in', 'Monthly Excel archive'] },
-        { name: 'Enterprise', price: '250,000', popular: false,
+        { name: 'Enterprise', price: '250,000', usd: '≈ $170 / month', popular: false,
           features: ['Everything in Pro', 'Three users', 'Camera plate reading', 'Vehicle check-in inside new service', 'Monthly Excel archive & priority support'],
           no: [] },
       ],
     },
     cta: { title: 'Ready to level up your center?', sub: 'Join hundreds of centers running professionally — and start today, free.', btn: 'Start Free Now' },
-    footer: { desc: 'The smartest management platform for car service centers in Iraq — oil, tires, wash, electrical, mechanic, AC, body & paint, and parts sales.', product: 'Product', company: 'Company', contact: 'Contact', dev: 'Built & operated by', rights: 'All rights reserved' },
+    footer: { desc: 'The smartest management platform for car-service centers — oil, tires, wash, electrical, mechanic, AC, body & paint, and parts sales.', product: 'Product', company: 'Company', contact: 'Contact', dev: 'Built & operated by', rights: 'All rights reserved' },
   },
 }
 
@@ -401,7 +401,7 @@ export default function LandingPage() {
         <div className={`absolute inset-0 flex items-center ${isRtl ? 'justify-end px-10 md:px-16' : 'justify-start px-10 md:px-16'}`}>
           <div className="max-w-md">
             <p className="accent-text-light text-xs font-bold mb-3 uppercase tracking-widest flex items-center gap-2">
-              <Cpu size={14} />{isRtl ? 'ذكاء اصطناعي عراقي' : 'Iraqi-built AI'}
+              <Cpu size={14} />{isRtl ? 'ذكاء اصطناعي للورشة' : 'AI for the workshop'}
             </p>
             <h3 className="text-white text-2xl md:text-3xl font-black leading-snug">
               {isRtl ? 'بُني داخل الورشة، لا بعيداً عنها' : 'Built inside the workshop, not far from it'}
@@ -475,8 +475,9 @@ export default function LandingPage() {
                   <h3 className="text-lg font-bold text-slate-800 mb-3">{plan.name}</h3>
                   <div className="flex items-end gap-1.5 mb-1">
                     <span className={`text-4xl font-black ${plan.popular ? 'lp-gradient-text' : 'text-slate-900'}`}>{plan.price}</span>
+                    <span className="text-sm font-semibold text-slate-400 mb-1.5">{c.pricing.currency}</span>
                   </div>
-                  <div className="text-sm text-slate-400 mb-7">{c.pricing.currency}</div>
+                  <div className="text-sm text-slate-400 mb-7">{plan.usd}</div>
                   <ul className="space-y-3 mb-8 flex-1">
                     {plan.features.map((f, j) => (
                       <li key={j} className="flex items-start gap-2.5 text-sm text-slate-600">
