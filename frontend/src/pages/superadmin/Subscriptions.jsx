@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { AlertTriangle, BadgeCheck, Bell, Check, CheckCircle2, ChevronDown, ChevronUp, Clock, Lock, Unlock, X } from 'lucide-react'
+import { AlertTriangle, BadgeCheck, Bell, Check, CheckCircle2, ChevronDown, ChevronUp, Clock, CreditCard, Lock, Unlock, Upload, X } from 'lucide-react'
 import Layout from '../../components/Layout'
 import { getTenants, updateTenant } from '../../api/tenants'
+import { getPaymentSettings, updatePaymentSettings, uploadPaymentQr } from '../../api/platform'
 import { PLAN_DETAILS, PLAN_ORDER, planShortName, tenantPlanLabel, tenantPlanPriceLabel } from '../../constants/plans'
 
 const PLAN_IQD = {
@@ -44,6 +45,138 @@ function PlanFeaturesSummary() {
           </div>
         )
       })}
+    </section>
+  )
+}
+
+const PAYMENT_METHOD_LABELS = {
+  superkey: 'سوبر كي - داخل العراق',
+  binance: 'Binance Pay - خارج العراق',
+}
+
+function PaymentSettingsPanel() {
+  const qc = useQueryClient()
+  const [form, setForm] = useState(null)
+  const { data, isLoading } = useQuery({
+    queryKey: ['payment-settings'],
+    queryFn: () => getPaymentSettings().then(r => r.data),
+  })
+  const save = useMutation({
+    mutationFn: () => updatePaymentSettings(form),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['payment-settings'] }),
+  })
+  const uploadQr = useMutation({
+    mutationFn: ({ method, file }) => {
+      const fd = new FormData()
+      fd.append('file', file)
+      return uploadPaymentQr(method, fd)
+    },
+    onSuccess: (res) => {
+      setForm(res.data)
+      qc.invalidateQueries({ queryKey: ['payment-settings'] })
+    },
+  })
+
+  useEffect(() => {
+    if (data) setForm(data)
+  }, [data])
+
+  const update = (key, value) => setForm(prev => ({ ...(prev || {}), [key]: value }))
+
+  if (isLoading || !form) {
+    return <div className="mb-6 h-40 animate-pulse rounded-xl bg-slate-100" />
+  }
+
+  return (
+    <section className="mb-6 rounded-xl border border-cyan-100 bg-white p-5 shadow-sm">
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="flex items-center gap-2 text-sm font-black text-cyan-700"><CreditCard size={16} /> طرق دفع الاشتراكات</p>
+          <h3 className="mt-1 text-lg font-black text-slate-950">سوبر كي داخل العراق و Binance خارج العراق</h3>
+          <p className="mt-1 text-xs font-bold text-slate-500">هذه البيانات تظهر للعميل عند طلب الاشتراك أو الترقية.</p>
+        </div>
+        <button
+          onClick={() => save.mutate()}
+          disabled={save.isPending}
+          className="rounded-lg bg-slate-950 px-5 py-2.5 text-sm font-black text-white hover:bg-slate-800 disabled:opacity-50"
+        >
+          {save.isPending ? 'جاري الحفظ...' : 'حفظ طرق الدفع'}
+        </button>
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        {[
+          { id: 'superkey', title: 'داخل العراق', name: 'سوبر كي', tone: 'amber' },
+          { id: 'binance', title: 'خارج العراق', name: 'Binance Pay', tone: 'yellow' },
+        ].map(method => {
+          const prefix = method.id
+          const enabledKey = `${prefix}_enabled`
+          const qrKey = `${prefix}_qr_url`
+          return (
+            <div key={method.id} className={`rounded-xl border p-4 ${method.tone === 'amber' ? 'border-amber-200 bg-amber-50/40' : 'border-yellow-200 bg-yellow-50/40'}`}>
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-black text-slate-500">{method.title}</p>
+                  <h4 className="text-base font-black text-slate-950">{method.name}</h4>
+                </div>
+                <label className="flex items-center gap-2 text-xs font-black text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={form[enabledKey] !== false}
+                    onChange={e => update(enabledKey, e.target.checked)}
+                  />
+                  مفعل
+                </label>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-[120px_1fr]">
+                <div className="rounded-lg border border-white bg-white p-2 text-center shadow-sm">
+                  {form[qrKey] ? (
+                    <img src={form[qrKey]} alt={method.name} className="mx-auto h-24 w-24 object-contain" />
+                  ) : (
+                    <div className="flex h-24 w-24 items-center justify-center rounded-md bg-slate-100 text-xs font-bold text-slate-400">لا يوجد QR</div>
+                  )}
+                  <label className="mt-2 flex cursor-pointer items-center justify-center gap-1 rounded-md bg-white px-2 py-1.5 text-xs font-black text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50">
+                    <Upload size={12} /> رفع
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp"
+                      className="hidden"
+                      onChange={e => e.target.files?.[0] && uploadQr.mutate({ method: method.id, file: e.target.files[0] })}
+                    />
+                  </label>
+                </div>
+                <div className="space-y-3">
+                  <input
+                    value={form[`${prefix}_account_name`] || ''}
+                    onChange={e => update(`${prefix}_account_name`, e.target.value)}
+                    placeholder="اسم الحساب"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-bold outline-none focus:border-cyan-400"
+                  />
+                  <input
+                    value={form[`${prefix}_account_id`] || ''}
+                    onChange={e => update(`${prefix}_account_id`, e.target.value)}
+                    placeholder="رقم الحساب أو User ID اختياري"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-cyan-400"
+                  />
+                  <textarea
+                    value={form[`${prefix}_instructions`] || ''}
+                    onChange={e => update(`${prefix}_instructions`, e.target.value)}
+                    placeholder="تعليمات الدفع التي تظهر للعميل"
+                    rows={3}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-cyan-400"
+                  />
+                </div>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      {(save.isError || uploadQr.isError) && (
+        <p className="mt-3 text-sm font-bold text-rose-600">
+          {save.error?.response?.data?.detail || uploadQr.error?.response?.data?.detail || 'تعذر حفظ بيانات الدفع'}
+        </p>
+      )}
     </section>
   )
 }
@@ -112,13 +245,14 @@ export default function Subscriptions() {
         subscription_starts_at: today.toISOString().split('T')[0],
         subscription_ends_at: endsStr,
         subscription_request_plan: null,
+        subscription_request_method: null,
         subscription_request_ref: null,
       },
     })
   }
 
   function rejectRequest(t) {
-    update.mutate({ id: t.id, data: { subscription_request_plan: null, subscription_request_ref: null } })
+    update.mutate({ id: t.id, data: { subscription_request_plan: null, subscription_request_method: null, subscription_request_ref: null } })
   }
 
   const pendingRequests = tenants.filter(t => t.subscription_request_ref)
@@ -136,6 +270,8 @@ export default function Subscriptions() {
         <h2 className="mt-1 text-2xl font-black text-slate-950">اشتراكات المراكز</h2>
         <p className="mt-1 text-sm text-slate-500">إدارة الاشتراكات والدفع، ومعرفة المميزات المتاحة لكل خطة.</p>
       </div>
+
+      <PaymentSettingsPanel />
 
       <PlanFeaturesSummary />
 
@@ -157,6 +293,9 @@ export default function Subscriptions() {
                     <p className="font-black text-slate-950">{t.name}</p>
                     <p className="mt-0.5 text-sm text-slate-600">
                       يطلب: <span className="font-bold text-slate-800">{planShortName(t.subscription_request_plan)} · {PLAN_IQD[t.subscription_request_plan]}</span>
+                    </p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      وسيلة الدفع: <span className="font-bold text-slate-800">{PAYMENT_METHOD_LABELS[t.subscription_request_method] || 'سوبر كي - داخل العراق'}</span>
                     </p>
                     <p className="mt-0.5 text-xs text-slate-500">
                       رقم الإيشال: <span className="font-mono font-bold text-slate-800">{t.subscription_request_ref}</span>
@@ -279,6 +418,7 @@ export default function Subscriptions() {
                                 subscription_ends_at: base.toISOString().split('T')[0],
                                 is_active: true,
                                 subscription_request_plan: null,
+                                subscription_request_method: null,
                                 subscription_request_ref: null,
                               },
                             })
@@ -325,7 +465,7 @@ export default function Subscriptions() {
                           <div className="flex items-center gap-2 text-sm">
                             <AlertTriangle size={14} className="text-amber-600" />
                             <span className="font-bold text-amber-800">
-                              طلب ترقية لـ {planShortName(t.subscription_request_plan)} · رقم الإيشال: <span className="font-mono">{t.subscription_request_ref}</span>
+                              طلب ترقية لـ {planShortName(t.subscription_request_plan)} · {PAYMENT_METHOD_LABELS[t.subscription_request_method] || 'سوبر كي - داخل العراق'} · رقم العملية: <span className="font-mono">{t.subscription_request_ref}</span>
                             </span>
                           </div>
                           <div className="flex gap-2">

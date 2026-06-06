@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom'
 import QRCode from 'qrcode'
 import Layout from '../components/Layout'
 import { getCenterSettings, updateCenterSettings, requestSubscription, uploadLogo, getMobileCameraLink } from '../api/settings'
+import { getPaymentSettings } from '../api/platform'
 import { getCenterUsers, createCenterUser, updateCenterUser, deleteCenterUser } from '../api/users'
 import { PLAN_DETAILS, PLAN_ORDER, hasPlanFeature, isHigherPlan, nextPlan, planShortName, planUserLimit } from '../constants/plans'
 
@@ -71,9 +72,14 @@ function isSubscriptionActive(subscriptionEndsAt) {
 function SubscriptionSection({ center, forceUpgrade = false }) {
   const initialPlan = nextPlan(center?.plan) || center?.plan || 'pro'
   const [selectedPlan, setSelectedPlan] = useState(initialPlan)
+  const [paymentMethod, setPaymentMethod] = useState('superkey')
   const [paymentRef, setPaymentRef] = useState('')
   const [submitted, setSubmitted] = useState(!!center?.subscription_request_ref)
   const [showUpgradeForm, setShowUpgradeForm] = useState(false)
+  const { data: paymentSettings } = useQuery({
+    queryKey: ['payment-settings'],
+    queryFn: () => getPaymentSettings().then(r => r.data),
+  })
   const subscriptionActive = isSubscriptionActive(center?.subscription_ends_at)
   const currentPlan = center?.plan || 'basic'
   const targetUpgradePlan = nextPlan(currentPlan)
@@ -83,7 +89,7 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
     : PLANS
 
   const sub = useMutation({
-    mutationFn: () => requestSubscription(selectedPlan, paymentRef),
+    mutationFn: () => requestSubscription(selectedPlan, paymentRef, paymentMethod),
     onSuccess: () => setSubmitted(true),
   })
 
@@ -95,6 +101,44 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
   useEffect(() => {
     if (forceUpgrade && targetUpgradePlan) setShowUpgradeForm(true)
   }, [forceUpgrade, targetUpgradePlan])
+
+  const paymentMethods = [
+    {
+      id: 'superkey',
+      title: 'داخل العراق',
+      name: 'سوبر كي',
+      badge: 'IQD',
+      enabled: paymentSettings?.superkey_enabled !== false,
+      accountName: paymentSettings?.superkey_account_name || 'سعد',
+      accountId: paymentSettings?.superkey_account_id,
+      qrUrl: paymentSettings?.superkey_qr_url,
+      instructions: paymentSettings?.superkey_instructions || 'ادفع عبر سوبر كي ثم أدخل رقم العملية.',
+      gradient: 'from-amber-50 to-yellow-50',
+      border: 'border-amber-200',
+      active: 'border-amber-400 bg-amber-50 shadow-amber-100',
+    },
+    {
+      id: 'binance',
+      title: 'خارج العراق',
+      name: 'Binance Pay',
+      badge: 'USD',
+      enabled: paymentSettings?.binance_enabled !== false,
+      accountName: paymentSettings?.binance_account_name || 'Care Car',
+      accountId: paymentSettings?.binance_account_id,
+      qrUrl: paymentSettings?.binance_qr_url,
+      instructions: paymentSettings?.binance_instructions || 'ادفع عبر Binance Pay ثم أدخل رقم العملية.',
+      gradient: 'from-slate-50 to-yellow-50',
+      border: 'border-yellow-200',
+      active: 'border-yellow-400 bg-yellow-50 shadow-yellow-100',
+    },
+  ].filter(method => method.enabled)
+  const activePayment = paymentMethods.find(method => method.id === paymentMethod) || paymentMethods[0]
+
+  useEffect(() => {
+    if (paymentMethods.length && !paymentMethods.some(method => method.id === paymentMethod)) {
+      setPaymentMethod(paymentMethods[0].id)
+    }
+  }, [paymentMethods, paymentMethod])
 
   const planPrice = PLANS.find(p => p.id === selectedPlan)?.price || ''
   const sectionTitle = subscriptionActive ? 'ترقية الاشتراك' : 'خطط الاشتراك'
@@ -211,43 +255,59 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
       {/* Payment section */}
       <div className="mt-6 rounded-xl border border-slate-200 overflow-hidden">
         <div className="bg-slate-50 px-5 py-3 border-b border-slate-200">
-          <p className="font-bold text-slate-950">{subscriptionActive ? 'دفع فرق/قيمة الترقية — سوبر كي' : 'طريقة الدفع — سوبر كي'}</p>
+          <p className="font-bold text-slate-950">{subscriptionActive ? 'دفع قيمة الترقية' : 'طرق دفع الاشتراك'}</p>
           <p className="text-sm text-slate-500 mt-0.5">
-            ادفع <span className="font-bold text-slate-950">{planPrice} دينار</span> عبر سوبر كي ثم أدخل رقم الإيشال
+            اختر وسيلة الدفع المناسبة، ثم أدخل رقم العملية بعد الدفع. داخل العراق عبر سوبر كي، وخارج العراق عبر Binance Pay.
           </p>
         </div>
 
-        <div className="p-5 flex flex-col md:flex-row gap-6 items-center">
-          {/* QR Code card — styled like the user's image */}
-          <div className="flex-shrink-0">
-            <div className="relative w-52 rounded-2xl overflow-hidden shadow-xl"
-              style={{ background: 'linear-gradient(145deg, #FFD700, #FFA500)' }}>
-              <div className="absolute inset-0 opacity-10"
-                style={{ backgroundImage: 'radial-gradient(circle at 30% 20%, #fff 0%, transparent 50%)' }} />
-              <div className="relative z-10 px-5 pt-5 pb-4 text-center">
-                <div className="flex items-center justify-center gap-2 mb-3">
-                  <div className="h-8 w-8 rounded-full bg-slate-950 flex items-center justify-center">
-                    <span className="text-white text-xs font-black">SK</span>
+        <div className="p-5">
+          {paymentMethods.length > 0 ? (
+            <div className="grid gap-3 md:grid-cols-2">
+              {paymentMethods.map(method => (
+                <button
+                  key={method.id}
+                  type="button"
+                  onClick={() => setPaymentMethod(method.id)}
+                  className={`rounded-xl border-2 bg-gradient-to-br p-4 text-right transition ${method.gradient} ${
+                    activePayment?.id === method.id ? method.active : `${method.border} hover:border-slate-300`
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <span className="rounded-full bg-white px-2.5 py-1 text-xs font-black text-slate-700 shadow-sm">{method.badge}</span>
+                    <div>
+                      <p className="text-xs font-black text-slate-500">{method.title}</p>
+                      <h4 className="mt-1 text-lg font-black text-slate-950">{method.name}</h4>
+                      <p className="mt-1 text-xs font-bold text-slate-500">{method.accountName}</p>
+                    </div>
                   </div>
-                  <p className="font-black text-slate-950 text-base">إستخدم سوبر كي</p>
-                </div>
-                <div className="bg-white rounded-xl p-2 shadow-inner">
-                  <img
-                    src="/superkey-qr.png"
-                    alt="SuperKey QR Code"
-                    className="w-full h-auto rounded-lg"
-                    onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex' }}
-                  />
-                  <div className="hidden w-full h-32 items-center justify-center text-slate-400 text-xs text-center">
-                    QR Code<br/>سيضاف قريباً
-                  </div>
-                </div>
-                <p className="mt-3 text-xs font-bold text-slate-800">سعد</p>
-              </div>
+                </button>
+              ))}
             </div>
-          </div>
+          ) : (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800">
+              لا توجد طريقة دفع مفعّلة حالياً. تواصل مع إدارة النظام لتفعيل الاشتراك.
+            </div>
+          )}
 
-          {/* Payment ref input */}
+          <div className="mt-5 flex flex-col gap-6 md:flex-row md:items-start">
+            {activePayment && (
+              <div className="shrink-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="w-56 rounded-xl bg-slate-50 p-3 text-center">
+                  {activePayment.qrUrl ? (
+                    <img src={activePayment.qrUrl} alt={activePayment.name} className="mx-auto h-44 w-44 rounded-lg object-contain" />
+                  ) : (
+                    <div className="mx-auto flex h-44 w-44 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white text-xs font-bold leading-6 text-slate-400">
+                      QR غير مضاف<br />من السوبر أدمن
+                    </div>
+                  )}
+                  <p className="mt-3 text-sm font-black text-slate-950">{activePayment.name}</p>
+                  <p className="mt-1 text-xs font-bold text-slate-500">{activePayment.accountName}</p>
+                  {activePayment.accountId && <p className="mt-1 font-mono text-xs font-bold text-slate-500">{activePayment.accountId}</p>}
+                </div>
+              </div>
+            )}
+
           <div className="flex-1 w-full">
             {submitted || center?.subscription_request_ref ? (
               <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-5 text-center">
@@ -255,6 +315,9 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
                 <p className="font-bold text-emerald-800">تم استلام طلبك</p>
                 <p className="text-sm text-emerald-600 mt-1">
                   الخطة: <strong>{PLANS.find(p => p.id === center?.subscription_request_plan)?.name || selectedPlan}</strong>
+                </p>
+                <p className="text-sm text-emerald-600">
+                  الدفع: <strong>{center?.subscription_request_method === 'binance' ? 'Binance Pay' : 'سوبر كي'}</strong>
                 </p>
                 <p className="text-sm text-emerald-600">رقم الإيشال: <strong>{center?.subscription_request_ref}</strong></p>
                 <p className="text-xs text-slate-500 mt-3">سيتم تفعيل اشتراكك خلال 24 ساعة</p>
@@ -267,20 +330,20 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
                   </div>
                 )}
                 <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3">
-                  <p className="text-sm font-bold text-amber-800">خطوات الدفع:</p>
-                  <ol className="mt-2 space-y-1 text-xs text-amber-700 list-decimal list-inside">
-                    <li>افتح تطبيق سوبر كي</li>
-                    <li>اسكن الـ QR Code أو ابحث عن الحساب</li>
-                    <li>ادفع مبلغ <strong>{planPrice} دينار</strong></li>
-                    <li>انسخ رقم الإيشال وأدخله أدناه</li>
-                  </ol>
+                  <p className="text-sm font-bold text-amber-800">تعليمات الدفع:</p>
+                  <p className="mt-2 text-xs font-bold leading-6 text-amber-700">
+                    {activePayment?.instructions}
+                  </p>
+                  <p className="mt-2 text-xs text-amber-700">
+                    المبلغ المطلوب: <strong>{planPrice} دينار</strong>
+                  </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">رقم الإيشال (رقم العملية) *</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">رقم العملية أو ملاحظة الدفع *</label>
                   <input
                     value={paymentRef}
                     onChange={e => setPaymentRef(e.target.value)}
-                    placeholder="مثال: TRX-20260528-XXXXXX"
+                    placeholder={activePayment?.id === 'binance' ? 'مثال: Binance Pay Order ID' : 'مثال: رقم إيشال سوبر كي'}
                     className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
                   />
                 </div>
@@ -289,13 +352,14 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
                 )}
                 <button
                   onClick={() => sub.mutate()}
-                  disabled={!canRequestSelectedPlan || !paymentRef.trim() || sub.isPending}
+                  disabled={!activePayment || !canRequestSelectedPlan || !paymentRef.trim() || sub.isPending}
                   className="w-full rounded-lg bg-slate-950 py-3 text-sm font-bold text-white disabled:opacity-50 hover:bg-slate-800"
                 >
                   {sub.isPending ? 'جاري الإرسال...' : `إرسال طلب ${subscriptionActive ? 'الترقية' : 'الاشتراك'} — ${PLANS.find(p => p.id === selectedPlan)?.name}`}
                 </button>
               </div>
             )}
+          </div>
           </div>
         </div>
       </div>

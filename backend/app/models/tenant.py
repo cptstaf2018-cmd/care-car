@@ -30,4 +30,5 @@ class Tenant(Base, TimestampMixin):
     debt_message_template = Column(String(1000))
     trial_ends_at = Column(DateTime, nullable=True)
     subscription_request_plan = Column(String(20), nullable=True)
+    subscription_request_method = Column(String(20), nullable=True)
     subscription_request_ref = Column(String(100), nullable=True)

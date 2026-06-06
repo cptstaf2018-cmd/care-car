@@ -8,3 +8,4 @@ from app.models.invoice_line import InvoiceLine
 from app.models.debt import Debt
 from app.models.inventory import InventoryItem
 from app.models.message_log import MessageLog
+from app.models.platform_ad import PlatformAd, PlatformPaymentSettings

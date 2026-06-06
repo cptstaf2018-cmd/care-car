@@ -111,6 +111,7 @@ async def upload_logo(
 class SubscriptionRequestBody(BaseModel):
     plan: str
     payment_ref: str
+    payment_method: str = "superkey"
 
 
 @router.post("/subscription-request")
@@ -124,14 +125,19 @@ def request_subscription(
         raise HTTPException(status_code=404, detail="Center not found")
     current_plan = getattr(tenant.plan, "value", tenant.plan)
     requested_plan = body.plan
+    payment_method = (body.payment_method or "superkey").strip().lower()
     if requested_plan not in _PLAN_RANK:
         raise HTTPException(status_code=400, detail="خطة غير صحيحة")
+    if payment_method not in {"superkey", "binance"}:
+        raise HTTPException(status_code=400, detail="وسيلة دفع غير صحيحة")
     if tenant.subscription_ends_at and tenant.subscription_ends_at > date.today() and _PLAN_RANK[requested_plan] <= _PLAN_RANK.get(current_plan, 1):
         tenant.subscription_request_plan = None
+        tenant.subscription_request_method = None
         tenant.subscription_request_ref = None
         db.commit()
         return {"status": "active", "message": "اشتراكك نشط بالفعل"}
     tenant.subscription_request_plan = requested_plan
+    tenant.subscription_request_method = payment_method
     tenant.subscription_request_ref = body.payment_ref
     db.commit()
     return {"status": "pending", "message": "تم إرسال طلبك، سيتم التفعيل خلال 24 ساعة"}

@@ -21,6 +21,7 @@ class TenantCreate(BaseModel):
     reminder_message_template: str | None = None
     debt_message_template: str | None = None
     subscription_request_plan: str | None = None
+    subscription_request_method: str | None = None
     subscription_request_ref: str | None = None
 
 class TenantUpdate(BaseModel):
@@ -43,6 +44,7 @@ class TenantUpdate(BaseModel):
     reminder_message_template: str | None = None
     debt_message_template: str | None = None
     subscription_request_plan: str | None = None
+    subscription_request_method: str | None = None
     subscription_request_ref: str | None = None
 
 class TenantOut(BaseModel):
@@ -67,6 +69,7 @@ class TenantOut(BaseModel):
     debt_message_template: str | None
     trial_ends_at: datetime | None
     subscription_request_plan: str | None
+    subscription_request_method: str | None
     subscription_request_ref: str | None
     created_at: datetime | None
     # populated by list endpoint (not ORM field)
