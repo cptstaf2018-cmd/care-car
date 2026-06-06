@@ -2,7 +2,7 @@ import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import html2canvas from 'html2canvas'
-import { getInvoice } from '../api/invoices'
+import { getInvoice, sendInvoiceWhatsApp } from '../api/invoices'
 
 const STATUS = { paid: 'مدفوعة', unpaid: 'غير مدفوعة', partial: 'جزئية' }
 const STATUS_COLOR = { paid: '#059669', unpaid: '#dc2626', partial: '#d97706' }
@@ -11,6 +11,7 @@ export default function InvoicePrint() {
   const { id } = useParams()
   const invoiceRef = useRef(null)
   const [imageStatus, setImageStatus] = useState('')
+  const [sending, setSending] = useState(false)
   const { data: inv, isLoading, isError } = useQuery({
     queryKey: ['invoice', id],
     queryFn: () => getInvoice(id).then(r => r.data),
@@ -23,6 +24,19 @@ export default function InvoicePrint() {
     : inv.service_lines.filter(Boolean).map(line => ({ name: line, amount: 0, notes: '', inventory_item_name: '', inventory_quantity: null }))
   const isSaleInvoice = inv.invoice_type === 'sale' || inv.car_type === 'بيع قطع'
   const showMileage = Boolean(inv.mileage && invoiceLines.some(line => line.name?.includes('تبديل زيت')))
+
+  const sendInvoiceToCustomer = async () => {
+    setSending(true)
+    setImageStatus('جاري إرسال الفاتورة للزبون عبر واتساب...')
+    try {
+      const { data } = await sendInvoiceWhatsApp(inv.id)
+      setImageStatus(`✓ تم إرسال الفاتورة إلى ${data.phone} عبر واتساب`)
+    } catch (err) {
+      setImageStatus(err.response?.data?.detail || 'تعذّر إرسال الفاتورة عبر واتساب')
+    } finally {
+      setSending(false)
+    }
+  }
 
   const shareInvoiceImage = async () => {
     if (!invoiceRef.current) return
@@ -71,9 +85,13 @@ export default function InvoicePrint() {
             className="invoice-action-button invoice-action-primary">
             🖨️ طباعة
           </button>
-          <button onClick={shareInvoiceImage}
+          <button onClick={sendInvoiceToCustomer} disabled={sending}
             className="invoice-action-button invoice-action-whatsapp">
-            📲 إرسال صورة واتساب
+            {sending ? '... جاري الإرسال' : '✅ إرسال الفاتورة تلقائياً'}
+          </button>
+          <button onClick={shareInvoiceImage}
+            className="invoice-action-button invoice-action-muted">
+            📲 صورة واتساب يدوي
           </button>
           <button onClick={() => window.history.back()}
             className="invoice-action-button invoice-action-muted">

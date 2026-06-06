@@ -15,6 +15,7 @@ from app.models.debt import Debt
 from app.models.message_log import MessageLog
 from app.schemas.invoice import InvoiceOut, InvoiceUpdate, SaleCreate
 from app.services.pos_service import create_sale_invoice
+from app.services.wasnder_service import send_whatsapp_message
 
 router = APIRouter(prefix="/invoices", tags=["invoices"])
 
@@ -259,3 +260,70 @@ def delete_invoice(invoice_id: int, db: Session = Depends(get_db), user: User = 
     db.query(Debt).filter(Debt.invoice_id == inv.id).delete(synchronize_session=False)
     db.delete(inv)
     db.commit()
+
+
+def _build_invoice_whatsapp_text(db: Session, inv: Invoice, tenant: Tenant) -> str:
+    meta = _resolve_meta(db, inv)
+    total, paid, remaining = _invoice_amounts(db, inv)
+    lines = _stored_invoice_lines(db, inv.id) or _invoice_lines(meta["service"])
+    parts = [
+        f"فاتورة من {tenant.name}" if tenant.name else "فاتورة",
+        f"رقم الفاتورة: #{str(inv.id).zfill(5)}",
+        f"التاريخ: {inv.invoice_date}",
+    ]
+    if meta["customer_name"]:
+        parts.append(f"الزبون: {meta['customer_name']}")
+    if meta["plate_number"]:
+        parts.append(f"رقم السيارة: {meta['plate_number']}")
+    parts.append("———")
+    for line in lines[:12]:
+        name = (line.get("name") or line.get("inventory_item_name") or "").strip()
+        if not name:
+            continue
+        amount = float(line.get("amount") or 0)
+        parts.append(f"• {name}" + (f" — {amount:,.0f} د.ع" if amount else ""))
+    parts.append("———")
+    parts.append(f"الإجمالي: {total:,.0f} د.ع")
+    if paid:
+        parts.append(f"المدفوع: {paid:,.0f} د.ع")
+    if remaining > 0:
+        parts.append(f"المتبقي: {remaining:,.0f} د.ع")
+    parts.append("شكراً لزيارتكم 🚗")
+    contact = tenant.contact_phone or tenant.whatsapp_number
+    if contact:
+        parts.append(f"للتواصل: {contact}")
+    return "\n".join(parts)
+
+
+@router.post("/{invoice_id}/send-whatsapp")
+def send_invoice_whatsapp(invoice_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    inv = db.get(Invoice, invoice_id)
+    if not inv or (user.role != Role.superadmin and inv.tenant_id != user.tenant_id):
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    tenant = db.get(Tenant, inv.tenant_id)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Center not found")
+    if not tenant.wasnder_api_key or not tenant.whatsapp_number:
+        raise HTTPException(status_code=400, detail="فعّل واتساب المركز من الإعدادات أولاً لإرسال الفواتير")
+
+    meta = _resolve_meta(db, inv)
+    car = meta["car"]
+    phone = (car.phone if car else None) or inv.customer_phone
+    if not phone:
+        raise HTTPException(status_code=400, detail="لا يوجد رقم واتساب للزبون على هذه الفاتورة")
+
+    message = _build_invoice_whatsapp_text(db, inv, tenant)
+    status, response = send_whatsapp_message(tenant, phone, message)
+    db.add(MessageLog(
+        tenant_id=tenant.id,
+        car_id=car.id if car else None,
+        phone=phone,
+        message=message,
+        reminder_type="invoice",
+        status=status,
+        provider_response=response,
+    ))
+    db.commit()
+    if status != "sent":
+        raise HTTPException(status_code=502, detail="تعذّر إرسال الفاتورة عبر واتساب، تأكد من الرقم وحاول مجدداً")
+    return {"status": status, "phone": phone}

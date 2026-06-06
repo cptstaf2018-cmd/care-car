@@ -125,3 +125,37 @@ def test_delete_invoice_removes_debt_and_lines(client, db):
     assert deleted.status_code == 204
     assert db.query(Debt).filter(Debt.invoice_id == invoice_id).count() == 0
     assert db.query(InvoiceLine).filter(InvoiceLine.invoice_id == invoice_id).count() == 0
+
+
+def test_send_invoice_whatsapp_requires_config(client, db):
+    _, _, car = setup_tenant_with_car(db, email="wa1@test.com", tenant_name="WaCtr1", plate="WA001")
+    token = login(client, "wa1@test.com", "pass")
+    svc = create_service(client, car.id, token)
+    r = client.post(f"/invoices/{svc['invoice_id']}/send-whatsapp", headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 400  # center WhatsApp not configured
+
+
+def test_send_invoice_whatsapp_success(client, db, monkeypatch):
+    t, _, car = setup_tenant_with_car(db, email="wa2@test.com", tenant_name="WaCtr2", plate="WA002")
+    t.wasnder_api_key = "key"
+    t.whatsapp_number = "07700000000"
+    car.phone = "07706688044"
+    db.commit()
+    token = login(client, "wa2@test.com", "pass")
+    svc = create_service(client, car.id, token)
+
+    sent = {}
+
+    def fake_send(tenant, phone, message):
+        sent["phone"] = phone
+        sent["message"] = message
+        return "sent", "ok"
+
+    monkeypatch.setattr("app.api.invoices.send_whatsapp_message", fake_send)
+
+    r = client.post(f"/invoices/{svc['invoice_id']}/send-whatsapp", headers={"Authorization": f"Bearer {token}"})
+
+    assert r.status_code == 200
+    assert r.json()["status"] == "sent"
+    assert sent["phone"] == "07706688044"
+    assert "الإجمالي" in sent["message"]
