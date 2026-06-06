@@ -76,7 +76,26 @@ export default function Dashboard() {
     const threshold = Number(item.min_threshold ?? 0)
     return item.low_stock || quantity <= 0 || quantity <= threshold
   })
-  const inventoryAlert = inventoryUnavailable || inventory.length === 0 || lowStock.length > 0
+  const inventoryIsSparse = inventory.length > 0 && inventory.length < 2
+  const inventoryAlert = inventoryUnavailable || inventory.length === 0 || inventoryIsSparse || lowStock.length > 0
+  const inventoryAlertTitle = inventoryUnavailable
+    ? 'تعذر قراءة المخزون'
+    : inventory.length === 0
+      ? 'المخزون فارغ'
+      : lowStock.length
+        ? 'قطع ومواد ناقصة'
+        : inventoryIsSparse
+          ? 'المخزون غير مكتمل'
+          : 'لا توجد تنبيهات مخزون'
+  const inventoryAlertText = inventoryUnavailable
+    ? 'افتح صفحة المخزون للتأكد من صلاحية الوصول والبيانات'
+    : inventory.length === 0
+      ? 'لا توجد مواد مسجلة في المخزون'
+      : lowStock.length
+        ? `${lowStock.length} مواد وصلت للحد الأدنى أو نفدت`
+        : inventoryIsSparse
+          ? 'المخزون يحتوي مادة واحدة فقط. أضف باقي المواد حتى تكون المتابعة دقيقة'
+          : 'المواد المسجلة حالياً فوق حد التنبيه'
   const unpaidInvoices = invoices.filter(inv => inv.status !== 'paid')
   const dueCars = isOilCenter ? cars
     .map(car => ({ ...car, days_left: daysUntilReminder(car) }))
@@ -249,8 +268,8 @@ export default function Dashboard() {
         <Panel title="تنبيهات اليوم" icon={AlertTriangle}>
           <ActionAlert
             tone={inventoryUnavailable ? 'rose' : inventoryAlert ? 'amber' : 'green'}
-            title={inventoryUnavailable ? 'تعذر قراءة المخزون' : inventory.length === 0 ? 'المخزون فارغ' : lowStock.length ? 'قطع ومواد ناقصة' : 'المخزون كافٍ'}
-            text={inventoryUnavailable ? 'افتح صفحة المخزون للتأكد من صلاحية الوصول والبيانات' : inventory.length === 0 ? 'لا توجد مواد مسجلة في المخزون' : lowStock.length ? `${lowStock.length} مواد وصلت للحد الأدنى أو نفدت` : 'جميع قطع الغيار والمواد متوفرة'}
+            title={inventoryAlertTitle}
+            text={inventoryAlertText}
             to="/center/inventory"
           />
           <ActionAlert

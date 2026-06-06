@@ -22,15 +22,17 @@ def _require_plan(db: Session, tenant_id: int, min_plan: str):
     if not tenant or _PLAN_RANK.get(_plan_value(tenant.plan), 1) < _PLAN_RANK[min_plan]:
         raise HTTPException(status_code=403, detail="هذه الميزة تحتاج ترقية الاشتراك")
 
+
+def _inventory_out(item: InventoryItem) -> InventoryOut:
+    out = InventoryOut.model_validate(item)
+    out.low_stock = float(item.quantity or 0) <= float(item.min_threshold or 0)
+    return out
+
+
 @router.get("/", response_model=list[InventoryOut])
 def list_inventory(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     items = db.query(InventoryItem).filter(InventoryItem.tenant_id == user.tenant_id).all()
-    result = []
-    for item in items:
-        out = InventoryOut.model_validate(item)
-        out.low_stock = float(item.quantity) <= float(item.min_threshold)
-        result.append(out)
-    return result
+    return [_inventory_out(item) for item in items]
 
 @router.post("/", response_model=InventoryOut, status_code=201)
 def create_item(body: InventoryCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
@@ -38,7 +40,7 @@ def create_item(body: InventoryCreate, db: Session = Depends(get_db), user: User
     db.add(item)
     db.commit()
     db.refresh(item)
-    return item
+    return _inventory_out(item)
 
 @router.post("/receipt", response_model=list[InventoryOut], status_code=201)
 def add_receipt_items(body: InventoryReceiptCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
@@ -85,9 +87,7 @@ def add_receipt_items(body: InventoryReceiptCreate, db: Session = Depends(get_db
     result = []
     for item in updated_items:
         db.refresh(item)
-        out = InventoryOut.model_validate(item)
-        out.low_stock = float(item.quantity) <= float(item.min_threshold)
-        result.append(out)
+        result.append(_inventory_out(item))
     return result
 
 @router.patch("/{item_id}", response_model=InventoryOut)
@@ -99,7 +99,7 @@ def update_item(item_id: int, body: InventoryUpdate, db: Session = Depends(get_d
         setattr(item, k, v)
     db.commit()
     db.refresh(item)
-    return item
+    return _inventory_out(item)
 
 @router.delete("/{item_id}", status_code=204)
 def delete_item(item_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):

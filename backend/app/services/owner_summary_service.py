@@ -60,7 +60,7 @@ def build_owner_daily_summary(db: Session, tenant: Tenant, today: date | None = 
         suffix = f" ({names}…)" if len(low_items) > 3 else (f" ({names})" if names else "")
         parts.append(f"⚠️ مخزون منخفض: {len(low_items)} صنف{suffix}")
     else:
-        parts.append("✅ المخزون بحالة جيدة")
+        parts.append("✅ لا توجد مواد منخفضة ضمن المخزون المسجل")
 
     parts.append("———")
     parts.append("Care Car")
