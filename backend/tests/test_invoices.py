@@ -1,6 +1,8 @@
 from app.models.tenant import Tenant
 from app.models.user import User, Role
 from app.models.car import Car
+from app.models.debt import Debt
+from app.models.invoice_line import InvoiceLine
 from app.core.security import hash_password
 
 
@@ -97,3 +99,29 @@ def test_list_invoices(client, db):
     assert r.status_code == 200
     ids = [inv["id"] for inv in r.json()]
     assert invoice_id in ids
+
+
+def test_delete_invoice_removes_debt_and_lines(client, db):
+    _, _, car = setup_tenant_with_car(db, email="delete-inv@test.com", tenant_name="DeleteInvoiceCtr", plate="DEL001")
+    token = login(client, "delete-inv@test.com", "pass")
+    r = client.post(
+        "/services/",
+        json={
+            "car_id": car.id,
+            "oil_type": "زيت محرك",
+            "amount": 100,
+            "payment_status": "unpaid",
+            "invoice_lines": [{"name": "زيت محرك", "amount": 100, "quantity": 1, "unit_price": 100}],
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert r.status_code == 201
+    invoice_id = r.json()["invoice_id"]
+    assert db.query(Debt).filter(Debt.invoice_id == invoice_id).count() == 1
+    assert db.query(InvoiceLine).filter(InvoiceLine.invoice_id == invoice_id).count() == 1
+
+    deleted = client.delete(f"/invoices/{invoice_id}", headers={"Authorization": f"Bearer {token}"})
+
+    assert deleted.status_code == 204
+    assert db.query(Debt).filter(Debt.invoice_id == invoice_id).count() == 0
+    assert db.query(InvoiceLine).filter(InvoiceLine.invoice_id == invoice_id).count() == 0

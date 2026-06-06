@@ -7,7 +7,8 @@ class MessageLog(Base, TimestampMixin):
 
     id = Column(Integer, primary_key=True)
     tenant_id = Column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
-    car_id = Column(Integer, ForeignKey("cars.id"), nullable=False, index=True)
+    car_id = Column(Integer, ForeignKey("cars.id"), nullable=True, index=True)
+    debt_id = Column(Integer, ForeignKey("debts.id", ondelete="SET NULL"), nullable=True, index=True)
     phone = Column(String(30), nullable=False)
     message = Column(Text, nullable=False)
     status = Column(String(30), nullable=False, default="queued")

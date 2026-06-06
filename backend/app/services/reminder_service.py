@@ -69,18 +69,35 @@ def render_debt_reminder(tenant: Tenant, car: Car, debt_amount: float | int | st
     return message.replace("{debt_amount}", f"{float(debt_amount):,.0f} د.ع" if isinstance(debt_amount, (int, float)) else str(debt_amount))
 
 
-def _last_sent_at(db: Session, tenant_id: int, car_id: int, reminder_type: str) -> datetime | None:
-    log = db.query(MessageLog).filter(
+def render_sale_debt_reminder(tenant: Tenant, customer_name: str | None, debt_amount: float | int | str) -> str:
+    message = PARTS_DEBT_REMINDER_TEMPLATE
+    values = {
+        "{customer_name}": customer_name or "عميلنا العزيز",
+        "{center_name}": tenant.name,
+        "{center_phone}": tenant.contact_phone or "",
+        "{debt_amount}": f"{float(debt_amount):,.0f} د.ع" if isinstance(debt_amount, (int, float)) else str(debt_amount),
+    }
+    for token, value in values.items():
+        message = message.replace(token, value)
+    return message
+
+
+def _last_sent_at(db: Session, tenant_id: int, reminder_type: str, car_id: int | None = None, debt_id: int | None = None) -> datetime | None:
+    q = db.query(MessageLog).filter(
         MessageLog.tenant_id == tenant_id,
-        MessageLog.car_id == car_id,
         MessageLog.reminder_type == reminder_type,
         MessageLog.status == "sent",
-    ).order_by(MessageLog.sent_at.desc(), MessageLog.id.desc()).first()
+    )
+    if debt_id:
+        q = q.filter(MessageLog.debt_id == debt_id)
+    else:
+        q = q.filter(MessageLog.car_id == car_id)
+    log = q.order_by(MessageLog.sent_at.desc(), MessageLog.id.desc()).first()
     return log.sent_at if log else None
 
 
-def _can_send_every_interval(db: Session, tenant_id: int, car_id: int, reminder_type: str, today: date) -> bool:
-    last_sent_at = _last_sent_at(db, tenant_id, car_id, reminder_type)
+def _can_send_every_interval(db: Session, tenant_id: int, reminder_type: str, today: date, car_id: int | None = None, debt_id: int | None = None) -> bool:
+    last_sent_at = _last_sent_at(db, tenant_id, reminder_type, car_id=car_id, debt_id=debt_id)
     if not last_sent_at:
         return True
     sent_date = last_sent_at.date() if hasattr(last_sent_at, "date") else last_sent_at
@@ -88,7 +105,7 @@ def _can_send_every_interval(db: Session, tenant_id: int, car_id: int, reminder_
 
 
 def _already_sent(db: Session, tenant_id: int, car_id: int, reminder_type: str) -> bool:
-    return _last_sent_at(db, tenant_id, car_id, reminder_type) is not None
+    return _last_sent_at(db, tenant_id, reminder_type, car_id=car_id) is not None
 
 
 def get_due_reminders(db: Session, tenant: Tenant) -> list[dict]:
@@ -151,9 +168,10 @@ def get_debt_reminders(db: Session, tenant: Tenant) -> list[dict]:
     for car, debt_amount in rows:
         if not car.phone:
             continue
-        if not _can_send_every_interval(db, tenant.id, car.id, "debt_reminder", today):
+        if not _can_send_every_interval(db, tenant.id, "debt_reminder", today, car_id=car.id):
             continue
         reminders.append({
+            "debt_id": None,
             "car_id": car.id,
             "plate_number": car.plate_number,
             "owner_name": car.owner_name,
@@ -161,6 +179,34 @@ def get_debt_reminders(db: Session, tenant: Tenant) -> list[dict]:
             "debt_amount": float(debt_amount or 0),
             "reminder_type": "debt_reminder",
             "car": car,
+        })
+
+    sale_debts = (
+        db.query(Debt)
+        .filter(
+            Debt.tenant_id == tenant.id,
+            Debt.car_id == None,
+            Debt.amount > 0,
+            Debt.auto_reminder_enabled == True,
+        )
+        .all()
+    )
+    for debt in sale_debts:
+        phone = (debt.customer_phone or "").strip()
+        if not phone:
+            continue
+        if not _can_send_every_interval(db, tenant.id, "debt_reminder", today, debt_id=debt.id):
+            continue
+        reminders.append({
+            "debt_id": debt.id,
+            "car_id": None,
+            "plate_number": "بيع قطع",
+            "owner_name": debt.customer_name or "زبون بيع قطع",
+            "phone": phone,
+            "debt_amount": float(debt.amount or 0),
+            "reminder_type": "debt_reminder",
+            "car": None,
+            "customer_name": debt.customer_name,
         })
     return reminders
 
@@ -198,14 +244,17 @@ def get_cars_to_notify(db: Session, tenant: Tenant) -> list[dict]:
 def log_reminder_message(
     db: Session,
     tenant: Tenant,
-    car: Car,
+    car: Car | None,
     reminder_type: str,
     status: str,
     provider_response: str | None = None,
     debt_amount: float | int | str | None = None,
+    debt_id: int | None = None,
+    phone: str | None = None,
+    customer_name: str | None = None,
 ) -> MessageLog:
     if reminder_type == "debt_reminder":
-        message = render_debt_reminder(tenant, car, debt_amount or 0)
+        message = render_debt_reminder(tenant, car, debt_amount or 0) if car else render_sale_debt_reminder(tenant, customer_name, debt_amount or 0)
     elif reminder_type == "due_reminder":
         message = render_due_reminder(tenant, car)
     else:
@@ -213,8 +262,9 @@ def log_reminder_message(
 
     log = MessageLog(
         tenant_id=tenant.id,
-        car_id=car.id,
-        phone=car.phone or "",
+        car_id=car.id if car else None,
+        debt_id=debt_id,
+        phone=(car.phone if car else phone) or "",
         message=message,
         reminder_type=reminder_type,
         status=status,

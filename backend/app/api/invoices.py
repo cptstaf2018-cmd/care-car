@@ -12,6 +12,7 @@ from app.models.car import Car
 from app.models.tenant import Tenant
 from app.models.user import User, Role
 from app.models.debt import Debt
+from app.models.message_log import MessageLog
 from app.schemas.invoice import InvoiceOut, InvoiceUpdate, SaleCreate
 from app.services.pos_service import create_sale_invoice
 
@@ -250,5 +251,11 @@ def delete_invoice(invoice_id: int, db: Session = Depends(get_db), user: User = 
     inv = db.get(Invoice, invoice_id)
     if not inv or (user.role != Role.superadmin and inv.tenant_id != user.tenant_id):
         raise HTTPException(status_code=404, detail="Invoice not found")
+    debts = db.query(Debt).filter(Debt.invoice_id == inv.id).all()
+    debt_ids = [debt.id for debt in debts]
+    if debt_ids:
+        db.query(MessageLog).filter(MessageLog.debt_id.in_(debt_ids)).update({MessageLog.debt_id: None}, synchronize_session=False)
+    db.query(InvoiceLine).filter(InvoiceLine.invoice_id == inv.id).delete(synchronize_session=False)
+    db.query(Debt).filter(Debt.invoice_id == inv.id).delete(synchronize_session=False)
     db.delete(inv)
     db.commit()

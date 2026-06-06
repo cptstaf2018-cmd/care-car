@@ -10,7 +10,7 @@ from app.models.message_log import MessageLog
 from app.models.tenant import Tenant
 from app.models.user import User, Role
 from app.schemas.debt import DebtListOut, DebtOut, DebtReminderOut, DebtUpdate
-from app.services.reminder_service import log_reminder_message, render_debt_reminder
+from app.services.reminder_service import log_reminder_message, render_debt_reminder, render_sale_debt_reminder
 from app.services.wasnder_service import send_whatsapp_message
 
 router = APIRouter(prefix="/debts", tags=["debts"])
@@ -22,18 +22,22 @@ def _scope_debt_query(db: Session, user: User):
     return q
 
 
-def _last_debt_message(db: Session, tenant_id: int, car_id: int | None):
-    if not car_id:
-        return None
-    return db.query(MessageLog).filter(
+def _last_debt_message(db: Session, tenant_id: int, car_id: int | None, debt_id: int | None = None):
+    q = db.query(MessageLog).filter(
         MessageLog.tenant_id == tenant_id,
-        MessageLog.car_id == car_id,
         MessageLog.reminder_type == "debt_reminder",
-    ).order_by(MessageLog.sent_at.desc(), MessageLog.id.desc()).first()
+    )
+    if debt_id:
+        q = q.filter(MessageLog.debt_id == debt_id)
+    elif car_id:
+        q = q.filter(MessageLog.car_id == car_id)
+    else:
+        return None
+    return q.order_by(MessageLog.sent_at.desc(), MessageLog.id.desc()).first()
 
 
 def _serialize_debt(db: Session, debt: Debt, car: Car | None, invoice: Invoice) -> DebtListOut:
-    last = _last_debt_message(db, debt.tenant_id, debt.car_id)
+    last = _last_debt_message(db, debt.tenant_id, debt.car_id, debt.id if not debt.car_id else None)
     customer_name = debt.customer_name or invoice.customer_name or (car.owner_name if car else None)
     phone = debt.customer_phone or invoice.customer_phone or (car.phone if car else None)
     is_sale = invoice.invoice_type == "sale"
@@ -91,16 +95,18 @@ def send_debt_reminder_now(debt_id: int, db: Session = Depends(get_db), user: Us
     if car:
         message = render_debt_reminder(tenant, car, float(debt.amount or 0))
     else:
-        customer_name = debt.customer_name or invoice.customer_name or "عميلنا العزيز"
-        contact = tenant.contact_phone or tenant.whatsapp_number or ""
-        message = "\n".join([
-            f"أهلاً {customer_name}",
-            f"نذكركم بوجود مبلغ متبقي قدره {float(debt.amount or 0):,.0f} IQD على فاتورة بيع قطع السيارات.",
-            "يمكنكم التسديد أو التواصل معنا لترتيب الدفع.",
-            tenant.name or "",
-            f"للتواصل: {contact}" if contact else "",
-        ]).strip()
+        message = render_sale_debt_reminder(tenant, debt.customer_name or invoice.customer_name, float(debt.amount or 0))
     status, response = send_whatsapp_message(tenant, phone, message)
-    if car:
-        log_reminder_message(db, tenant, car, "debt_reminder", status, response, float(debt.amount or 0))
+    log_reminder_message(
+        db,
+        tenant,
+        car,
+        "debt_reminder",
+        status,
+        response,
+        float(debt.amount or 0),
+        debt_id=debt.id if not car else None,
+        phone=phone,
+        customer_name=debt.customer_name or invoice.customer_name,
+    )
     return DebtReminderOut(status=status, message=message, provider_response=response)
