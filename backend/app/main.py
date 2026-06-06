@@ -69,6 +69,7 @@ os.makedirs(os.path.join(app_settings.UPLOADS_DIR, "ads"), exist_ok=True)
 
 
 @app.get("/reports/monthly-exports/{filename}", tags=["exports"])
+@app.head("/reports/monthly-exports/{filename}", tags=["exports"])
 def download_monthly_export(filename: str):
     if "/" in filename or "\\" in filename or not filename.endswith(".xlsx"):
         raise HTTPException(status_code=404, detail="Export not found")
