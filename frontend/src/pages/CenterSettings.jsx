@@ -100,6 +100,7 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
   const [paymentRef, setPaymentRef] = useState('')
   const [submitted, setSubmitted] = useState(!!center?.subscription_request_ref)
   const [showUpgradeForm, setShowUpgradeForm] = useState(false)
+  const [checkoutOpen, setCheckoutOpen] = useState(false)
   const { data: paymentSettings } = useQuery({
     queryKey: ['payment-settings'],
     queryFn: () => getPaymentSettings().then(r => r.data),
@@ -120,6 +121,7 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
   useEffect(() => {
     setSelectedPlan(nextPlan(center?.plan) || center?.plan || 'pro')
     setSubmitted(!!center?.subscription_request_ref)
+    setCheckoutOpen(false)
   }, [center?.plan, center?.subscription_request_ref])
 
   useEffect(() => {
@@ -211,6 +213,25 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
     )
   }
 
+  if (submitted || center?.subscription_request_ref) {
+    return (
+      <section className="surface rounded-xl p-6">
+        <div className="mx-auto max-w-xl rounded-xl border border-emerald-200 bg-emerald-50 p-6 text-center">
+          <p className="text-3xl mb-2">✅</p>
+          <p className="font-black text-emerald-800">تم استلام طلب الاشتراك</p>
+          <p className="mt-2 text-sm text-emerald-700">
+            الخطة: <strong>{PLANS.find(p => p.id === center?.subscription_request_plan)?.name || PLANS.find(p => p.id === selectedPlan)?.name}</strong>
+          </p>
+          <p className="mt-1 text-sm text-emerald-700">
+            الدفع: <strong>{center?.subscription_request_method === 'binance' ? 'Binance Pay' : 'سوبر كي'}</strong>
+          </p>
+          <p className="mt-1 text-sm text-emerald-700">رقم العملية: <strong>{center?.subscription_request_ref || paymentRef}</strong></p>
+          <p className="mt-4 text-xs font-bold text-slate-500">سيظهر الطلب في لوحة السوبر أدمن للتفعيل اليدوي.</p>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className="surface rounded-xl p-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -228,14 +249,17 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
         )}
       </div>
 
-      {/* Plans grid */}
+      {!checkoutOpen && (
       <div className="mt-5 grid gap-4 md:grid-cols-3">
         {visiblePlans.map(plan => {
           const displayPlan = planDisplayForCenter(plan, center)
           return (
           <button
             key={plan.id}
-            onClick={() => setSelectedPlan(plan.id)}
+            onClick={() => {
+              setSelectedPlan(plan.id)
+              setCheckoutOpen(true)
+            }}
             className={`relative rounded-xl border-2 p-5 text-right transition-all ${
               selectedPlan === plan.id
                 ? plan.color === 'cyan'
@@ -277,14 +301,26 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
           </button>
         )})}
       </div>
+      )}
 
-      {/* Payment section */}
-      <div className="mt-6 rounded-xl border border-slate-200 overflow-hidden">
+      {checkoutOpen && (
+      <div className="mt-5 overflow-hidden rounded-xl border border-slate-200">
         <div className="bg-slate-50 px-5 py-3 border-b border-slate-200">
-          <p className="font-bold text-slate-950">{subscriptionActive ? 'دفع قيمة الترقية' : 'طرق دفع الاشتراك'}</p>
-          <p className="text-sm text-slate-500 mt-0.5">
-            اختر وسيلة الدفع المناسبة، ثم أدخل رقم العملية بعد الدفع. داخل العراق عبر سوبر كي، وخارج العراق عبر Binance Pay.
-          </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-bold text-slate-950">دفع اشتراك {PLANS.find(p => p.id === selectedPlan)?.name}</p>
+              <p className="text-sm text-slate-500 mt-0.5">
+                اختر وسيلة الدفع، امسح الباركود، ثم أدخل رقم العملية.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setCheckoutOpen(false)}
+              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-700 hover:bg-slate-50"
+            >
+              تغيير الخطة
+            </button>
+          </div>
         </div>
 
         <div className="p-5">
@@ -316,11 +352,11 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
             </div>
           )}
 
-          <div className="mt-5 flex flex-col gap-6 md:flex-row md:items-start">
+          <div className="mt-5 grid gap-6 xl:grid-cols-[420px_1fr] xl:items-start">
             {activePayment && (
-              <div className="shrink-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="w-56 rounded-xl bg-slate-50 p-3 text-center">
-                  <img src={activePayment.qrUrl} alt={activePayment.name} className="mx-auto h-44 w-44 rounded-lg object-contain" />
+              <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="rounded-xl bg-slate-50 p-4 text-center">
+                  <img src={activePayment.qrUrl} alt={activePayment.name} className="mx-auto h-72 w-72 rounded-lg object-contain md:h-80 md:w-80" />
                   <p className="mt-3 text-sm font-black text-slate-950">{activePayment.name}</p>
                   <p className="mt-1 text-xs font-bold text-slate-500">{activePayment.accountName}</p>
                   {activePayment.accountId && <p className="mt-1 font-mono text-xs font-bold text-slate-500">{activePayment.accountId}</p>}
@@ -329,20 +365,6 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
             )}
 
           <div className="flex-1 w-full">
-            {submitted || center?.subscription_request_ref ? (
-              <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-5 text-center">
-                <p className="text-2xl mb-2">✅</p>
-                <p className="font-bold text-emerald-800">تم استلام طلبك</p>
-                <p className="text-sm text-emerald-600 mt-1">
-                  الخطة: <strong>{PLANS.find(p => p.id === center?.subscription_request_plan)?.name || selectedPlan}</strong>
-                </p>
-                <p className="text-sm text-emerald-600">
-                  الدفع: <strong>{center?.subscription_request_method === 'binance' ? 'Binance Pay' : 'سوبر كي'}</strong>
-                </p>
-                <p className="text-sm text-emerald-600">رقم الإيشال: <strong>{center?.subscription_request_ref}</strong></p>
-                <p className="text-xs text-slate-500 mt-3">سيتم تفعيل اشتراكك خلال 24 ساعة</p>
-              </div>
-            ) : (
               <div className="space-y-4">
                 {!canRequestSelectedPlan && (
                   <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-600">
@@ -378,11 +400,11 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
                   {sub.isPending ? 'جاري الإرسال...' : `إرسال طلب ${subscriptionActive ? 'الترقية' : 'الاشتراك'} — ${PLANS.find(p => p.id === selectedPlan)?.name}`}
                 </button>
               </div>
-            )}
           </div>
           </div>
         </div>
       </div>
+      )}
     </section>
   )
 }
