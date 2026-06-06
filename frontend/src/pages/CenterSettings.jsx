@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import QRCode from 'qrcode'
 import Layout from '../components/Layout'
-import { getCenterSettings, updateCenterSettings, requestSubscription, uploadLogo, getMobileCameraLink } from '../api/settings'
+import { getCenterSettings, updateCenterSettings, requestSubscription, uploadLogo, getMobileCameraLink, testOwnerSummary } from '../api/settings'
 import { getPaymentSettings } from '../api/platform'
 import { getCenterUsers, createCenterUser, updateCenterUser, deleteCenterUser } from '../api/users'
 import { PLAN_DETAILS, PLAN_ORDER, hasPlanFeature, isHigherPlan, nextPlan, planShortName, planUserLimit } from '../constants/plans'
@@ -700,6 +700,8 @@ export default function CenterSettings() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['center-settings'] }),
   })
 
+  const summaryTest = useMutation({ mutationFn: testOwnerSummary })
+
   const update = (key, value) => setForm(prev => ({ ...prev, [key]: value }))
 
   return (
@@ -823,6 +825,20 @@ export default function CenterSettings() {
             {oilServiceReminders
               ? 'الرسائل ثابتة داخل النظام: تذكير صيانة لمراكز الزيوت حسب المدة، ومطالبة دين كل 20 يوم ما دام الدين مفتوحا.'
               : 'الرسائل الثابتة لهذا الاختصاص: مطالبة دين واتساب كل 20 يوم ما دام الدين مفتوحا. لا يتم إرسال تذكير صيانة للسيارات هنا.'}
+          </div>
+
+          <div className="mt-4 rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3">
+            <p className="text-sm font-bold leading-7 text-emerald-900">
+              📊 ملخص يومي تلقائي: يصلك كل ليلة الساعة ٩ مساءً على واتساب المركز — مبيعات اليوم، عدد الفواتير، الديون، وتنبيه المخزون المنخفض.
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <button type="button" onClick={() => summaryTest.mutate()} disabled={summaryTest.isPending}
+                className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-black text-white transition hover:bg-emerald-700 disabled:opacity-50">
+                {summaryTest.isPending ? '... جاري الإرسال' : 'إرسال ملخص تجريبي الآن'}
+              </button>
+              {summaryTest.isSuccess && <span className="text-xs font-bold text-emerald-700">✓ تم الإرسال إلى واتساب المركز</span>}
+              {summaryTest.isError && <span className="text-xs font-bold text-rose-600">{summaryTest.error?.response?.data?.detail || 'تعذّر الإرسال'}</span>}
+            </div>
           </div>
         </section>
       </div>

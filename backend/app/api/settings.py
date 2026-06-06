@@ -9,7 +9,10 @@ from app.core.deps import require_manager_or_above
 from app.core.config import settings
 from app.models.tenant import Tenant
 from app.models.user import User
+from app.models.message_log import MessageLog
 from app.schemas.tenant import TenantOut, TenantUpdate
+from app.services.owner_summary_service import build_owner_daily_summary
+from app.services.wasnder_service import send_whatsapp_message
 
 router = APIRouter(prefix="/settings", tags=["settings"])
 
@@ -141,3 +144,28 @@ def request_subscription(
     tenant.subscription_request_ref = body.payment_ref
     db.commit()
     return {"status": "pending", "message": "تم إرسال طلبك، سيتم التفعيل خلال 24 ساعة"}
+
+
+@router.post("/owner-summary/test")
+def test_owner_summary(db: Session = Depends(get_db), user: User = Depends(require_manager_or_above)):
+    """Send the end-of-day owner summary to the center's own WhatsApp now (preview)."""
+    tenant = db.get(Tenant, user.tenant_id)
+    if not tenant:
+        raise HTTPException(status_code=404, detail="Center not found")
+    if not tenant.wasnder_api_key or not tenant.whatsapp_number:
+        raise HTTPException(status_code=400, detail="فعّل واتساب المركز من الإعدادات أولاً")
+    phone = tenant.whatsapp_number or tenant.contact_phone
+    message = build_owner_daily_summary(db, tenant, force=True)
+    status, response = send_whatsapp_message(tenant, phone, message)
+    db.add(MessageLog(
+        tenant_id=tenant.id,
+        phone=phone,
+        message=message,
+        reminder_type="owner_summary",
+        status=status,
+        provider_response=response,
+    ))
+    db.commit()
+    if status != "sent":
+        raise HTTPException(status_code=502, detail="تعذّر إرسال الملخص، تأكد من إعداد واتساب وحاول مجدداً")
+    return {"status": status, "phone": phone}
