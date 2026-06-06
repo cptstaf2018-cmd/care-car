@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { AlertTriangle, BadgeCheck, Bell, Check, CheckCircle2, ChevronDown, ChevronUp, Clock, CreditCard, Lock, Unlock, Upload, X } from 'lucide-react'
+import { AlertTriangle, BadgeCheck, Bell, Check, CheckCircle2, ChevronDown, ChevronUp, Clock, CreditCard, Lock, Unlock, X } from 'lucide-react'
 import Layout from '../../components/Layout'
 import { getTenants, updateTenant } from '../../api/tenants'
-import { getPaymentSettings, updatePaymentSettings, uploadPaymentQr } from '../../api/platform'
+import { getPaymentSettings, updatePaymentSettings } from '../../api/platform'
 import { PLAN_DETAILS, PLAN_ORDER, planShortName, tenantPlanLabel, tenantPlanPriceLabel } from '../../constants/plans'
 
 const PLAN_IQD = {
@@ -65,18 +65,6 @@ function PaymentSettingsPanel() {
     mutationFn: () => updatePaymentSettings(form),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['payment-settings'] }),
   })
-  const uploadQr = useMutation({
-    mutationFn: ({ method, file }) => {
-      const fd = new FormData()
-      fd.append('file', file)
-      return uploadPaymentQr(method, fd)
-    },
-    onSuccess: (res) => {
-      setForm(res.data)
-      qc.invalidateQueries({ queryKey: ['payment-settings'] })
-    },
-  })
-
   useEffect(() => {
     if (data) setForm(data)
   }, [data])
@@ -92,8 +80,8 @@ function PaymentSettingsPanel() {
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="flex items-center gap-2 text-sm font-black text-cyan-700"><CreditCard size={16} /> طرق دفع الاشتراكات</p>
-          <h3 className="mt-1 text-lg font-black text-slate-950">سوبر كي داخل العراق و Binance خارج العراق</h3>
-          <p className="mt-1 text-xs font-bold text-slate-500">هذه البيانات تظهر للعميل عند طلب الاشتراك أو الترقية.</p>
+          <h3 className="mt-1 text-lg font-black text-slate-950">تفاصيل الحسابات التي يدفع لها العميل</h3>
+          <p className="mt-1 text-xs font-bold text-slate-500">الباركود يظهر في لوحة المركز. هنا تعدل اسم الحساب والتعليمات فقط، وتراجع الطلبات بالأسفل.</p>
         </div>
         <button
           onClick={() => save.mutate()}
@@ -111,7 +99,6 @@ function PaymentSettingsPanel() {
         ].map(method => {
           const prefix = method.id
           const enabledKey = `${prefix}_enabled`
-          const qrKey = `${prefix}_qr_url`
           return (
             <div key={method.id} className={`rounded-xl border p-4 ${method.tone === 'amber' ? 'border-amber-200 bg-amber-50/40' : 'border-yellow-200 bg-yellow-50/40'}`}>
               <div className="mb-3 flex items-center justify-between gap-3">
@@ -129,23 +116,7 @@ function PaymentSettingsPanel() {
                 </label>
               </div>
 
-              <div className="grid gap-3 md:grid-cols-[120px_1fr]">
-                <div className="rounded-lg border border-white bg-white p-2 text-center shadow-sm">
-                  {form[qrKey] ? (
-                    <img src={form[qrKey]} alt={method.name} className="mx-auto h-24 w-24 object-contain" />
-                  ) : (
-                    <div className="flex h-24 w-24 items-center justify-center rounded-md bg-slate-100 text-xs font-bold text-slate-400">لا يوجد QR</div>
-                  )}
-                  <label className="mt-2 flex cursor-pointer items-center justify-center gap-1 rounded-md bg-white px-2 py-1.5 text-xs font-black text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50">
-                    <Upload size={12} /> رفع
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      className="hidden"
-                      onChange={e => e.target.files?.[0] && uploadQr.mutate({ method: method.id, file: e.target.files[0] })}
-                    />
-                  </label>
-                </div>
+              <div className="grid gap-3">
                 <div className="space-y-3">
                   <input
                     value={form[`${prefix}_account_name`] || ''}
@@ -172,9 +143,9 @@ function PaymentSettingsPanel() {
           )
         })}
       </div>
-      {(save.isError || uploadQr.isError) && (
+      {save.isError && (
         <p className="mt-3 text-sm font-bold text-rose-600">
-          {save.error?.response?.data?.detail || uploadQr.error?.response?.data?.detail || 'تعذر حفظ بيانات الدفع'}
+          {save.error?.response?.data?.detail || 'تعذر حفظ بيانات الدفع'}
         </p>
       )}
     </section>

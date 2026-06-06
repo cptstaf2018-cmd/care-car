@@ -111,7 +111,7 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
       enabled: paymentSettings?.superkey_enabled !== false,
       accountName: paymentSettings?.superkey_account_name || 'سعد',
       accountId: paymentSettings?.superkey_account_id,
-      qrUrl: paymentSettings?.superkey_qr_url,
+      qrUrl: paymentSettings?.superkey_qr_url || '/superkey-qr.png',
       instructions: paymentSettings?.superkey_instructions || 'ادفع عبر سوبر كي ثم أدخل رقم العملية.',
       gradient: 'from-amber-50 to-yellow-50',
       border: 'border-amber-200',
@@ -125,7 +125,7 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
       enabled: paymentSettings?.binance_enabled !== false,
       accountName: paymentSettings?.binance_account_name || 'Care Car',
       accountId: paymentSettings?.binance_account_id,
-      qrUrl: paymentSettings?.binance_qr_url,
+      qrUrl: paymentSettings?.binance_qr_url || '/binance-qr.jpeg',
       instructions: paymentSettings?.binance_instructions || 'ادفع عبر Binance Pay ثم أدخل رقم العملية.',
       gradient: 'from-slate-50 to-yellow-50',
       border: 'border-yellow-200',
@@ -294,13 +294,7 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
             {activePayment && (
               <div className="shrink-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="w-56 rounded-xl bg-slate-50 p-3 text-center">
-                  {activePayment.qrUrl ? (
-                    <img src={activePayment.qrUrl} alt={activePayment.name} className="mx-auto h-44 w-44 rounded-lg object-contain" />
-                  ) : (
-                    <div className="mx-auto flex h-44 w-44 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white text-xs font-bold leading-6 text-slate-400">
-                      QR غير مضاف<br />من السوبر أدمن
-                    </div>
-                  )}
+                  <img src={activePayment.qrUrl} alt={activePayment.name} className="mx-auto h-44 w-44 rounded-lg object-contain" />
                   <p className="mt-3 text-sm font-black text-slate-950">{activePayment.name}</p>
                   <p className="mt-1 text-xs font-bold text-slate-500">{activePayment.accountName}</p>
                   {activePayment.accountId && <p className="mt-1 font-mono text-xs font-bold text-slate-500">{activePayment.accountId}</p>}
