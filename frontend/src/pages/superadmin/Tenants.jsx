@@ -285,6 +285,7 @@ export default function AdminTenants() {
   const remove = useMutation({
     mutationFn: (id) => deleteTenant(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tenants'] }),
+    onError: (err) => alert(`فشل الحذف: ${err?.response?.data?.detail || err.message}`),
   })
 
   const handleDelete = (t) => {

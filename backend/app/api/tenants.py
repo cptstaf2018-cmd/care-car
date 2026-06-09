@@ -14,6 +14,7 @@ from app.models.car import Car
 from app.models.debt import Debt
 from app.models.inventory import InventoryItem
 from app.models.invoice import Invoice
+from app.models.invoice_line import InvoiceLine
 from app.models.message_log import MessageLog
 from app.models.service import Service
 from app.models.tenant import Tenant
@@ -291,6 +292,7 @@ def delete_tenant(tenant_id: int, db: Session = Depends(get_db), _=Depends(requi
 
     db.query(MessageLog).filter(MessageLog.tenant_id == tenant_id).delete(synchronize_session=False)
     db.query(Debt).filter(Debt.tenant_id == tenant_id).delete(synchronize_session=False)
+    db.query(InvoiceLine).filter(InvoiceLine.tenant_id == tenant_id).delete(synchronize_session=False)
     db.query(Invoice).filter(Invoice.tenant_id == tenant_id).delete(synchronize_session=False)
     db.query(Service).filter(Service.tenant_id == tenant_id).delete(synchronize_session=False)
     db.query(Car).filter(Car.tenant_id == tenant_id).delete(synchronize_session=False)
