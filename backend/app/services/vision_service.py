@@ -279,6 +279,44 @@ def fast_alpr_plate_reads(image_bytes: bytes) -> list[dict]:
     return sorted(reads, key=lambda item: item.get("confidence", 0), reverse=True)[:4]
 
 
+def detect_plate_bbox(image_bytes: bytes) -> list | None:
+    """Locate a plate region on the raw frame for a live tracking-box overlay.
+
+    Runs the FastALPR detector on the unscaled frame only (no OCR, no
+    multi-candidate cropping/resizing), so the returned bbox coordinates
+    line up with the original frame for drawing.
+    """
+    if not NUMPY_AVAILABLE or not CV2_AVAILABLE or not FAST_ALPR_AVAILABLE:
+        return None
+    alpr = _get_fast_alpr()
+    if not alpr:
+        return None
+    img = _bytes_to_cv2(image_bytes)
+    if img is None:
+        return None
+    try:
+        results = alpr.predict(img)
+    except Exception:
+        return None
+    best_box = None
+    best_conf = -1.0
+    for result in results or []:
+        detection = getattr(result, 'detection', None)
+        box = getattr(detection, 'bounding_box', None) if detection else None
+        if box is None:
+            continue
+        conf = float(getattr(detection, 'confidence', 0) or 0)
+        if conf > best_conf:
+            best_conf = conf
+            best_box = [
+                int(getattr(box, 'x1', 0)),
+                int(getattr(box, 'y1', 0)),
+                int(getattr(box, 'x2', 0)),
+                int(getattr(box, 'y2', 0)),
+            ]
+    return best_box
+
+
 def _cv2_to_bytes(img, quality=95) -> bytes:
     if not CV2_AVAILABLE:
         return b""

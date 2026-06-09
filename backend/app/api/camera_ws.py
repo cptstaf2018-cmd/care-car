@@ -14,7 +14,7 @@ from app.core.security import decode_token
 from app.models.tenant import Tenant
 from app.models.car import Car
 from app.models.user import Role
-from app.services.vision_service import _cv2_to_bytes, fast_alpr_plate_reads
+from app.services.vision_service import _cv2_to_bytes, fast_alpr_plate_reads, detect_plate_bbox
 from app.api.mobile_camera import get_latest_mobile_frame
 
 logger = logging.getLogger(__name__)
@@ -73,6 +73,11 @@ def _is_private_camera_url(cam_url: str) -> bool:
         or any(normalized_host.startswith(f"172.{i}.") for i in range(16, 32))
         or normalized_host.endswith(".local")
     )
+
+
+async def _detect_bbox_async(frame_bytes: bytes) -> list | None:
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, detect_plate_bbox, frame_bytes)
 
 
 async def _read_plate_async(frame_bytes: bytes) -> dict:
@@ -283,9 +288,13 @@ async def camera_stream(websocket: WebSocket, tenant_id: int, db: Session = Depe
                         frame_count += 1
                         now = time.time()
                         display_frame = frame
+                        live_bbox = await _detect_bbox_async(_cv2_to_bytes(frame))
+                        if live_bbox:
+                            display_frame = _draw_plate_overlay(frame.copy(), {"bbox": live_bbox, "plate": ""})
                         if frame_count % 3 == 0:
                             plate_result = await _read_plate_async(_cv2_to_bytes(frame))
-                            display_frame = _annotate_frame(frame, plate_result if plate_result.get("plate") else None)
+                            if plate_result.get("plate"):
+                                display_frame = _annotate_frame(frame, plate_result)
                             candidate_plate = plate_result.get("plate", "")
                             if candidate_plate and now - seen_candidates.get(candidate_plate, 0) >= 2.0:
                                 seen_candidates[candidate_plate] = now
