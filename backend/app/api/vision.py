@@ -79,4 +79,6 @@ async def parse_receipt(
         return {"items": [], "raw_text": ""}
 
     items = parse_receipt_text(full_text)
+    logger.info("receipt OCR raw_text=%r", full_text)
+    logger.info("receipt parsed items=%r", items)
     return {"items": items, "raw_text": full_text}
