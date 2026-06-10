@@ -444,7 +444,7 @@ export default function NewService() {
 
   // Auto-match inventory item when service type or oil grade changes
   useEffect(() => {
-    if (!selectedCar || !inventoryAutomationEnabled || inventoryItems.length === 0) return
+    if ((!selectedCar && !isWalkInService) || !inventoryAutomationEnabled || inventoryItems.length === 0) return
     const kwMap = {
       'تبديل زيت': [oilGrade, oilGrade.replace('W', 'W-'), 'زيت محرك', 'زيت'],
       'زيت محرك': ['زيت محرك', 'زيت'],
@@ -481,7 +481,7 @@ export default function NewService() {
       setLineInventoryId('')
       setForm(prev => ({ ...prev, amount: '' }))
     }
-  }, [serviceType, oilGrade, inventoryItems, selectedCar, inventoryAutomationEnabled])
+  }, [serviceType, oilGrade, inventoryItems, selectedCar, isWalkInService, inventoryAutomationEnabled])
 
   // Auto-fill price from selected inventory item
   useEffect(() => {
@@ -1184,35 +1184,6 @@ export default function NewService() {
                     onChange={e => setForm({ ...form, [k]: e.target.value })}
                     className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
                 ))}
-                {!isPartsStore && (
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-black text-slate-500">
-                    <Package size={14} /> خصم من المخزون (اختياري)
-                  </div>
-                  {inventoryAutomationEnabled ? (
-                    <div className="grid grid-cols-[1fr_90px] gap-2">
-                      <select value={lineInventoryId} onChange={e => setLineInventoryId(e.target.value)}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-cyan-400">
-                        <option value="">— اختر المادة —</option>
-                        {inventoryItems.map(item => (
-                          <option key={item.id} value={item.id}>
-                            {item.oil_type} ({Number(item.quantity).toLocaleString()} {item.category || 'وحدة'})
-                          </option>
-                        ))}
-                      </select>
-                      <input type="number" min="0.1" step="0.1" value={lineInventoryQty}
-                        onChange={e => setLineInventoryQty(e.target.value)}
-                        placeholder="الكمية"
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-cyan-400"
-                        disabled={!lineInventoryId} />
-                    </div>
-                  ) : (
-                    <div className="rounded-lg border border-cyan-100 bg-cyan-50 px-3 py-2 text-xs font-bold leading-5 text-cyan-900">
-                      الخصم التلقائي من المخزون مفعل في خطتك عند توفر مواد مسجلة.
-                    </div>
-                  )}
-                </div>
-                )}
                 <button onClick={addLineToInvoice} disabled={!form.amount}
                   className="flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-400 px-6 py-4 text-base font-black text-slate-950 transition hover:bg-cyan-300 disabled:opacity-50">
                   <PlusCircle size={18} />
