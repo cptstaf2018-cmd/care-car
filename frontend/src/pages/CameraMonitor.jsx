@@ -45,7 +45,7 @@ export default function CameraMonitor() {
         setCurrentFrame(`data:image/jpeg;base64,${msg.data}`)
       } else if (msg.type === 'plate_detected') {
         setTodayCount(n => n + 1)
-        setRecentPlates(prev => [
+        setRecentPlates([
           {
             plate: msg.plate,
             car: msg.car,
@@ -55,7 +55,6 @@ export default function CameraMonitor() {
             frame: msg.frame ? `data:image/jpeg;base64,${msg.frame}` : currentFrame,
             time: new Date().toLocaleTimeString('ar-IQ'),
           },
-          ...prev.slice(0, 9)
         ])
       } else if (msg.type === 'error') {
         setStatus('error')

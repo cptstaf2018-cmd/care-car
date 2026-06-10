@@ -299,7 +299,9 @@ def vision_plate_reads(image_bytes: bytes) -> list[dict]:
     if not anns:
         return []
     candidates = extract_plate_candidates(anns[0].get("description", ""))
-    return [{"plate": candidate, "confidence": 0.9, "bbox": None} for candidate in candidates]
+    # Confidence kept below HIGH_CONFIDENCE_SINGLE_READ so a single read never
+    # auto-confirms a plate; two consecutive matching reads must agree first.
+    return [{"plate": candidate, "confidence": 0.6, "bbox": None} for candidate in candidates]
 
 
 def read_plate_reads(image_bytes: bytes) -> list[dict]:
