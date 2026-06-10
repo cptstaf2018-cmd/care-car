@@ -99,6 +99,17 @@ const STORE_CATEGORIES_BY_SPECIALTY = {
 const getStoreCategories = specialty =>
   STORE_CATEGORIES_BY_SPECIALTY[specialty] || STORE_CATEGORIES
 
+const PRESET_MATERIALS_BY_SPECIALTY = {
+  ac: {
+    gas_freon: ['غاز R134a', 'غاز R1234yf', 'زيت كومبروسر PAG', 'صبغة كشف تسريب'],
+    compressors: ['كومبروسر دينسو', 'كومبروسر سانون', 'طقم بكرة كومبروسر'],
+    ac_filters: ['فلتر مكيف عادي', 'فلتر مكيف كاربون'],
+    hoses_pipes: ['خرطوم ضغط عالي', 'خرطوم ضغط واطي', 'أورنك (O-ring)'],
+    fans: ['مروحة مكثف', 'مروحة رديتر', 'مقاومة مروحة'],
+    accessories: ['شريط عازل', 'كوبلنج تعبئة', 'صمام تمدد'],
+  },
+}
+
 export default function Inventory() {
   const qc = useQueryClient()
   const { data: center } = useQuery({
@@ -121,6 +132,7 @@ export default function Inventory() {
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({})
   const [manual, setManual] = useState(initialManual)
+  const presetMaterials = PRESET_MATERIALS_BY_SPECIALTY[centerSpecialty]?.[manual.product_category] || []
   const [receiptFile, setReceiptFile] = useState(null)
   const [receiptImage, setReceiptImage] = useState(null)
   const [receiptMessage, setReceiptMessage] = useState('')
@@ -303,6 +315,21 @@ export default function Inventory() {
             <InventoryInput value={manual.unit_cost} onChange={v => setManual({ ...manual, unit_cost: v })} placeholder="شراء" type="number" />
             <InventoryInput value={manual.sale_price} onChange={v => setManual({ ...manual, sale_price: v })} placeholder="بيع" type="number" />
             <InventoryInput value={manual.min_threshold} onChange={v => setManual({ ...manual, min_threshold: v })} placeholder="التنبيه" type="number" />
+            {presetMaterials.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 md:col-span-4 xl:col-span-8">
+                <span className="text-xs font-bold text-slate-500">مواد جاهزة:</span>
+                {presetMaterials.map(name => (
+                  <button key={name} type="button" onClick={() => setManual({ ...manual, oil_type: name })}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${manual.oil_type === name ? 'border-cyan-400 bg-cyan-50 text-cyan-700' : 'border-slate-200 bg-white text-slate-600 hover:border-cyan-300'}`}>
+                    {name}
+                  </button>
+                ))}
+                <button type="button" onClick={() => setManual({ ...manual, oil_type: '' })}
+                  className="rounded-full border border-dashed border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-500 hover:border-cyan-300">
+                  مادة أخرى ✏️
+                </button>
+              </div>
+            )}
             <button onClick={saveManual} disabled={!manual.oil_type || !manual.quantity || create.isPending}
               className="rounded-lg bg-emerald-600 px-6 py-3 text-sm font-black text-white transition hover:bg-emerald-700 disabled:opacity-50 md:col-span-4 xl:col-span-8">
               حفظ المنتج في المخزون
