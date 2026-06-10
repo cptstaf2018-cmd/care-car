@@ -487,9 +487,10 @@ export default function NewService() {
   useEffect(() => {
     if (!lineInventoryId) return
     const item = inventoryItems.find(i => i.id === Number(lineInventoryId))
-    if (item?.unit_cost) {
+    const unitPrice = Number(item?.sale_price || item?.unit_cost || 0)
+    if (unitPrice) {
       const qty = parseFloat(lineInventoryQty) || 1
-      setForm(prev => ({ ...prev, amount: String(Math.round(item.unit_cost * qty)) }))
+      setForm(prev => ({ ...prev, amount: String(Math.round(unitPrice * qty)) }))
     }
   }, [lineInventoryId, lineInventoryQty, inventoryItems])
 
