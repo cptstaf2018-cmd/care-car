@@ -279,6 +279,42 @@ def fast_alpr_plate_reads(image_bytes: bytes) -> list[dict]:
     return sorted(reads, key=lambda item: item.get("confidence", 0), reverse=True)[:4]
 
 
+def vision_plate_reads(image_bytes: bytes) -> list[dict]:
+    """Read plate text via Google Vision OCR.
+
+    General text detection handles Arabic + Latin mixed Iraqi plates
+    correctly, unlike FastALPR's Latin-only global OCR model which
+    invents/forces a Latin plate format on non-Latin plates.
+    """
+    if not VISION_API_KEY:
+        return []
+    try:
+        payload = {"requests": [{"image": {"content": base64.b64encode(image_bytes).decode()},
+                                 "features": [{"type": "TEXT_DETECTION"}]}]}
+        r = requests.post(VISION_URL, params={"key": VISION_API_KEY}, json=payload, timeout=8)
+        r.raise_for_status()
+        anns = r.json().get("responses", [{}])[0].get("textAnnotations", [])
+    except Exception:
+        return []
+    if not anns:
+        return []
+    candidates = extract_plate_candidates(anns[0].get("description", ""))
+    return [{"plate": candidate, "confidence": 0.9, "bbox": None} for candidate in candidates]
+
+
+def read_plate_reads(image_bytes: bytes) -> list[dict]:
+    """Best-available plate reads for the live camera stream.
+
+    Prefers Google Vision OCR (accurate for Iraqi mixed-script plates),
+    falling back to FastALPR's local model when Vision is unavailable
+    or finds nothing.
+    """
+    reads = vision_plate_reads(image_bytes)
+    if reads:
+        return reads
+    return fast_alpr_plate_reads(image_bytes)
+
+
 def detect_plate_bbox(image_bytes: bytes) -> list | None:
     """Locate a plate region on the raw frame for a live tracking-box overlay.
 

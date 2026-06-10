@@ -15,7 +15,7 @@ from app.core.deps import get_current_user, require_manager_or_above
 from app.core.security import create_signed_token, decode_token
 from app.models.tenant import Plan, Tenant
 from app.models.user import Role, User
-from app.services.vision_service import fast_alpr_plate_reads
+from app.services.vision_service import read_plate_reads
 
 router = APIRouter(prefix="/mobile-camera", tags=["mobile-camera"])
 
@@ -109,7 +109,7 @@ def read_latest_mobile_plate(
     if cached and cached[0] == frame.signature:
         return {**cached[1], "cached": True}
 
-    reads = fast_alpr_plate_reads(frame.data)
+    reads = read_plate_reads(frame.data)
     best = reads[0] if reads else {}
     plate = best.get("plate", "")
     result = {
