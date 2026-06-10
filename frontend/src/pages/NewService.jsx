@@ -17,6 +17,7 @@ import { createSaleInvoice } from '../api/invoices'
 import { getInventory } from '../api/inventory'
 import { getCenterSettings, readLatestMobilePlate } from '../api/settings'
 import { DEFAULT_CENTER_SPECIALTY, getSpecialtyLabel } from '../constants/centerSpecialties'
+import { getStoreCategories } from '../constants/inventoryCategories'
 import { hasPlanFeature } from '../constants/plans'
 import { useAuthStore } from '../store/auth'
 
@@ -155,6 +156,57 @@ const SERVICE_TEMPLATES = {
     { label: 'حماية طلاء', image: '/service-icons-3d/auto-pack/paint-protection.webp', tone: 'teal', hint: 'طبقة حماية' },
   ],
   multi_service: MULTI_SERVICE_TYPES,
+}
+
+// Maps each service type to the inventory "store category" key it consumes materials from.
+// Services not listed here are labor-only and don't link to inventory.
+const SERVICE_TYPE_TO_CATEGORY = {
+  ac: {
+    'تعبئة غاز مكيف': 'gas_freon',
+    'فحص تهريب مكيف': 'gas_freon',
+    'تبديل كمبروسر': 'compressors',
+    'تبديل فلتر مكيف': 'ac_filters',
+    'تصليح مروحة': 'fans',
+  },
+  tires: {
+    'تبديل إطار': 'tires',
+    'بيع إطار': 'tires',
+    'ترصيص': 'balance_weights',
+    'تعبئة نيتروجين': 'nitrogen',
+    'تبديل بلف': 'valves',
+  },
+  wash: {
+    'غسيل خارجي': 'wash_supplies',
+    'غسيل كامل': 'wash_supplies',
+    'تنظيف داخلي': 'wash_supplies',
+    'بولش': 'wax_polish',
+    'واكس': 'wax_polish',
+    'نانو سيراميك': 'nano_ceramic',
+    'تعقيم': 'fresheners',
+  },
+  electrical: {
+    'تبديل بطارية': 'batteries',
+    'فحص دينمو': 'alternators_starters',
+    'تصليح سلف': 'alternators_starters',
+    'تبديل حساس': 'sensors',
+    'تصليح إنارة': 'lighting',
+    'تبديل فيوز': 'fuses_wires',
+  },
+  mechanic: {
+    'تبديل بريك': 'brakes',
+    'تبديل جامبين': 'suspension',
+    'تبديل مقص': 'suspension',
+    'تبديل سير': 'belts_pumps',
+    'تبديل مضخة ماء': 'belts_pumps',
+    'تصليح رديتر': 'cooling_radiators',
+  },
+  body_paint: {
+    'صبغ قطعة': 'paint_materials',
+    'سمكرة ضربة': 'putty_bodywork',
+    'تلميع': 'polishing',
+    'بولش خدوش': 'polishing',
+    'حماية طلاء': 'paint_protection',
+  },
 }
 
 const PARTS_CATEGORIES = [
@@ -442,9 +494,28 @@ export default function NewService() {
     enabled: isPartsStore || (!!inventoryAutomationEnabled && (isWalkInService || !!selectedCar)),
   })
 
+  const materialCategoryKey = SERVICE_TYPE_TO_CATEGORY[centerSpecialty]?.[serviceType]
+  const categoryMaterials = materialCategoryKey
+    ? inventoryItems.filter(item => item.product_category === materialCategoryKey)
+    : []
+  const materialCategoryLabel = materialCategoryKey
+    ? (getStoreCategories(centerSpecialty).find(([key]) => key === materialCategoryKey)?.[1] || '')
+    : ''
+
   // Auto-match inventory item when service type or oil grade changes
   useEffect(() => {
     if ((!selectedCar && !isWalkInService) || !inventoryAutomationEnabled || inventoryItems.length === 0) return
+
+    if (materialCategoryKey) {
+      if (categoryMaterials.length > 0) {
+        setLineInventoryId(String(categoryMaterials[0].id))
+      } else {
+        setLineInventoryId('')
+        setForm(prev => ({ ...prev, amount: '' }))
+      }
+      return
+    }
+
     const kwMap = {
       'تبديل زيت': [oilGrade, oilGrade.replace('W', 'W-'), 'زيت محرك', 'زيت'],
       'زيت محرك': ['زيت محرك', 'زيت'],
@@ -1198,6 +1269,23 @@ export default function NewService() {
                       specialtyLabel={getSpecialtyLabel(centerSpecialty)}
                     />
                   </div>
+                )}
+                {materialCategoryKey && (
+                  categoryMaterials.length > 0 ? (
+                    <select value={lineInventoryId} onChange={e => setLineInventoryId(e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100">
+                      <option value="">اختر المادة من {materialCategoryLabel}</option>
+                      {categoryMaterials.map(item => (
+                        <option key={item.id} value={item.id}>
+                          {item.oil_type}{item.quantity != null ? ` (متوفر: ${item.quantity})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                      لا توجد مواد مضافة في قسم "{materialCategoryLabel}" بالمخزون. أضف المادة من المخزون أولاً لتظهر هنا.
+                    </p>
+                  )
                 )}
                 {[
                   ['amount', isPartsStore ? 'سعر منتج غير مسجل (IQD)' : 'سعر هذه الخدمة (IQD) *', 'number'],
