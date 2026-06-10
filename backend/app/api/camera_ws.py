@@ -14,7 +14,7 @@ from app.core.security import decode_token
 from app.models.tenant import Tenant
 from app.models.car import Car
 from app.models.user import Role
-from app.services.vision_service import _cv2_to_bytes, fast_alpr_plate_reads
+from app.services.vision_service import _cv2_to_bytes, read_plate_reads, detect_plate_bbox
 from app.api.mobile_camera import get_latest_mobile_frame
 
 logger = logging.getLogger(__name__)
@@ -75,9 +75,31 @@ def _is_private_camera_url(cam_url: str) -> bool:
     )
 
 
+async def _detect_bbox_async(frame_bytes: bytes) -> list | None:
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, detect_plate_bbox, frame_bytes)
+
+
+def _crop_for_ocr(frame, bbox: list | None):
+    """Crop the frame to the detected plate region with padding so OCR
+    reads only the plate (not unrelated text elsewhere in the scene)."""
+    if not bbox or len(bbox) != 4:
+        return frame
+    h, w = frame.shape[:2]
+    x1, y1, x2, y2 = [int(value) for value in bbox]
+    box_w, box_h = max(x2 - x1, 1), max(y2 - y1, 1)
+    pad_x, pad_y = int(box_w * 0.3), int(box_h * 0.6)
+    cx1, cy1 = max(0, x1 - pad_x), max(0, y1 - pad_y)
+    cx2, cy2 = min(w, x2 + pad_x), min(h, y2 + pad_y)
+    if cx2 <= cx1 or cy2 <= cy1:
+        return frame
+    crop = frame[cy1:cy2, cx1:cx2]
+    return crop if crop.size else frame
+
+
 async def _read_plate_async(frame_bytes: bytes) -> dict:
     loop = asyncio.get_event_loop()
-    reads = await loop.run_in_executor(None, fast_alpr_plate_reads, frame_bytes)
+    reads = await loop.run_in_executor(None, read_plate_reads, frame_bytes)
     best = reads[0] if reads else {}
     return {
         "plate": best.get("plate", ""),
@@ -268,8 +290,8 @@ async def camera_stream(websocket: WebSocket, tenant_id: int, db: Session = Depe
         seen_plates: dict[str, float] = {}
         seen_candidates: dict[str, float] = {}
         plate_votes = defaultdict(deque)
-        frame_count = 0
         last_frame_time = 0.0
+        last_ocr_time = 0.0
         try:
             while True:
                 if time.time() - started_at >= MAX_CAMERA_SESSION_SECONDS:
@@ -280,12 +302,20 @@ async def camera_stream(websocket: WebSocket, tenant_id: int, db: Session = Depe
                     last_frame_time = latest.received_at
                     frame = _bytes_to_frame(latest.data)
                     if frame is not None:
-                        frame_count += 1
                         now = time.time()
                         display_frame = frame
-                        if frame_count % 3 == 0:
-                            plate_result = await _read_plate_async(_cv2_to_bytes(frame))
-                            display_frame = _annotate_frame(frame, plate_result if plate_result.get("plate") else None)
+                        live_bbox = await _detect_bbox_async(_cv2_to_bytes(frame))
+                        if live_bbox:
+                            display_frame = _draw_plate_overlay(frame.copy(), {"bbox": live_bbox, "plate": ""})
+                        ocr_interval = 1.0 if live_bbox else 2.0
+                        if now - last_ocr_time >= ocr_interval:
+                            last_ocr_time = now
+                            ocr_crop = _crop_for_ocr(frame, live_bbox)
+                            plate_result = await _read_plate_async(_cv2_to_bytes(ocr_crop))
+                            if live_bbox and not plate_result.get("bbox"):
+                                plate_result["bbox"] = live_bbox
+                            if plate_result.get("plate"):
+                                display_frame = _annotate_frame(frame, plate_result)
                             candidate_plate = plate_result.get("plate", "")
                             if candidate_plate and now - seen_candidates.get(candidate_plate, 0) >= 2.0:
                                 seen_candidates[candidate_plate] = now

@@ -324,6 +324,7 @@ export default function NewService() {
   const centerSpecialty = centerSettings?.specialty || DEFAULT_CENTER_SPECIALTY
   const isOilCenter = centerSpecialty === 'quick_service'
   const isPartsStore = centerSpecialty === 'multi_service'
+  const isWalkInService = !isOilCenter && !isPartsStore
   const cameraEnabled = isOilCenter && centerSettings && hasPlanFeature(centerSettings.plan, 'camera')
   const inventoryAutomationEnabled = centerSettings && hasPlanFeature(centerSettings.plan, 'inventory_auto_deduct')
   const serviceTypes = SERVICE_TEMPLATES[centerSpecialty] || SERVICE_TEMPLATES[DEFAULT_CENTER_SPECIALTY]
@@ -438,7 +439,7 @@ export default function NewService() {
   const { data: inventoryItems = [] } = useQuery({
     queryKey: ['inventory'],
     queryFn: () => getInventory().then(r => r.data),
-    enabled: isPartsStore || (!!selectedCar && !!inventoryAutomationEnabled),
+    enabled: isPartsStore || (!!inventoryAutomationEnabled && (isWalkInService || !!selectedCar)),
   })
 
   // Auto-match inventory item when service type or oil grade changes
@@ -593,10 +594,15 @@ export default function NewService() {
       ? 0
       : Math.min(Math.max(parseFloat(paidAmount) || 0, 0), normalizedNet)
   const remainingAmount = Math.max(normalizedNet - effectivePaidAmount, 0)
-  const partsSaleNeedsCustomerPhone = isPartsStore && remainingAmount > 0
-  const canSubmit = isPartsStore
-    ? invoiceLines.length > 0 && !partsSaleMutation.isPending && (!partsSaleNeedsCustomerPhone || partsCustomer.phone.trim())
-    : selectedCar && invoiceLines.length > 0 && !mutation.isPending
+  const needsCustomerPhone = remainingAmount > 0 && (isPartsStore || (isWalkInService && !selectedCar))
+  const isSubmitPending = isPartsStore
+    ? partsSaleMutation.isPending
+    : isWalkInService
+      ? (selectedCar ? mutation.isPending : partsSaleMutation.isPending)
+      : mutation.isPending
+  const canSubmit = (isPartsStore || isWalkInService)
+    ? invoiceLines.length > 0 && !isSubmitPending && (!needsCustomerPhone || partsCustomer.phone.trim())
+    : selectedCar && invoiceLines.length > 0 && !isSubmitPending
   const serviceName = usesOilGrade ? `${serviceType} ${oilGrade}` : serviceType
   const filteredPartItems = useMemo(() => {
     if (!isPartsStore) return []
@@ -675,7 +681,7 @@ export default function NewService() {
 
   const submitPartsSale = () => {
     setSubmitError('')
-    if (partsSaleNeedsCustomerPhone && !partsCustomer.phone.trim()) {
+    if (needsCustomerPhone && !partsCustomer.phone.trim()) {
       setSubmitError('فاتورة الدين تحتاج رقم واتساب للزبون حتى تعمل المطالبة لاحقاً.')
       return
     }
@@ -706,6 +712,11 @@ export default function NewService() {
     })
   }
 
+  const submitWalkIn = () => {
+    if (selectedCar) submitService()
+    else submitPartsSale()
+  }
+
   useEffect(() => {
     if (!invoiceNeedsMileage && form.mileage) {
       setForm(prev => ({ ...prev, mileage: '' }))
@@ -722,13 +733,14 @@ export default function NewService() {
     const onKeyDown = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && canSubmit) {
         if (isPartsStore) submitPartsSale()
+        else if (isWalkInService) submitWalkIn()
         else submitService()
       }
       if (e.key === 'Escape') setSelectedCar(null)
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [canSubmit, selectedCar, form, mutation, serviceName, isPartsStore, invoiceLines, paymentMode, paidAmount])
+  }, [canSubmit, selectedCar, form, mutation, serviceName, isPartsStore, isWalkInService, invoiceLines, paymentMode, paidAmount])
 
   if (result) return (
     <Layout>
@@ -784,6 +796,8 @@ export default function NewService() {
           <p className="mt-2 text-sm text-slate-500">
             {isPartsStore
               ? 'ابحث عن الزبون أو السيارة عند الحاجة، أضف المنتجات إلى السلة، ثم اعتمد فاتورة البيع.'
+              : isWalkInService
+              ? 'اختر الخدمة وأضفها إلى الفاتورة واعتمدها مباشرة — أو اربطها بسيارة الزبون لتتبع السجل (اختياري). Ctrl+Enter للحفظ.'
               : arrivalPlate
               ? `تم استقبال السيارة من كاميرا الباب: ${arrivalPlate}. أكمل بياناتها أو اخترها من النتائج ثم أضف الخدمات.`
               : 'ابحث عن السيارة، أضف الخدمات إلى الفاتورة، ثم اعتمد الفاتورة النهائية. Ctrl+Enter للحفظ.'}
@@ -994,7 +1008,7 @@ export default function NewService() {
             remainingAmount={remainingAmount}
             partsCustomer={partsCustomer}
             setPartsCustomer={setPartsCustomer}
-            needsCustomerPhone={partsSaleNeedsCustomerPhone}
+            needsCustomerPhone={needsCustomerPhone}
             submitError={submitError}
             onSubmit={submitPartsSale}
             isPending={partsSaleMutation.isPending}
@@ -1004,7 +1018,7 @@ export default function NewService() {
       <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
         {/* Service form */}
         <div className="space-y-4">
-          {!selectedCar ? (
+          {(!selectedCar && !isWalkInService) ? (
             <>
               {isPartsStore ? (
                 <ProductCatalog
@@ -1080,6 +1094,7 @@ export default function NewService() {
           ) : (
             <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
               <div className="surface rounded-lg p-6 space-y-4">
+                {selectedCar && (
                 <div className="flex justify-between items-center pb-3 border-b border-slate-200">
                   <div>
                     <span className="font-mono font-black text-slate-950 text-lg">{selectedCar.plate_number}</span>
@@ -1087,6 +1102,58 @@ export default function NewService() {
                   </div>
                   <button onClick={() => setSelectedCar(null)} className="text-slate-500 hover:text-rose-600 text-sm">تغيير</button>
                 </div>
+                )}
+                {isWalkInService && !selectedCar && (
+                <div className="space-y-3 pb-3 border-b border-slate-200">
+                  <p className="text-sm font-black text-slate-700">ربط بسيارة الزبون (اختياري)</p>
+                  <div className="relative">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    <input value={search} onChange={e => setSearch(e.target.value)}
+                      placeholder="ابحث برقم اللوحة لربط الفاتورة بسيارة..."
+                      className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-3 pr-10 text-sm font-bold text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
+                  </div>
+                  {cars.length > 0 && (
+                    <div className="space-y-2">
+                      {cars.map(c => (
+                        <div key={c.id} onClick={() => { setSelectedCar(c); setNewCarForm(null); setSearch('') }}
+                          className="flex cursor-pointer items-center justify-between rounded-lg border border-slate-200 px-4 py-2.5 text-sm transition hover:border-cyan-300 hover:bg-cyan-50">
+                          <span className="font-mono font-black text-slate-950">{c.plate_number}</span>
+                          <span className="text-slate-500">{c.owner_name} {c.car_type ? `— ${c.car_type}` : ''}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {search.length > 1 && cars.length === 0 && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                      <p className="mb-3 text-sm font-black text-amber-800">السيارة غير مسجلة — يمكنك إضافتها (اختياري)</p>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {[
+                          ['plate_number', 'رقم اللوحة *'],
+                          ['car_type', 'نوع السيارة'],
+                          ['car_color', 'لون السيارة'],
+                          ['owner_name', 'اسم المالك'],
+                          ['phone', 'رقم الهاتف / واتساب'],
+                        ].map(([k, label]) => (
+                          <input key={k} placeholder={label}
+                            value={newCarForm?.[k] ?? ''}
+                            onChange={e => setNewCarForm(prev => ({ ...prev, [k]: e.target.value }))}
+                            className="rounded-lg border border-amber-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-100" />
+                        ))}
+                      </div>
+                      {createCarMutation.isError && (
+                        <p className="mt-2 text-xs font-bold text-rose-600">رقم اللوحة مسجل مسبقاً</p>
+                      )}
+                      <button
+                        onClick={() => createCarMutation.mutate(newCarForm)}
+                        disabled={!newCarForm?.plate_number || createCarMutation.isPending}
+                        className="mt-3 flex items-center gap-2 rounded-lg bg-amber-600 px-5 py-2.5 text-sm font-black text-white hover:bg-amber-700 disabled:opacity-50 transition">
+                        <PlusCircle size={15} />
+                        {createCarMutation.isPending ? 'جاري الحفظ...' : 'حفظ وربط السيارة'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+                )}
                 {isPartsStore ? (
                   <ProductCatalog
                     categories={PARTS_CATEGORIES}
@@ -1157,8 +1224,8 @@ export default function NewService() {
                 </div>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-slate-400">{isPartsStore ? 'الزبون / المرجع' : 'السيارة'}</span>
-                    <span className="font-mono font-black">{selectedCar.plate_number}</span>
+                    <span className="text-slate-400">{isPartsStore || (isWalkInService && !selectedCar) ? 'الزبون / المرجع' : 'السيارة'}</span>
+                    <span className="font-mono font-black">{selectedCar ? selectedCar.plate_number : 'بدون سيارة'}</span>
                   </div>
                   <div className="rounded-lg border border-white/10 bg-white/5">
                     {invoiceLines.length ? invoiceLines.map(line => (
@@ -1240,7 +1307,7 @@ export default function NewService() {
                         <p className="mt-1 font-black text-white">{remainingAmount.toLocaleString()} IQD</p>
                       </div>
                     </div>
-                    {isPartsStore && partsSaleNeedsCustomerPhone && (
+                    {needsCustomerPhone && (
                       <div className="mt-3 rounded-lg border border-amber-300/30 bg-amber-500/10 p-3">
                         <p className="mb-2 text-xs font-black text-amber-100">بيانات الزبون مطلوبة للمطالبة بالدين</p>
                         <div className="space-y-2">
@@ -1268,10 +1335,10 @@ export default function NewService() {
                     {submitError}
                   </div>
                 )}
-                <button onClick={isPartsStore ? submitPartsSale : submitService}
-                  disabled={!invoiceLines.length || (isPartsStore ? partsSaleMutation.isPending : mutation.isPending)}
+                <button onClick={isPartsStore ? submitPartsSale : (isWalkInService ? submitWalkIn : submitService)}
+                  disabled={!invoiceLines.length || isSubmitPending}
                   className="mt-5 w-full rounded-lg bg-emerald-500 px-6 py-4 text-lg font-black text-white transition hover:bg-emerald-600 disabled:opacity-50">
-                  {(isPartsStore ? partsSaleMutation.isPending : mutation.isPending) ? 'جاري...' : (isPartsStore ? 'اعتماد فاتورة البيع' : 'اعتماد الفاتورة النهائية')}
+                  {isSubmitPending ? 'جاري...' : (isPartsStore ? 'اعتماد فاتورة البيع' : 'اعتماد الفاتورة النهائية')}
                 </button>
               </div>
             </div>
