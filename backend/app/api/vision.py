@@ -71,8 +71,8 @@ async def parse_receipt(
         raise HTTPException(403, detail="قراءة وصل الشراء تحتاج الخطة المتوسطة")
 
     contents = await file.read()
-    if len(contents) > 10 * 1024 * 1024:
-        raise HTTPException(400, detail="Image too large (max 10 MB)")
+    if len(contents) > 20 * 1024 * 1024:
+        raise HTTPException(400, detail="Image too large (max 20 MB)")
 
     full_text = read_receipt_text_from_image(contents)
     if not full_text:
