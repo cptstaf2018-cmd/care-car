@@ -289,7 +289,8 @@ def vision_plate_reads(image_bytes: bytes) -> list[dict]:
     if not VISION_API_KEY:
         return []
     try:
-        payload = {"requests": [{"image": {"content": base64.b64encode(image_bytes).decode()},
+        enhanced = _enhance_plate(image_bytes)
+        payload = {"requests": [{"image": {"content": base64.b64encode(enhanced).decode()},
                                  "features": [{"type": "TEXT_DETECTION"}]}]}
         r = requests.post(VISION_URL, params={"key": VISION_API_KEY}, json=payload, timeout=8)
         r.raise_for_status()
