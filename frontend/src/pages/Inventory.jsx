@@ -36,6 +36,27 @@ const initialManual = {
 }
 
 const money = value => Number(value || 0).toLocaleString()
+
+// Downscales large receipt photos so they upload reliably and OCR stays fast,
+// regardless of how big the original camera photo is.
+const RECEIPT_MAX_DIMENSION = 1800
+const resizeReceiptImage = (file) => new Promise((resolve) => {
+  const img = new Image()
+  img.onload = () => {
+    const scale = Math.min(1, RECEIPT_MAX_DIMENSION / Math.max(img.width, img.height))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.round(img.width * scale)
+    canvas.height = Math.round(img.height * scale)
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+    canvas.toBlob((blob) => {
+      URL.revokeObjectURL(img.src)
+      resolve(blob ? new File([blob], file.name.replace(/\.\w+$/, '.jpg'), { type: 'image/jpeg' }) : file)
+    }, 'image/jpeg', 0.85)
+  }
+  img.onerror = () => resolve(file)
+  img.src = URL.createObjectURL(file)
+})
 const PRESET_MATERIALS_BY_SPECIALTY = {
   ac: {
     gas_freon: ['غاز R134a', 'غاز R1234yf', 'زيت كومبروسر PAG', 'صبغة كشف تسريب'],
@@ -327,11 +348,13 @@ export default function Inventory() {
             <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-5">
               <p className="font-black text-slate-950">صورة الوصل</p>
               <input type="file" accept="image/*" capture="environment"
-                onChange={e => {
+                onChange={async e => {
                   const file = e.target.files?.[0]
                   if (file) {
-                    setReceiptFile(file)
-                    setReceiptImage(URL.createObjectURL(file))
+                    setReceiptMessage('جاري تجهيز الصورة...')
+                    const resized = await resizeReceiptImage(file)
+                    setReceiptFile(resized)
+                    setReceiptImage(URL.createObjectURL(resized))
                     setReceiptMessage('تم اختيار الصورة. اضغط قراءة الوصل لتعبئة الجدول.')
                   }
                 }}
