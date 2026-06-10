@@ -7,6 +7,7 @@ import { getInventory, createInventoryItem, updateInventoryItem, deleteInventory
 import { getCenterSettings } from '../api/settings'
 import { parseReceipt } from '../api/vision'
 import { hasPlanFeature } from '../constants/plans'
+import { DEFAULT_CENTER_SPECIALTY } from '../constants/centerSpecialties'
 
 const emptyLine = {
   oil_type: '',
@@ -47,6 +48,57 @@ const STORE_CATEGORIES = [
   ['accessories', 'الإكسسوارات'],
 ]
 
+const STORE_CATEGORIES_BY_SPECIALTY = {
+  ac: [
+    ['gas_freon', 'غاز / فريون'],
+    ['compressors', 'كومبروسرات'],
+    ['ac_filters', 'فلاتر مكيف'],
+    ['hoses_pipes', 'خراطيم ومواسير'],
+    ['fans', 'مراوح'],
+    ['accessories', 'إكسسوارات'],
+  ],
+  tires: [
+    ['tires', 'إطارات'],
+    ['valves', 'بلف وصمامات'],
+    ['balance_weights', 'أوزان ترصيص'],
+    ['nitrogen', 'نيتروجين'],
+    ['accessories', 'إكسسوارات'],
+  ],
+  wash: [
+    ['wash_supplies', 'مواد غسيل'],
+    ['wax_polish', 'شمع وبولش'],
+    ['nano_ceramic', 'نانو سيراميك'],
+    ['fresheners', 'معطرات وتعقيم'],
+    ['accessories', 'إكسسوارات'],
+  ],
+  electrical: [
+    ['batteries', 'بطاريات'],
+    ['sensors', 'حساسات'],
+    ['fuses_wires', 'فيوزات وأسلاك'],
+    ['lighting', 'إنارة'],
+    ['alternators_starters', 'دينمو وسلف'],
+    ['accessories', 'إكسسوارات'],
+  ],
+  mechanic: [
+    ['brakes', 'فرامل'],
+    ['suspension', 'تعليق (جمبات/مقص)'],
+    ['belts_pumps', 'سيور ومضخات'],
+    ['cooling_radiators', 'تبريد ورديترات'],
+    ['oils_filters', 'زيوت وفلاتر'],
+    ['accessories', 'إكسسوارات'],
+  ],
+  body_paint: [
+    ['paint_materials', 'مواد صبغ'],
+    ['putty_bodywork', 'معجون وسمكرة'],
+    ['polishing', 'تلميع وبولش'],
+    ['paint_protection', 'حماية طلاء'],
+    ['accessories', 'إكسسوارات'],
+  ],
+}
+
+const getStoreCategories = specialty =>
+  STORE_CATEGORIES_BY_SPECIALTY[specialty] || STORE_CATEGORIES
+
 export default function Inventory() {
   const qc = useQueryClient()
   const { data: center } = useQuery({
@@ -54,6 +106,8 @@ export default function Inventory() {
     queryFn: () => getCenterSettings().then(r => r.data),
   })
   const receiptEnabled = hasPlanFeature(center?.plan, 'inventory_receipt')
+  const centerSpecialty = center?.specialty || DEFAULT_CENTER_SPECIALTY
+  const storeCategories = getStoreCategories(centerSpecialty)
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['inventory'],
     queryFn: () => getInventory().then(r => r.data),
@@ -239,7 +293,7 @@ export default function Inventory() {
             <select value={manual.product_category} onChange={e => setManual({ ...manual, product_category: e.target.value })}
               className="rounded-lg border border-slate-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 outline-none focus:border-cyan-400">
               <option value="">قسم المتجر</option>
-              {STORE_CATEGORIES.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+              {storeCategories.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
             </select>
             <InventoryInput value={manual.sku} onChange={v => setManual({ ...manual, sku: v })} placeholder="SKU" />
             <InventoryInput value={manual.barcode} onChange={v => setManual({ ...manual, barcode: v })} placeholder="باركود" />
@@ -324,7 +378,7 @@ export default function Inventory() {
                               <select value={line[key]} onChange={e => setLine(index, key, e.target.value)}
                                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm">
                                 <option value="">قسم</option>
-                                {STORE_CATEGORIES.map(([catKey, label]) => <option key={catKey} value={catKey}>{label}</option>)}
+                                {storeCategories.map(([catKey, label]) => <option key={catKey} value={catKey}>{label}</option>)}
                               </select>
                             ) : <InventoryInput type={type} value={line[key]} onChange={v => setLine(index, key, v)} />}
                           </td>
@@ -409,13 +463,13 @@ export default function Inventory() {
                           <select value={editForm.product_category} onChange={e => setEditForm({ ...editForm, product_category: e.target.value })}
                             className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-amber-300">
                             <option value="">قسم المتجر</option>
-                            {STORE_CATEGORIES.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                            {storeCategories.map(([key, label]) => <option key={key} value={key}>{label}</option>)}
                           </select>
                         </div>
                       ) : (
                         <>
                           <p className="font-black text-slate-950">{item.oil_type}</p>
-                          <p className="mt-1 text-xs text-slate-500">{STORE_CATEGORIES.find(([key]) => key === item.product_category)?.[1] || item.category || 'بدون تصنيف'}</p>
+                          <p className="mt-1 text-xs text-slate-500">{storeCategories.find(([key]) => key === item.product_category)?.[1] || item.category || 'بدون تصنيف'}</p>
                         </>
                       )}
                     </td>
