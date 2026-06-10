@@ -1,5 +1,7 @@
-import io, os, re, base64, requests
+import io, os, re, base64, time, logging, requests
 from statistics import mean
+
+logger = logging.getLogger(__name__)
 
 try:
     import numpy as np
@@ -546,42 +548,46 @@ def _tesseract_read_bytes(image_bytes: bytes, lang: str = 'ara+eng') -> str:
 
     configs = [
         '--psm 6 --oem 1',
-        '--psm 11 --oem 1',
         '--psm 4 --oem 1',
     ]
     texts = []
-    for mode in ('gray', 'contrast', 'threshold', 'sharp'):
+    started = time.monotonic()
+    for mode in ('gray', 'threshold'):
         try:
             pil_img = Image.open(io.BytesIO(image_bytes)).convert('L')
             w, h = pil_img.size
-            scale = 3 if max(w, h) < 1600 else 2
-            pil_img = pil_img.resize((w * scale, h * scale), Image.LANCZOS)
+            scale = 2 if max(w, h) < 1600 else 1
+            if scale > 1:
+                pil_img = pil_img.resize((w * scale, h * scale), Image.LANCZOS)
             pil_img = ImageEnhance.Contrast(pil_img).enhance(2.4)
             if mode == 'threshold':
                 pil_img = pil_img.point(lambda p: 255 if p > 165 else 0)
-            elif mode == 'sharp':
-                pil_img = pil_img.filter(ImageFilter.SHARPEN)
             for config in configs:
                 text = pytesseract.image_to_string(pil_img, lang=lang, config=config).strip()
                 if text and text not in texts:
                     texts.append(text)
         except Exception:
-            pass
+            logger.exception("tesseract pass failed mode=%s", mode)
+    logger.info("tesseract OCR took %.2fs, found %d block(s)", time.monotonic() - started, len(texts))
     return '\n'.join(texts).strip()
 
 
 def read_text_from_image(image_bytes: bytes) -> str:
     if VISION_API_KEY:
         try:
+            started = time.monotonic()
             payload = {"requests": [{"image": {"content": base64.b64encode(image_bytes).decode()},
                                      "features": [{"type": "TEXT_DETECTION"}]}]}
             r = requests.post(VISION_URL, params={"key": VISION_API_KEY}, json=payload, timeout=10)
             r.raise_for_status()
             anns = r.json().get("responses", [{}])[0].get("textAnnotations", [])
+            logger.info("Google Vision OCR took %.2fs, anns=%d", time.monotonic() - started, len(anns))
             if anns:
                 return anns[0].get("description", "").strip()
         except Exception:
-            pass
+            logger.exception("Google Vision OCR request failed")
+    else:
+        logger.info("GOOGLE_VISION_API_KEY not set, skipping Vision OCR")
 
     text = _paddle_read_bytes(image_bytes)
     if text:
@@ -601,18 +607,11 @@ def read_receipt_text_from_image(image_bytes: bytes) -> str:
         return ''
     try:
         h, w = img.shape[:2]
-        crops = [
-            img[int(h * 0.18):int(h * 0.88), int(w * 0.05):int(w * 0.95)],
-            img[int(h * 0.28):int(h * 0.78), int(w * 0.10):int(w * 0.90)],
-        ]
-        texts = []
-        for crop in crops:
-            crop_bytes = _cv2_to_bytes(crop, quality=98)
-            crop_text = _paddle_read_bytes(crop_bytes) or _tesseract_read_bytes(crop_bytes)
-            if crop_text:
-                texts.append(crop_text)
-        return '\n'.join(texts).strip()
+        crop = img[int(h * 0.18):int(h * 0.88), int(w * 0.05):int(w * 0.95)]
+        crop_bytes = _cv2_to_bytes(crop, quality=98)
+        return (_paddle_read_bytes(crop_bytes) or _tesseract_read_bytes(crop_bytes)).strip()
     except Exception:
+        logger.exception("receipt crop OCR failed")
         return ''
 
 
