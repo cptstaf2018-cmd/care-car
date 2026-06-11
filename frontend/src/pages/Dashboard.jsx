@@ -182,7 +182,7 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              {!isPartsStore && <QuickLink to="/center/cars" icon={Car} text="سيارة" compact />}
+              {isOilCenter && <QuickLink to="/center/cars" icon={Car} text="سيارة" compact />}
               <QuickLink to="/center/inventory" icon={Package} text="مخزون" compact />
               <QuickLink to="/center/services/new" icon={PlusCircle} text={isPartsStore ? 'نقطة بيع' : 'خدمة جديدة'} primary compact />
             </div>
@@ -344,7 +344,7 @@ export default function Dashboard() {
           )}
         </Panel>
 
-        {!isPartsStore && <Panel title="آخر السيارات المخدومة" icon={Car}>
+        {isOilCenter && <Panel title="آخر السيارات المخدومة" icon={Car}>
           {cars.slice(0, 6).map(car => (
             <div key={car.id} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2.5">
               <div>

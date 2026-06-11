@@ -55,12 +55,13 @@ function SidebarContent({ collapsed, setCollapsed, onClose }) {
   const centerName = center?.name || 'تشغيل المركز'
   const isAdmin = user?.role === 'superadmin'
   const isPartsStore = !isAdmin && center?.specialty === 'multi_service'
-  const visibleGroups = isPartsStore
+  const isOilCenter = !isAdmin && (center?.specialty || 'quick_service') === 'quick_service'
+  const visibleGroups = !isAdmin
     ? centerGroups.map(group => ({
         ...group,
         links: group.links
-          .filter(link => link.to !== '/center/cars')
-          .map(link => link.to === '/center/services/new' ? { ...link, label: 'نقطة بيع' } : link),
+          .filter(link => link.to !== '/center/cars' || isOilCenter)
+          .map(link => link.to === '/center/services/new' && isPartsStore ? { ...link, label: 'نقطة بيع' } : link),
       }))
     : groups
   const userContact = displayUserContact(user, center)
