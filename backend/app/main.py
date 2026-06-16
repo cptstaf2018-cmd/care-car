@@ -34,9 +34,9 @@ async def add_security_headers(request: Request, call_next):
         "Content-Security-Policy",
         "default-src 'self'; "
         "script-src 'self'; "
-        "style-src 'self' 'unsafe-inline'; "
-        "img-src 'self' data: blob:; "
-        "font-src 'self' data:; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "img-src 'self' data: blob: https:; "
+        "font-src 'self' data: https://fonts.gstatic.com; "
         "connect-src 'self' https://carecar.online wss://carecar.online; "
         "frame-ancestors 'none'; "
         "base-uri 'self'; "
