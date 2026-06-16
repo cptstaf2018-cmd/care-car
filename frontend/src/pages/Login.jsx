@@ -469,6 +469,12 @@ export default function Login({ initialMode = 'login' }) {
                           )}
                           {regError && <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-200">{regError}</p>}
                           <LaunchButton launching={regLoading} label={regLoading ? 'جاري إرسال الكود...' : 'إرسال كود التفعيل'} />
+                          <p className="text-center text-xs text-slate-500">
+                            بإنشاء الحساب توافق على{' '}
+                            <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-slate-400 underline hover:text-slate-300">شروط الاستخدام</a>
+                            {' '}و{' '}
+                            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-slate-400 underline hover:text-slate-300">سياسة الخصوصية</a>
+                          </p>
                         </form>
                       )}
                       <p className="mt-4 text-center text-sm text-slate-400">
