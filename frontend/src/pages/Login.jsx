@@ -109,6 +109,8 @@ export default function Login({ initialMode = 'login' }) {
       setLaunching(false)
       if (err.response?.status === 401) {
         setError('بيانات الدخول غير صحيحة')
+      } else if (err.response?.status === 402) {
+        setError('انتهت فترة الاشتراك — تواصل مع الدعم لتجديد اشتراكك')
       } else {
         setError('خطأ في الاتصال، حاول مجددًا')
       }
