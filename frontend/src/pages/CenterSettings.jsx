@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
+import { useAuthStore } from '../store/auth'
 import QRCode from 'qrcode'
 import Layout from '../components/Layout'
-import { getCenterSettings, updateCenterSettings, requestSubscription, uploadLogo, getMobileCameraLink, testOwnerSummary } from '../api/settings'
+import { getCenterSettings, updateCenterSettings, requestSubscription, uploadLogo, getMobileCameraLink, testOwnerSummary, deleteOwnAccount } from '../api/settings'
 import { getPaymentSettings } from '../api/platform'
 import { getCenterUsers, createCenterUser, updateCenterUser, deleteCenterUser } from '../api/users'
 import { PLAN_DETAILS, PLAN_ORDER, hasPlanFeature, isHigherPlan, nextPlan, planShortName, planUserLimit } from '../constants/plans'
@@ -919,6 +920,61 @@ export default function CenterSettings() {
       <div id="subscription-upgrade" className="mt-8 scroll-mt-6">
         <SubscriptionSection center={center} forceUpgrade={searchParams.get('upgrade') === '1'} />
       </div>
+
+      <DangerZone />
     </Layout>
+  )
+}
+
+function DangerZone() {
+  const [confirm, setConfirm] = useState('')
+  const [step, setStep] = useState('idle')
+  const { logout } = useAuthStore()
+  const del = useMutation({
+    mutationFn: deleteOwnAccount,
+    onSuccess: () => { logout() },
+  })
+
+  if (step === 'idle') {
+    return (
+      <div className="mt-10 rounded-2xl border border-rose-200 bg-rose-50 p-6">
+        <h3 className="mb-1 text-base font-black text-rose-700">منطقة الخطر</h3>
+        <p className="mb-4 text-sm text-rose-600">حذف الحساب يمسح جميع البيانات نهائياً ولا يمكن استرجاعها.</p>
+        <button onClick={() => setStep('confirm')}
+          className="rounded-lg border border-rose-400 px-4 py-2 text-sm font-bold text-rose-700 hover:bg-rose-100">
+          حذف حسابي وجميع بياناتي
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-10 rounded-2xl border border-rose-400 bg-rose-50 p-6">
+      <h3 className="mb-1 text-base font-black text-rose-700">تأكيد حذف الحساب</h3>
+      <p className="mb-4 text-sm text-rose-600">
+        سيتم حذف المركز وجميع السيارات والخدمات والفواتير والمخزون نهائياً.<br />
+        اكتب <strong>احذف</strong> للتأكيد.
+      </p>
+      <input
+        value={confirm}
+        onChange={e => setConfirm(e.target.value)}
+        placeholder="اكتب: احذف"
+        className="mb-3 w-full rounded-lg border border-rose-300 bg-white px-4 py-2.5 text-sm font-bold text-rose-900 placeholder:text-rose-300 focus:outline-none"
+        dir="rtl"
+      />
+      <div className="flex gap-3">
+        <button
+          onClick={() => del.mutate()}
+          disabled={confirm !== 'احذف' || del.isPending}
+          className="rounded-lg bg-rose-600 px-5 py-2.5 text-sm font-black text-white disabled:opacity-40 hover:bg-rose-700">
+          {del.isPending ? 'جاري الحذف...' : 'حذف نهائي'}
+        </button>
+        <button onClick={() => { setStep('idle'); setConfirm('') }}
+          className="rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100">
+          إلغاء
+        </button>
+      </div>
+      {del.isError && <p className="mt-3 text-sm font-bold text-rose-700">تعذر الحذف. حاول مجدداً.</p>}
+    </div>
   )
 }

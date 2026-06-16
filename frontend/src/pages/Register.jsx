@@ -196,6 +196,13 @@ export default function Register() {
                 تسجيل الدخول
               </Link>
             </p>
+
+            <p className="text-center text-xs text-slate-500">
+              بإنشاء الحساب توافق على{' '}
+              <Link to="/terms" className="text-slate-400 underline hover:text-slate-300">شروط الاستخدام</Link>
+              {' '}و{' '}
+              <Link to="/privacy" className="text-slate-400 underline hover:text-slate-300">سياسة الخصوصية</Link>
+            </p>
           </form>
         )}
       </motion.section>

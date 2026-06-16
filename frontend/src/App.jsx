@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import ProtectedRoute from './components/ProtectedRoute'
 import CenterSetupGate from './components/CenterSetupGate'
+import ErrorBoundary from './components/ErrorBoundary'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Cars from './pages/Cars'
@@ -21,6 +22,8 @@ import PlatformAds from './pages/superadmin/PlatformAds'
 import Activate from './pages/Activate'
 import LandingPage from './pages/LandingPage'
 import MobileCamera from './pages/MobileCamera'
+import PrivacyPolicy from './pages/PrivacyPolicy'
+import TermsOfService from './pages/TermsOfService'
 import { useAuthStore } from './store/auth'
 
 const qc = new QueryClient()
@@ -43,12 +46,15 @@ function HomeRedirect() {
 export default function App() {
   return (
     <QueryClientProvider client={qc}>
+      <ErrorBoundary>
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Login initialMode="register" />} />
           <Route path="/activate" element={<Activate />} />
           <Route path="/about" element={<LandingPage />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
           <Route path="/mobile-camera/:token" element={<MobileCamera />} />
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/center/onboarding" element={<ProtectedRoute allowedRoles={centerRoles}><CenterSetupGate><CenterOnboarding /></CenterSetupGate></ProtectedRoute>} />
@@ -77,6 +83,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </BrowserRouter>
+      </ErrorBoundary>
     </QueryClientProvider>
   )
 }

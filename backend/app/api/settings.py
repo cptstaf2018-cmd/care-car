@@ -7,9 +7,15 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.deps import require_manager_or_above
 from app.core.config import settings
+from app.models.car import Car
+from app.models.debt import Debt
+from app.models.inventory import InventoryItem
+from app.models.invoice import Invoice
+from app.models.invoice_line import InvoiceLine
+from app.models.message_log import MessageLog
+from app.models.service import Service
 from app.models.tenant import Tenant
 from app.models.user import User
-from app.models.message_log import MessageLog
 from app.schemas.tenant import TenantOut, TenantUpdate
 from app.services.owner_summary_service import build_owner_daily_summary
 from app.services.wasnder_service import send_whatsapp_message
@@ -169,3 +175,24 @@ def test_owner_summary(db: Session = Depends(get_db), user: User = Depends(requi
     if status != "sent":
         raise HTTPException(status_code=502, detail="تعذّر إرسال الملخص، تأكد من إعداد واتساب وحاول مجدداً")
     return {"status": status, "phone": phone}
+
+
+@router.delete("/account", status_code=204)
+def delete_own_account(
+    db: Session = Depends(get_db),
+    user: User = Depends(require_manager_or_above),
+):
+    tenant_id = user.tenant_id
+    db.query(MessageLog).filter(MessageLog.tenant_id == tenant_id).delete(synchronize_session=False)
+    db.query(Debt).filter(Debt.tenant_id == tenant_id).delete(synchronize_session=False)
+    db.query(InvoiceLine).filter(InvoiceLine.tenant_id == tenant_id).delete(synchronize_session=False)
+    db.query(Invoice).filter(Invoice.tenant_id == tenant_id).delete(synchronize_session=False)
+    db.query(Service).filter(Service.tenant_id == tenant_id).delete(synchronize_session=False)
+    db.query(Car).filter(Car.tenant_id == tenant_id).delete(synchronize_session=False)
+    db.query(InventoryItem).filter(InventoryItem.tenant_id == tenant_id).delete(synchronize_session=False)
+    db.query(User).filter(User.tenant_id == tenant_id).delete(synchronize_session=False)
+    tenant = db.get(Tenant, tenant_id)
+    if tenant:
+        db.delete(tenant)
+    db.commit()
+    return None
