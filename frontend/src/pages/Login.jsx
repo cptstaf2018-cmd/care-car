@@ -313,7 +313,7 @@ export default function Login({ initialMode = 'login' }) {
                     <motion.div key="login" custom={dir} variants={formVariants} initial="enter" animate="center" exit="exit">
                       <h2 className="mb-1 text-2xl font-extrabold leading-tight">تسجيل الدخول</h2>
                       <p className="mb-5 text-sm leading-6 text-slate-300">
-                        ادخل إلى لوحة السوبر أدمن أو لوحة المركز حسب صلاحيات حسابك.
+                        ادخل إلى لوحة إدارة مركزك للمتابعة.
                       </p>
                       <form onSubmit={handleLoginSubmit} className="space-y-4">
                         <label className="block">
