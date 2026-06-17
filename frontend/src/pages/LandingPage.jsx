@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   Sparkles, Globe, ArrowLeft, ArrowRight, Star,
   Target, Eye, Zap, ShieldCheck, Headphones, TrendingUp,
-  Lightbulb, MapPin, Quote, Building, Cpu, Check, X, Mail
+  Lightbulb, MapPin, Quote, Building, Cpu, Check, X, Mail, Clock
 } from 'lucide-react'
 
 /* ── Bilingual content ── */
@@ -19,6 +19,7 @@ const ABOUT_T = {
       cta1: 'ابدأ الآن مجاناً',
       cta2: 'تعرّف على المنصة',
       trust: 'يثق بنا أكثر من ٢٠٠ مركز خدمة سيارات',
+      trial: '٧ أيام تجربة مجانية كاملة المزايا — بدون بطاقة ائتمان',
     },
     stats: [
       { val: '+٢٠٠', label: 'مركز يعتمد علينا' },
@@ -88,9 +89,10 @@ const ABOUT_T = {
       eyebrow: 'أسعار واضحة',
       title: 'اختر الخطة التي تناسب مركزك',
       sub: 'أسعار شفافة بالدينار العراقي والدولار. بدون رسوم خفية. ألغِ في أي وقت.',
+      trialNote: 'كل خطة تبدأ بـ ٧ أيام تجربة مجانية كاملة المزايا، بدون بطاقة ائتمان.',
       currency: 'د.ع / شهرياً',
       popular: 'الأكثر طلباً',
-      cta: 'ابدأ بهذه الخطة',
+      cta: 'جرّب ٧ أيام مجاناً',
       plans: [
         { name: 'الأساسية', price: '100,000', usd: '≈ 70$ شهرياً', popular: false,
           features: ['سيارات الزبائن وتاريخ الخدمة', 'خدمة سريعة وفواتير وتقارير', 'إدارة المخزون مع الخصم التلقائي', 'الديون ومطالبة واتساب', 'مستخدم واحد'],
@@ -103,7 +105,7 @@ const ABOUT_T = {
           no: [] },
       ],
     },
-    cta: { title: 'جاهز ترفع مستوى مركزك؟', sub: 'انضم لمئات المراكز التي تدير عملها باحتراف — وابدأ اليوم مجاناً.', btn: 'ابدأ مجاناً الآن' },
+    cta: { title: 'جاهز ترفع مستوى مركزك؟', sub: 'انضم لمئات المراكز التي تدير عملها باحتراف — جرّب ٧ أيام مجاناً بكامل المزايا، بدون بطاقة ائتمان.', btn: 'ابدأ تجربتك المجانية' },
     footer: { desc: 'منصة الإدارة الأذكى لمراكز ومحلات خدمات السيارات — زيوت، إطارات، غسيل، كهرباء، ميكانيك، تكييف، سمكرة، وبيع قطع.', product: 'المنتج', company: 'الشركة', contact: 'تواصل معنا', dev: 'تطوير وتشغيل', rights: 'جميع الحقوق محفوظة' },
   },
   en: {
@@ -117,6 +119,7 @@ const ABOUT_T = {
       cta1: 'Start Free Now',
       cta2: 'Explore the platform',
       trust: 'Trusted by 200+ car-service centers',
+      trial: '7-day free trial, full features — no credit card required',
     },
     stats: [
       { val: '200+', label: 'Centers rely on us' },
@@ -186,9 +189,10 @@ const ABOUT_T = {
       eyebrow: 'Clear pricing',
       title: 'Pick the plan that fits your center',
       sub: 'Transparent pricing in IQD and USD. No hidden fees. Cancel anytime.',
+      trialNote: 'Every plan starts with a 7-day free trial, full features, no credit card required.',
       currency: 'IQD / month',
       popular: 'Most Popular',
-      cta: 'Start with this plan',
+      cta: 'Try free for 7 days',
       plans: [
         { name: 'Basic', price: '100,000', usd: '≈ $70 / month', popular: false,
           features: ['Customer cars & service history', 'Fast service, invoices & reports', 'Inventory with auto-deduction', 'Debt tracking & WhatsApp claims', 'One user'],
@@ -201,7 +205,7 @@ const ABOUT_T = {
           no: [] },
       ],
     },
-    cta: { title: 'Ready to level up your center?', sub: 'Join hundreds of centers running professionally — and start today, free.', btn: 'Start Free Now' },
+    cta: { title: 'Ready to level up your center?', sub: 'Join hundreds of centers running professionally — try 7 days free, full features, no credit card required.', btn: 'Start Your Free Trial' },
     footer: { desc: 'The smartest management platform for car-service centers — oil, tires, wash, electrical, mechanic, AC, body & paint, and parts sales.', product: 'Product', company: 'Company', contact: 'Contact', dev: 'Built & operated by', rights: 'All rights reserved' },
   },
 }
@@ -300,9 +304,13 @@ export default function LandingPage() {
                 {c.hero.cta2}
               </button>
             </div>
-            <div className="flex items-center gap-2 text-sm text-white/50">
+            <div className="flex items-center gap-2 text-sm text-white/50 mb-3">
               <span className="flex gap-0.5">{[0,1,2,3,4].map(i => <Star key={i} size={13} className="text-amber-400 fill-amber-400" />)}</span>
               {c.hero.trust}
+            </div>
+            <div className="inline-flex items-center gap-2 text-sm text-white/80 font-medium">
+              <Clock size={15} className="accent-text-light" />
+              {c.hero.trial}
             </div>
           </div>
         </div>
@@ -458,7 +466,10 @@ export default function LandingPage() {
           <div className="text-center max-w-2xl mx-auto mb-16">
             <Eyebrow>{c.pricing.eyebrow}</Eyebrow>
             <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4 text-slate-900">{c.pricing.title}</h2>
-            <p className="text-slate-500 text-lg">{c.pricing.sub}</p>
+            <p className="text-slate-500 text-lg mb-4">{c.pricing.sub}</p>
+            <span className="inline-flex items-center gap-2 text-sm font-semibold accent-text accent-soft-bg px-4 py-1.5 rounded-full">
+              <Clock size={15} />{c.pricing.trialNote}
+            </span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch max-w-5xl mx-auto">
             {c.pricing.plans.map((plan, i) => (
