@@ -17,6 +17,7 @@ jobs:
       DATABASE_URL: sqlite:///./test.db
       SECRET_KEY: ci-test-secret-key
       START_SCHEDULER: "false"
+      UPLOADS_DIR: ${{ github.workspace }}/uploads
 
     steps:
       - name: Checkout code
