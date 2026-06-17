@@ -287,7 +287,7 @@ export default function Login({ initialMode = 'login' }) {
                     </div>
                   </div>
                 </div>
-                <span className="rounded-full bg-cyan-400/15 px-3 py-1 text-xs font-bold text-cyan-300 border border-cyan-400/20">3 أيام مجاناً</span>
+                <span className="rounded-full bg-cyan-400/15 px-3 py-1 text-xs font-bold text-cyan-300 border border-cyan-400/20">7 أيام مجاناً</span>
               </div>
 
               {/* Tab switcher */}
@@ -338,7 +338,7 @@ export default function Login({ initialMode = 'login' }) {
                       <p className="mt-4 text-center text-sm text-slate-400">
                         ليس لديك حساب؟{' '}
                         <button onClick={() => switchMode('register')} className="font-bold text-cyan-300 hover:text-cyan-200 transition-colors">
-                          سجل مجاناً — 3 أيام تجريبية
+                          سجل مجاناً — 7 أيام تجريبية
                         </button>
                       </p>
                     </motion.div>

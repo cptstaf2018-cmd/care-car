@@ -348,11 +348,11 @@ def _register_with_auto_login(body: RegisterRequest, db: Session, center_name: s
             name=center_name,
             specialty=specialty,
             specialty_configured=False,
-            plan=Plan.basic,
+            plan=Plan.enterprise,
             is_active=True,
             contact_phone=contact_phone,
             whatsapp_number=contact_phone,
-            trial_ends_at=datetime.now(timezone.utc) + timedelta(days=3),
+            trial_ends_at=datetime.now(timezone.utc) + timedelta(days=7),
         )
         db.add(tenant)
         db.flush()
@@ -398,11 +398,11 @@ def _register_with_activation_code(body: RegisterRequest, db: Session, center_na
         name=center_name,
         specialty=specialty,
         specialty_configured=False,
-        plan=Plan.basic,
+        plan=Plan.enterprise,
         is_active=True,
         contact_phone=body.phone,
         whatsapp_number=body.phone,
-        trial_ends_at=datetime.now(timezone.utc) + timedelta(days=3),
+        trial_ends_at=datetime.now(timezone.utc) + timedelta(days=7),
     )
     db.add(tenant)
     db.flush()

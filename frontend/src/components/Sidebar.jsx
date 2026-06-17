@@ -9,7 +9,7 @@ import {
 import { useAuthStore } from '../store/auth'
 import { getCenterSettings } from '../api/settings'
 import { displayUserContact } from '../utils/displayIdentity'
-import { PLAN_RANK } from '../constants/plans'
+import { PLAN_RANK, isTrialTenant } from '../constants/plans'
 
 const centerGroups = [
   {
@@ -65,7 +65,7 @@ function SidebarContent({ collapsed, setCollapsed, onClose }) {
       }))
     : groups
   const userContact = displayUserContact(user, center)
-  const canUpgrade = !isAdmin && center?.plan && (PLAN_RANK[center.plan] || 1) < PLAN_RANK.enterprise
+  const canUpgrade = !isAdmin && center?.plan && (isTrialTenant(center) || (PLAN_RANK[center.plan] || 1) < PLAN_RANK.enterprise)
 
   return (
     <div className="flex h-full flex-col border-l border-slate-900 bg-[#08111f] text-white">

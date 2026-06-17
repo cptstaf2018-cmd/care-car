@@ -77,7 +77,7 @@ export default function Register() {
       >
         <div className="mb-7 flex items-start justify-between gap-4">
           <span className="rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1.5 text-xs font-bold text-emerald-100">
-            3 أيام مجاناً
+            7 أيام مجاناً
           </span>
           <div className="text-left">
             <div className="mb-4 mr-auto flex h-12 w-12 items-center justify-center rounded-lg bg-cyan-300 text-lg font-black text-slate-950 shadow-lg shadow-cyan-500/25">
