@@ -343,7 +343,7 @@ export default function Login({ initialMode = 'login' }) {
 
             {/* Mobile hero */}
             <div className="mb-8 lg:hidden">
-              <div className="relative mb-5 mx-auto aspect-square w-full max-w-xs overflow-hidden rounded-lg border border-white/10 shadow-2xl shadow-black/30">
+              <div className="relative mb-5 aspect-square w-full overflow-hidden rounded-lg border border-white/10 shadow-2xl shadow-black/30">
                 <img src={mobileHero} alt="care-car-saas" className="h-full w-full object-cover" />
               </div>
               <p className="text-sm font-extrabold uppercase text-cyan-300">care-car-saas</p>
