@@ -29,7 +29,7 @@ const ABOUT_T = {
     ],
     story: {
       eyebrow: 'قصتنا',
-      title: 'بدأت من دفتر ممزّق وزحمة آخر النهار',
+      title: 'بدأت القصة من *دفتر ممزّق، وفوضى آخر النهار*',
       p1: 'في مركز لتغيير الزيت في بغداد، كان كل شيء يُكتب بخط اليد: أرقام اللوحات على ورقة، الأسعار في رأس صاحب المحل، وموعد الزيت القادم… ينساه الزبون غالباً. عند آخر النهار، لا أحد يعرف بدقة كم دخل ولا كم بقي في المخزن.',
       p2: 'رأينا المشكلة عن قرب، فقررنا ألّا نبيع برنامجاً معقّداً مستورداً، بل أن نبني أداة يفهمها أي موظف من أول يوم: تسجّل السيارة، تحسب الفاتورة، تنبّه الزبون، وتقول لك بصدق أين تذهب أرباحك.',
       quote: 'لم نُرد أن نُعلّم المراكز كيف تعمل — أردنا أن نمنحها الوقت لتعمل أكثر.',
@@ -37,14 +37,14 @@ const ABOUT_T = {
     },
     mv: {
       eyebrow: 'رسالتنا ورؤيتنا',
-      title: 'لماذا نستيقظ كل صباح',
+      title: 'لماذا *نستيقظ كل صباح*؟',
       mission: { tag: 'الرسالة', title: 'نُبسّط إدارة المراكز', desc: 'أن نضع بين يدي كل مركز خدمة سيارات نظاماً واحداً يدير السيارات والخدمات والفواتير والمخزون بثقة — بلغته، وبعملته، وبسعر يقدر عليه.' },
       vision: { tag: 'الرؤية', title: 'بساطة بمستوى عالمي', desc: 'أن يصبح Care Car المعيار الذي تُدار به ورش ومراكز السيارات في كل مكان، حيث تتساوى البساطة مع القوة، والتقنية مع الواقع اليومي.' },
     },
     values: {
       eyebrow: 'قيمنا',
-      title: 'مبادئ نُهندس عليها كل تفصيل',
-      sub: 'ليست شعارات على الجدار — هي القرارات التي نتخذها في كل شاشة.',
+      title: 'مبادئ *تصمّم كل تفصيل* في Care Car',
+      sub: 'ليست شعارات معلّقة على الجدار، بل القرارات التي نتخذها في كل شاشة.',
       items: [
         { icon: 'Lightbulb', title: 'بساطة قبل كل شيء', desc: 'إن احتاجت الميزة إلى شرح طويل، فهي غير جاهزة بعد. نختصر حتى يفهمها أي موظف فوراً.' },
         { icon: 'MapPin', title: 'مبني من واقع الورشة', desc: 'بلغتك، وبعملتك المحلية، وبفهمٍ لتفاصيل يومك — لا ترجمة باهتة لمنتج جاهز بعيد عن الواقع.' },
@@ -56,8 +56,8 @@ const ABOUT_T = {
     },
     why: {
       eyebrow: 'لماذا Care Car',
-      title: 'الفرق بين أن «تشتغل» وأن «تدير»',
-      sub: 'هكذا يبدو يومك قبل Care Car وبعده.',
+      title: 'الفرق بين أن *"تشتغل"* وأن *"تدير"*',
+      sub: 'هكذا يبدو يومك *قبل* Care Car *وبعده*.',
       oldTitle: 'الطريقة التقليدية',
       newTitle: 'مع Care Car',
       rows: [
@@ -87,7 +87,7 @@ const ABOUT_T = {
     },
     pricing: {
       eyebrow: 'أسعار واضحة',
-      title: 'اختر الخطة التي تناسب مركزك',
+      title: 'اختر الخطة التي *تناسب مركزك*',
       sub: 'أسعار شفافة بالدينار العراقي والدولار. بدون رسوم خفية. ألغِ في أي وقت.',
       trialNote: 'كل خطة تبدأ بـ ٧ أيام تجربة مجانية كاملة المزايا، بدون بطاقة ائتمان.',
       currency: 'د.ع / شهرياً',
@@ -129,7 +129,7 @@ const ABOUT_T = {
     ],
     story: {
       eyebrow: 'Our story',
-      title: 'It started with a torn notebook and end-of-day chaos',
+      title: 'It started with *a torn notebook and end-of-day chaos*',
       p1: "At an oil-change center in Baghdad, everything was handwritten: plate numbers on a scrap of paper, prices in the owner's head, and the next oil date… usually forgotten by the customer. At day's end, nobody knew exactly how much came in or what was left in stock.",
       p2: 'We saw the problem up close, so we decided not to sell a complex imported program, but to build a tool any employee understands on day one: it logs the car, totals the invoice, reminds the customer, and tells you honestly where your profit goes.',
       quote: 'We never wanted to teach centers how to work — we wanted to give them the time to work more.',
@@ -137,14 +137,14 @@ const ABOUT_T = {
     },
     mv: {
       eyebrow: 'Mission & Vision',
-      title: 'Why we get up every morning',
+      title: 'Why *we get up every morning*',
       mission: { tag: 'Mission', title: 'Make center management simple', desc: "To put in every car-service center's hands one system that runs cars, services, invoices, and inventory with confidence — in their language, in their currency, at a price they can afford." },
       vision: { tag: 'Vision', title: 'Simplicity, world-class', desc: 'For Care Car to become the standard by which car workshops and centers are run everywhere, where simplicity meets power and technology meets daily reality.' },
     },
     values: {
       eyebrow: 'Our values',
-      title: 'Principles we engineer every detail on',
-      sub: 'Not slogans on a wall — the decisions we make on every screen.',
+      title: 'The principles that *shape every detail* of Care Car',
+      sub: "Not slogans on a wall, just the decisions we make on every screen.",
       items: [
         { icon: 'Lightbulb', title: 'Simplicity first', desc: "If a feature needs a long explanation, it isn't ready yet. We trim until any employee gets it instantly." },
         { icon: 'MapPin', title: 'Built from the workshop floor', desc: 'In your language, in your local currency, with a real grasp of your day — not a faded translation of an off-the-shelf product.' },
@@ -156,8 +156,8 @@ const ABOUT_T = {
     },
     why: {
       eyebrow: 'Why Care Car',
-      title: 'The difference between "working" and "running"',
-      sub: "Here's what your day looks like before Care Car and after.",
+      title: 'The difference between *"working"* and *"running"*',
+      sub: "Here's what your day looks like *before* Care Car *and after*.",
       oldTitle: 'The traditional way',
       newTitle: 'With Care Car',
       rows: [
@@ -187,7 +187,7 @@ const ABOUT_T = {
     },
     pricing: {
       eyebrow: 'Clear pricing',
-      title: 'Pick the plan that fits your center',
+      title: 'Pick the plan *that fits your center*',
       sub: 'Transparent pricing in IQD and USD. No hidden fees. Cancel anytime.',
       trialNote: 'Every plan starts with a 7-day free trial, full features, no credit card required.',
       currency: 'IQD / month',
@@ -230,6 +230,12 @@ function Eyebrow({ children }) {
       {children}
     </span>
   )
+}
+
+/* Renders text with *segments* wrapped in an accent color */
+function Headline({ text, accentClass = 'accent-text' }) {
+  const parts = text.split('*')
+  return parts.map((part, i) => i % 2 === 1 ? <span key={i} className={accentClass}>{part}</span> : part)
 }
 
 export default function LandingPage() {
@@ -334,7 +340,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-14 items-center">
           <div className="order-2 lg:order-1">
             <Eyebrow>{c.story.eyebrow}</Eyebrow>
-            <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-6 text-slate-900 leading-tight">{c.story.title}</h2>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-6 text-slate-900 leading-tight"><Headline text={c.story.title} /></h2>
             <p className="text-slate-500 leading-relaxed text-lg mb-4">{c.story.p1}</p>
             <p className="text-slate-500 leading-relaxed text-lg mb-8">{c.story.p2}</p>
             <div className="relative rounded-2xl accent-soft-bg border border-slate-200/60 p-6 pr-7">
@@ -357,7 +363,7 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <Eyebrow>{c.mv.eyebrow}</Eyebrow>
-            <h2 className="text-3xl md:text-5xl font-black tracking-tight text-slate-900">{c.mv.title}</h2>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight text-slate-900"><Headline text={c.mv.title} /></h2>
           </div>
           <div className="grid md:grid-cols-2 gap-6">
             {[{ d: c.mv.mission, Icon: Target }, { d: c.mv.vision, Icon: Eye }].map(({ d, Icon }, i) => (
@@ -379,7 +385,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <Eyebrow>{c.values.eyebrow}</Eyebrow>
-            <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4 text-slate-900">{c.values.title}</h2>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4 text-slate-900"><Headline text={c.values.title} /></h2>
             <p className="text-slate-500 text-lg">{c.values.sub}</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -412,7 +418,7 @@ export default function LandingPage() {
               <Cpu size={14} />{isRtl ? 'ذكاء اصطناعي للورشة' : 'AI for the workshop'}
             </p>
             <h3 className="text-white text-2xl md:text-3xl font-black leading-snug">
-              {isRtl ? 'بُني داخل الورشة، لا بعيداً عنها' : 'Built inside the workshop, not far from it'}
+              <Headline accentClass="accent-text-light" text={isRtl ? 'بُني *داخل الورشة*، لا بعيداً عنها' : 'Built *inside the workshop*, not far from it'} />
             </h3>
           </div>
         </div>
@@ -423,8 +429,8 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <Eyebrow>{c.why.eyebrow}</Eyebrow>
-            <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4 text-slate-900">{c.why.title}</h2>
-            <p className="text-slate-500 text-lg">{c.why.sub}</p>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4 text-slate-900"><Headline text={c.why.title} /></h2>
+            <p className="text-slate-500 text-lg"><Headline text={c.why.sub} /></p>
           </div>
           <div className="grid sm:grid-cols-2 gap-px rounded-3xl overflow-hidden border border-slate-200 bg-slate-200 lp-card-shadow">
             <div className="bg-white p-6 sm:p-7">
@@ -465,7 +471,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-16">
             <Eyebrow>{c.pricing.eyebrow}</Eyebrow>
-            <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4 text-slate-900">{c.pricing.title}</h2>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4 text-slate-900"><Headline text={c.pricing.title} /></h2>
             <p className="text-slate-500 text-lg mb-4">{c.pricing.sub}</p>
             <span className="inline-flex items-center gap-2 text-sm font-semibold accent-text accent-soft-bg px-4 py-1.5 rounded-full">
               <Clock size={15} />{c.pricing.trialNote}
