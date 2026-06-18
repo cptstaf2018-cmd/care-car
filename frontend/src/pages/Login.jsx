@@ -15,6 +15,17 @@ const features = [
   { icon: BarChart3, label: 'تقارير تشغيلية' },
 ]
 
+const serviceSpecialties = [
+  { src: '/service-icons-3d/auto-pack/oil-can.webp', label: 'تبديل زيت' },
+  { src: '/service-icons-3d/auto-pack/tire-sale-exact.webp', label: 'إطارات' },
+  { src: '/service-icons-3d/auto-pack/battery.webp', label: 'كهرباء' },
+  { src: '/service-icons-3d/auto-pack/car-wash-full-exact.webp', label: 'غسيل' },
+  { src: '/service-icons-3d/auto-pack/service-wrench-car.webp', label: 'ميكانيك' },
+  { src: '/service-icons-3d/auto-pack/ac-gas-exact.webp', label: 'تكييف' },
+  { src: '/service-icons-3d/auto-pack/paint-spray.webp', label: 'صبغ' },
+  { src: '/service-icons-3d/auto-pack/spark-plug.webp', label: 'قطع غيار' },
+]
+
 const trustStats = [
   { value: '+24K', label: 'تذكير خدمة' },
   { value: '99.9%', label: 'جاهزية تشغيل' },
@@ -226,13 +237,28 @@ export default function Login({ initialMode = 'login' }) {
               </div>
             </motion.div>
 
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="mb-8 mt-10 grid w-fit grid-cols-4 gap-4">
+              {serviceSpecialties.map((item, index) => (
+                <motion.div
+                  key={item.label}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 + index * 0.04 }}
+                  className="flex w-28 flex-col items-center gap-2 rounded-xl border border-white/10 bg-white/[0.06] px-2 py-3.5 shadow-lg shadow-black/10 backdrop-blur-xl"
+                >
+                  <img src={item.src} alt="" className="h-10 w-10 object-contain" />
+                  <span className="text-sm font-semibold text-slate-200">{item.label}</span>
+                </motion.div>
+              ))}
+            </motion.div>
+
             <motion.div variants={cardVariants} initial="hidden" animate="show" className="max-w-2xl pb-10">
               <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-200/20 bg-white/10 px-4 py-2 text-sm font-bold shadow-lg shadow-cyan-950/20 backdrop-blur-xl">
                 <Sparkles size={16} className="text-cyan-200" />
                 منصة احترافية لإدارة مراكز خدمات السيارات
               </div>
               <h1 className="max-w-3xl text-5xl font-extrabold leading-[1.14] tracking-normal xl:text-[62px]">
-                كل مركز سيارات يحتاج نظاما يبدو مثل شركته
+                منصة خدمات السيارات
               </h1>
               <p className="mt-5 max-w-xl text-base leading-8 text-slate-200/90">
                 إدارة الزبائن، السيارات، الفواتير، المخزون، التذكيرات التسويقية عبر واتساب، وربط الكاميرا من مكان واحد.
@@ -266,8 +292,8 @@ export default function Login({ initialMode = 'login' }) {
             <div className="mb-8 lg:hidden">
               <div className="relative mb-5 h-56 overflow-hidden rounded-lg border border-white/10 shadow-2xl shadow-black/30">
                 <img src={centerHero} alt="care-car-saas" className="h-full w-full object-cover" />
-                <div className="absolute inset-y-0 right-0 flex w-[48%] flex-col items-center justify-start gap-2 p-2.5">
-                  <div className="grid w-full grid-cols-4 gap-1.5">
+                <div className="absolute inset-y-0 right-0 flex w-[58%] flex-col items-center justify-start gap-2.5 p-2.5">
+                  <div className="grid w-full grid-cols-4 gap-2">
                     {[
                       { src: '/service-icons-3d/auto-pack/oil-can.webp', label: 'تبديل زيت' },
                       { src: '/service-icons-3d/auto-pack/tire-sale-exact.webp', label: 'إطارات' },
@@ -276,17 +302,17 @@ export default function Login({ initialMode = 'login' }) {
                       { src: '/service-icons-3d/auto-pack/service-wrench-car.webp', label: 'ميكانيك' },
                       { src: '/service-icons-3d/auto-pack/ac-gas-exact.webp', label: 'تكييف' },
                       { src: '/service-icons-3d/auto-pack/paint-spray.webp', label: 'صبغ' },
-                      { src: '/service-icons-3d/auto-pack/oil-filter.webp', label: 'قطع' },
+                      { src: '/service-icons-3d/auto-pack/spark-plug.webp', label: 'قطع غيار' },
                     ].map(({ src, label }) => (
                       <div key={src} className="flex flex-col items-center gap-1">
                         <div className="flex aspect-square w-full items-center justify-center rounded-xl border border-white/15 bg-white/10 shadow-lg shadow-black/30 backdrop-blur-md">
-                          <img src={src} alt="" className="h-5 w-5 object-contain" />
+                          <img src={src} alt="" className="h-10 w-10 object-contain" />
                         </div>
-                        <span className="text-[9px] font-bold text-white/85 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">{label}</span>
+                        <span className="text-[10px] font-bold text-white/85 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">{label}</span>
                       </div>
                     ))}
                   </div>
-                  <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-cyan-200/25 bg-white/10 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-cyan-200 backdrop-blur-md">
+                  <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-cyan-200/25 bg-white/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-200 backdrop-blur-md">
                     All-in-One Services
                   </span>
                 </div>
