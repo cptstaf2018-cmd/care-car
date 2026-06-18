@@ -264,11 +264,35 @@ export default function Login({ initialMode = 'login' }) {
 
             {/* Mobile hero */}
             <div className="mb-8 lg:hidden">
-              <div className="mb-5 h-56 overflow-hidden rounded-lg border border-white/10 shadow-2xl shadow-black/30">
+              <div className="relative mb-5 h-56 overflow-hidden rounded-lg border border-white/10 shadow-2xl shadow-black/30">
                 <img src={centerHero} alt="care-car-saas" className="h-full w-full object-cover" />
+                <div className="absolute inset-y-0 right-0 flex w-[48%] flex-col items-center justify-start gap-2 p-2.5">
+                  <div className="grid w-full grid-cols-4 gap-1.5">
+                    {[
+                      { src: '/service-icons-3d/auto-pack/oil-can.webp', label: 'تبديل زيت' },
+                      { src: '/service-icons-3d/auto-pack/tire-sale-exact.webp', label: 'إطارات' },
+                      { src: '/service-icons-3d/auto-pack/battery.webp', label: 'كهرباء' },
+                      { src: '/service-icons-3d/auto-pack/car-wash-full-exact.webp', label: 'غسيل' },
+                      { src: '/service-icons-3d/auto-pack/service-wrench-car.webp', label: 'ميكانيك' },
+                      { src: '/service-icons-3d/auto-pack/ac-gas-exact.webp', label: 'تكييف' },
+                      { src: '/service-icons-3d/auto-pack/paint-spray.webp', label: 'صبغ' },
+                      { src: '/service-icons-3d/auto-pack/oil-filter.webp', label: 'قطع' },
+                    ].map(({ src, label }) => (
+                      <div key={src} className="flex flex-col items-center gap-1">
+                        <div className="flex aspect-square w-full items-center justify-center rounded-xl border border-white/15 bg-white/10 shadow-lg shadow-black/30 backdrop-blur-md">
+                          <img src={src} alt="" className="h-5 w-5 object-contain" />
+                        </div>
+                        <span className="text-[9px] font-bold text-white/85 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-cyan-200/25 bg-white/10 px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-cyan-200 backdrop-blur-md">
+                    All-in-One Services
+                  </span>
+                </div>
               </div>
               <p className="text-sm font-extrabold uppercase text-cyan-300">care-car-saas</p>
-              <h1 className="mt-2 text-3xl font-extrabold leading-tight">منصة إدارة مراكز السيارات</h1>
+              <h1 className="mt-2 text-3xl font-extrabold leading-tight">منصة خدمات السيارات</h1>
             </div>
 
             {/* Card */}
