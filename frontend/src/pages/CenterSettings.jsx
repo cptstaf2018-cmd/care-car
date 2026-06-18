@@ -8,6 +8,7 @@ import { getCenterSettings, updateCenterSettings, requestSubscription, uploadLog
 import { getPaymentSettings } from '../api/platform'
 import { getCenterUsers, createCenterUser, updateCenterUser, deleteCenterUser } from '../api/users'
 import { PLAN_DETAILS, PLAN_ORDER, hasPlanFeature, isHigherPlan, nextPlan, planShortName, planUserLimit } from '../constants/plans'
+import { CENTER_SPECIALTIES } from '../constants/centerSpecialties'
 
 const PLAN_COLORS = { basic: 'slate', pro: 'cyan', enterprise: 'violet' }
 const PLAN_BADGES = { pro: 'الأكثر طلباً' }
@@ -413,6 +414,7 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
 const defaultForm = {
   name: '',
   contact_phone: '',
+  specialty: '',
   logo_url: '',
   ip_camera_url: '',
   ip_camera_username: '',
@@ -724,6 +726,7 @@ export default function CenterSettings() {
       setForm({
         contact_phone: center.contact_phone || '',
         name: center.name || '',
+        specialty: center.specialty || 'quick_service',
         logo_url: center.logo_url || '',
         ip_camera_url: center.ip_camera_url || '',
         ip_camera_username: center.ip_camera_username || '',
@@ -794,6 +797,15 @@ export default function CenterSettings() {
             <input value={form.contact_phone} onChange={e => update('contact_phone', e.target.value)}
               placeholder="هاتف المركز"
               className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
+            <div>
+              <label className="mb-1.5 block text-xs font-bold text-slate-500">تخصص المركز</label>
+              <select value={form.specialty} onChange={e => update('specialty', e.target.value)}
+                className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100">
+                {CENTER_SPECIALTIES.map(item => (
+                  <option key={item.value} value={item.value}>{item.label}</option>
+                ))}
+              </select>
+            </div>
             <LogoUpload
               currentUrl={form.logo_url}
               onUploaded={(url) => {
