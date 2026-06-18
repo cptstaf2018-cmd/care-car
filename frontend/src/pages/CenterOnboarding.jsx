@@ -98,7 +98,7 @@ export default function CenterOnboarding() {
             اختر <span className="text-blue-600">نوع مركزك</span>
           </h1>
           <p className="mt-3 text-sm font-semibold text-slate-500">
-            اختر التخصص الرئيسي لمركزك. يمكنك تعديله لاحقاً من الإعدادات.
+            اختر التخصص الرئيسي لمركزك.
           </p>
         </div>
 
