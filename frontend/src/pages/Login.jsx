@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, BarChart3, Camera, Car, CheckCircle2, Clock3, MessageCircle, ShieldCheck, Sparkles, Zap, Phone, Mail } from 'lucide-react'
+import { ArrowLeft, BarChart3, Camera, Car, CheckCircle2, Clock3, MessageCircle, ShieldCheck, Sparkles, Zap, Phone, Mail, Sun, Moon } from 'lucide-react'
 import { activate, confirmPasswordReset, login, register, requestPasswordReset } from '../api/auth'
 import { useAuthStore } from '../store/auth'
 import { DEFAULT_CENTER_SPECIALTY } from '../constants/centerSpecialties'
 import centerHero from '../assets/center-template-red.png'
 import loginCar from '../assets/login-car-real.png'
+import mobileHero from '../assets/center-hero-mobile.png'
 
 const features = [
   { icon: Car, label: 'سيارات العملاء' },
@@ -48,6 +49,22 @@ export default function Login({ initialMode = 'login' }) {
   const [searchParams] = useSearchParams()
   const [mode, setMode] = useState(initialMode)
   const [dir, setDir] = useState(1)
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem('loginTheme') || 'dark'
+    } catch {
+      return 'dark'
+    }
+  })
+  const isLight = theme === 'light'
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('loginTheme', theme)
+    } catch {
+      // localStorage unavailable (e.g. test environment)
+    }
+  }, [theme])
 
   // Login state
   const [loginId, setLoginId] = useState('')
@@ -208,8 +225,44 @@ export default function Login({ initialMode = 'login' }) {
     }
   }
 
+  const cardClass = isLight
+    ? 'overflow-hidden rounded-2xl border border-slate-200 bg-white p-8 shadow-2xl shadow-slate-300/40'
+    : 'overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 p-8 shadow-2xl shadow-black/40 backdrop-blur-2xl'
+  const subtleClass = isLight ? 'text-xs text-slate-500' : 'text-xs text-slate-400'
+  const tabWrapClass = isLight
+    ? 'rounded-xl border border-slate-200 bg-slate-100 p-1'
+    : 'rounded-xl border border-white/10 bg-slate-900/60 p-1'
+  const inactiveTabClass = isLight ? 'text-slate-500 hover:text-slate-900' : 'text-slate-400 hover:text-white'
+  const labelClass = isLight ? 'mb-2 block text-sm font-bold text-slate-700' : 'mb-2 block text-sm font-bold text-slate-200'
+  const descClass = isLight ? 'mb-5 text-sm leading-6 text-slate-600' : 'mb-5 text-sm leading-6 text-slate-300'
+  const footerLinkClass = isLight ? 'mt-4 text-center text-sm text-slate-500' : 'mt-4 text-center text-sm text-slate-400'
+  const inputClass = isLight
+    ? 'w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3.5 text-slate-900 shadow-inner shadow-black/5 placeholder:text-slate-400 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30'
+    : 'w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30'
+  const codeInputClass = isLight
+    ? 'w-full rounded-lg border border-slate-200 bg-slate-50 px-4 py-3.5 text-center font-mono text-2xl tracking-[0.45em] text-slate-900 shadow-inner shadow-black/5 placeholder:text-slate-400 focus:border-cyan-500/50 focus:outline-none focus:ring-1 focus:ring-cyan-500/30'
+    : 'w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-center font-mono text-2xl tracking-[0.45em] text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30'
+  const linkMutedClass = isLight ? 'text-slate-600 underline hover:text-slate-800' : 'text-slate-400 underline hover:text-slate-300'
+  const trustItemClass = isLight
+    ? 'flex items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-2'
+    : 'flex items-center justify-center gap-1.5 rounded-md border border-white/8 bg-white/[0.04] px-2 py-2'
+
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#07111f] text-right text-white">
+    <main className={isLight
+      ? 'relative min-h-screen overflow-hidden bg-slate-50 text-right text-slate-900'
+      : 'relative min-h-screen overflow-hidden bg-[#07111f] text-right text-white'}>
+      <button
+        type="button"
+        onClick={() => setTheme(isLight ? 'dark' : 'light')}
+        aria-label={isLight ? 'تفعيل الوضع الليلي' : 'تفعيل الوضع النهاري'}
+        className={`fixed left-4 top-4 z-30 flex h-10 w-10 items-center justify-center rounded-full border backdrop-blur-md transition-colors ${
+          isLight
+            ? 'border-slate-200 bg-white/80 text-slate-700 hover:bg-white'
+            : 'border-white/10 bg-slate-950/60 text-cyan-200 hover:bg-slate-900/70'
+        }`}
+      >
+        {isLight ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+      </button>
       <div className="pointer-events-none absolute -right-32 top-20 h-80 w-80 rounded-full bg-cyan-400/20 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 left-1/3 h-96 w-96 rounded-full bg-blue-500/10 blur-3xl" />
 
@@ -290,32 +343,8 @@ export default function Login({ initialMode = 'login' }) {
 
             {/* Mobile hero */}
             <div className="mb-8 lg:hidden">
-              <div className="relative mb-5 h-56 overflow-hidden rounded-lg border border-white/10 shadow-2xl shadow-black/30">
-                <img src={centerHero} alt="care-car-saas" className="h-full w-full object-cover" />
-                <div className="absolute inset-y-0 right-0 flex w-[58%] flex-col items-center justify-start gap-2.5 p-2.5">
-                  <div className="grid w-full grid-cols-4 gap-2">
-                    {[
-                      { src: '/service-icons-3d/auto-pack/oil-can.webp', label: 'تبديل زيت' },
-                      { src: '/service-icons-3d/auto-pack/tire-sale-exact.webp', label: 'إطارات' },
-                      { src: '/service-icons-3d/auto-pack/battery.webp', label: 'كهرباء' },
-                      { src: '/service-icons-3d/auto-pack/car-wash-full-exact.webp', label: 'غسيل' },
-                      { src: '/service-icons-3d/auto-pack/service-wrench-car.webp', label: 'ميكانيك' },
-                      { src: '/service-icons-3d/auto-pack/ac-gas-exact.webp', label: 'تكييف' },
-                      { src: '/service-icons-3d/auto-pack/paint-spray.webp', label: 'صبغ' },
-                      { src: '/service-icons-3d/auto-pack/spark-plug.webp', label: 'قطع غيار' },
-                    ].map(({ src, label }) => (
-                      <div key={src} className="flex flex-col items-center gap-1">
-                        <div className="flex aspect-square w-full items-center justify-center rounded-xl border border-white/15 bg-white/10 shadow-lg shadow-black/30 backdrop-blur-md">
-                          <img src={src} alt="" className="h-10 w-10 object-contain" />
-                        </div>
-                        <span className="text-[10px] font-bold text-white/85 drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">{label}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <span className="mt-1 inline-flex items-center gap-1 rounded-full border border-cyan-200/25 bg-white/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-cyan-200 backdrop-blur-md">
-                    All-in-One Services
-                  </span>
-                </div>
+              <div className="relative mb-5 mx-auto aspect-square w-full max-w-xs overflow-hidden rounded-lg border border-white/10 shadow-2xl shadow-black/30">
+                <img src={mobileHero} alt="care-car-saas" className="h-full w-full object-cover" />
               </div>
               <p className="text-sm font-extrabold uppercase text-cyan-300">care-car-saas</p>
               <h1 className="mt-2 text-3xl font-extrabold leading-tight">منصة خدمات السيارات</h1>
@@ -323,7 +352,7 @@ export default function Login({ initialMode = 'login' }) {
 
             {/* Card */}
             <motion.div variants={cardVariants} initial="hidden" animate="show"
-              className="overflow-hidden rounded-2xl border border-white/10 bg-slate-950/60 p-8 shadow-2xl shadow-black/40 backdrop-blur-2xl">
+              className={cardClass}>
 
               {/* Header */}
               <div className="mb-6 flex items-center justify-between">
@@ -333,7 +362,7 @@ export default function Login({ initialMode = 'login' }) {
                     <p className="text-xs font-semibold uppercase text-cyan-300">care-car-saas</p>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className="inline-block h-2 w-2 rounded-full bg-emerald-400 shadow shadow-emerald-400/50"></span>
-                      <span className="text-xs text-slate-400">Online</span>
+                      <span className={subtleClass}>Online</span>
                     </div>
                   </div>
                 </div>
@@ -341,16 +370,16 @@ export default function Login({ initialMode = 'login' }) {
               </div>
 
               {/* Tab switcher */}
-              <div className="mb-6 flex rounded-xl border border-white/10 bg-slate-900/60 p-1">
+              <div className={`mb-6 flex ${tabWrapClass}`}>
                 <button
                   onClick={() => switchMode('login')}
-                  className={`flex-1 rounded-lg py-2 text-sm font-bold transition-all ${mode === 'login' ? 'bg-cyan-400 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                  className={`flex-1 rounded-lg py-2 text-sm font-bold transition-all ${mode === 'login' ? 'bg-cyan-400 text-slate-950 shadow-lg' : inactiveTabClass}`}
                 >
                   تسجيل الدخول
                 </button>
                 <button
                   onClick={() => switchMode('register')}
-                  className={`flex-1 rounded-lg py-2 text-sm font-bold transition-all ${mode === 'register' ? 'bg-cyan-400 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white'}`}
+                  className={`flex-1 rounded-lg py-2 text-sm font-bold transition-all ${mode === 'register' ? 'bg-cyan-400 text-slate-950 shadow-lg' : inactiveTabClass}`}
                 >
                   حساب جديد
                 </button>
@@ -362,21 +391,21 @@ export default function Login({ initialMode = 'login' }) {
                   {mode === 'login' ? (
                     <motion.div key="login" custom={dir} variants={formVariants} initial="enter" animate="center" exit="exit">
                       <h2 className="mb-1 text-2xl font-extrabold leading-tight">تسجيل الدخول</h2>
-                      <p className="mb-5 text-sm leading-6 text-slate-300">
+                      <p className={descClass}>
                         ادخل إلى لوحة إدارة مركزك للمتابعة.
                       </p>
                       <form onSubmit={handleLoginSubmit} className="space-y-4">
                         <label className="block">
-                          <span className="mb-2 block text-sm font-bold text-slate-200">الإيميل أو رقم الواتساب</span>
+                          <span className={labelClass}>الإيميل أو رقم الواتساب</span>
                           <input type="text" inputMode="email" placeholder="email@example.com أو 07xxxxxxxxx" value={loginId}
                             onChange={(e) => setLoginId(e.target.value)} required
-                            className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                            className={inputClass} />
                         </label>
                         <label className="block">
-                          <span className="mb-2 block text-sm font-bold text-slate-200">كلمة المرور</span>
+                          <span className={labelClass}>كلمة المرور</span>
                           <input type="password" placeholder="كلمة المرور" value={password}
                             onChange={(e) => setPassword(e.target.value)} required
-                            className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                            className={inputClass} />
                         </label>
                         {loginNotice && <p className="rounded-lg border border-emerald-300/20 bg-emerald-300/10 px-3 py-2 text-sm font-bold text-emerald-100">{loginNotice}</p>}
                         {error && <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-200">{error}</p>}
@@ -385,7 +414,7 @@ export default function Login({ initialMode = 'login' }) {
                       <button onClick={openForgotPassword} className="mt-4 w-full text-center text-sm font-bold text-cyan-300 transition-colors hover:text-cyan-200">
                         نسيت كلمة المرور؟ إرسال كود جديد
                       </button>
-                      <p className="mt-4 text-center text-sm text-slate-400">
+                      <p className={footerLinkClass}>
                         ليس لديك حساب؟{' '}
                         <button onClick={() => switchMode('register')} className="font-bold text-cyan-300 hover:text-cyan-200 transition-colors">
                           سجل مجاناً — 7 أيام تجريبية
@@ -395,16 +424,16 @@ export default function Login({ initialMode = 'login' }) {
                   ) : mode === 'forgot' ? (
                     <motion.div key="forgot" custom={dir} variants={formVariants} initial="enter" animate="center" exit="exit">
                       <h2 className="mb-1 text-2xl font-extrabold leading-tight">استعادة كلمة المرور</h2>
-                      <p className="mb-5 text-sm leading-6 text-slate-300">
+                      <p className={descClass}>
                         أدخل الإيميل أو رقم الواتساب المرتبط بحسابك وسنرسل لك كود إعادة التعيين.
                       </p>
                       {!resetSent ? (
                         <form onSubmit={handleResetRequest} className="space-y-4">
                           <label className="block">
-                            <span className="mb-2 block text-sm font-bold text-slate-200">الإيميل أو رقم الواتساب</span>
+                            <span className={labelClass}>الإيميل أو رقم الواتساب</span>
                             <input type="text" inputMode="email" placeholder="email@example.com أو 07xxxxxxxxx" value={resetId}
                               onChange={(e) => setResetId(e.target.value)} required
-                              className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                              className={inputClass} />
                           </label>
                           {resetError && <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-200">{resetError}</p>}
                           <LaunchButton launching={resetLoading} label={resetLoading ? 'جاري إرسال الكود...' : 'إرسال كود إعادة التعيين'} />
@@ -415,28 +444,28 @@ export default function Login({ initialMode = 'login' }) {
                             تم إرسال الكود. أدخله مع كلمة المرور الجديدة.
                           </div>
                           <label className="block">
-                            <span className="mb-2 block text-sm font-bold text-slate-200">كود إعادة التعيين</span>
+                            <span className={labelClass}>كود إعادة التعيين</span>
                             <input type="text" inputMode="numeric" maxLength={6} placeholder="000000" value={resetForm.code}
                               onChange={(e) => setResetForm({ ...resetForm, code: e.target.value.replace(/\D/g, '') })} required
-                              className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-center font-mono text-2xl tracking-[0.45em] text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                              className={codeInputClass} />
                           </label>
                           <label className="block">
-                            <span className="mb-2 block text-sm font-bold text-slate-200">كلمة المرور الجديدة</span>
+                            <span className={labelClass}>كلمة المرور الجديدة</span>
                             <input type="password" placeholder="أدخل كلمة مرور قوية" value={resetForm.new_password}
                               onChange={(e) => setResetForm({ ...resetForm, new_password: e.target.value })} required
-                              className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                              className={inputClass} />
                           </label>
                           <label className="block">
-                            <span className="mb-2 block text-sm font-bold text-slate-200">تأكيد كلمة المرور</span>
+                            <span className={labelClass}>تأكيد كلمة المرور</span>
                             <input type="password" placeholder="أعد إدخال كلمة المرور" value={resetForm.confirm_password}
                               onChange={(e) => setResetForm({ ...resetForm, confirm_password: e.target.value })} required
-                              className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                              className={inputClass} />
                           </label>
                           {resetError && <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-200">{resetError}</p>}
                           <LaunchButton launching={resetLoading} label={resetLoading ? 'جاري التغيير...' : 'تغيير كلمة المرور'} />
                         </form>
                       )}
-                      <p className="mt-4 text-center text-sm text-slate-400">
+                      <p className={footerLinkClass}>
                         تذكرت كلمة المرور؟{' '}
                         <button onClick={() => switchMode('login')} className="font-bold text-cyan-300 hover:text-cyan-200 transition-colors">
                           تسجيل الدخول
@@ -446,7 +475,7 @@ export default function Login({ initialMode = 'login' }) {
                   ) : (
                     <motion.div key="register" custom={dir} variants={formVariants} initial="enter" animate="center" exit="exit">
                       <h2 className="mb-1 text-2xl font-extrabold leading-tight">إنشاء حساب جديد</h2>
-                      <p className="mb-5 text-sm leading-6 text-slate-300">
+                      <p className={descClass}>
                         سجّل مركزك وسنرسل لك كود التفعيل لإكمال الحساب.
                       </p>
                       {regResult ? (
@@ -455,22 +484,22 @@ export default function Login({ initialMode = 'login' }) {
                             تم إرسال كود التفعيل. أدخل الكود وكلمة المرور الجديدة للمتابعة.
                           </div>
                           <label className="block">
-                            <span className="mb-2 block text-sm font-bold text-slate-200">كود التفعيل</span>
+                            <span className={labelClass}>كود التفعيل</span>
                             <input type="text" inputMode="numeric" maxLength={6} placeholder="000000" value={codeForm.code}
                               onChange={(e) => setCodeForm({ ...codeForm, code: e.target.value.replace(/\D/g, '') })} required
-                              className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-center font-mono text-2xl tracking-[0.45em] text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                              className={codeInputClass} />
                           </label>
                           <label className="block">
-                            <span className="mb-2 block text-sm font-bold text-slate-200">كلمة المرور الجديدة</span>
+                            <span className={labelClass}>كلمة المرور الجديدة</span>
                             <input type="password" placeholder="أدخل كلمة مرور قوية" value={codeForm.new_password}
                               onChange={(e) => setCodeForm({ ...codeForm, new_password: e.target.value })} required
-                              className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                              className={inputClass} />
                           </label>
                           <label className="block">
-                            <span className="mb-2 block text-sm font-bold text-slate-200">تأكيد كلمة المرور</span>
+                            <span className={labelClass}>تأكيد كلمة المرور</span>
                             <input type="password" placeholder="أعد إدخال كلمة المرور" value={codeForm.confirm_password}
                               onChange={(e) => setCodeForm({ ...codeForm, confirm_password: e.target.value })} required
-                              className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                              className={inputClass} />
                           </label>
                           {codeError && <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-200">{codeError}</p>}
                           <LaunchButton launching={codeLoading} label={codeLoading ? 'جاري التفعيل...' : 'تفعيل الحساب'} />
@@ -478,56 +507,56 @@ export default function Login({ initialMode = 'login' }) {
                       ) : (
                         <form onSubmit={handleRegisterSubmit} className="space-y-4">
                           <label className="block">
-                            <span className="mb-2 block text-sm font-bold text-slate-200">اسم المركز</span>
+                            <span className={labelClass}>اسم المركز</span>
                             <input type="text" placeholder="مركز الخليج لخدمات السيارات" value={centerName}
                               onChange={(e) => setCenterName(e.target.value)} required
-                              className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                              className={inputClass} />
                           </label>
                           <label className="block">
-                            <span className="mb-2 block text-sm font-bold text-slate-200">اسمك الكامل</span>
+                            <span className={labelClass}>اسمك الكامل</span>
                             <input type="text" placeholder="أحمد محمد" value={fullName}
                               onChange={(e) => setFullName(e.target.value)} required
-                              className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                              className={inputClass} />
                           </label>
                           <div>
-                            <span className="mb-2 block text-sm font-bold text-slate-200">طريقة استلام كود التفعيل</span>
-                            <div className="flex rounded-xl border border-white/10 bg-slate-900/60 p-1">
+                            <span className={labelClass}>طريقة استلام كود التفعيل</span>
+                            <div className={`flex ${tabWrapClass}`}>
                               <button type="button" onClick={() => setContactMethod('whatsapp')}
-                                className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-bold transition-all ${contactMethod === 'whatsapp' ? 'bg-cyan-400 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white'}`}>
+                                className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-bold transition-all ${contactMethod === 'whatsapp' ? 'bg-cyan-400 text-slate-950 shadow-lg' : inactiveTabClass}`}>
                                 <Phone size={15} /> واتساب
                               </button>
                               <button type="button" onClick={() => setContactMethod('email')}
-                                className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-bold transition-all ${contactMethod === 'email' ? 'bg-cyan-400 text-slate-950 shadow-lg' : 'text-slate-400 hover:text-white'}`}>
+                                className={`flex flex-1 items-center justify-center gap-2 rounded-lg py-2 text-sm font-bold transition-all ${contactMethod === 'email' ? 'bg-cyan-400 text-slate-950 shadow-lg' : inactiveTabClass}`}>
                                 <Mail size={15} /> إيميل
                               </button>
                             </div>
                           </div>
                           {contactMethod === 'whatsapp' ? (
                             <label className="block">
-                              <span className="mb-2 block text-sm font-bold text-slate-200">رقم الواتساب</span>
+                              <span className={labelClass}>رقم الواتساب</span>
                               <input type="text" placeholder="07xxxxxxxxx" value={whatsapp}
                                 onChange={(e) => setWhatsapp(e.target.value)} required
-                                className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                                className={inputClass} />
                             </label>
                           ) : (
                             <label className="block">
-                              <span className="mb-2 block text-sm font-bold text-slate-200">البريد الإلكتروني</span>
+                              <span className={labelClass}>البريد الإلكتروني</span>
                               <input type="email" placeholder="example@mail.com" value={regEmail}
                                 onChange={(e) => setRegEmail(e.target.value)} required
-                                className="w-full rounded-lg border border-white/10 bg-slate-950/30 px-4 py-3.5 text-white shadow-inner shadow-black/20 placeholder:text-slate-500 focus:border-cyan-400/50 focus:outline-none focus:ring-1 focus:ring-cyan-400/30" />
+                                className={inputClass} />
                             </label>
                           )}
                           {regError && <p className="rounded-lg border border-rose-400/20 bg-rose-500/10 px-3 py-2 text-sm font-bold text-rose-200">{regError}</p>}
                           <LaunchButton launching={regLoading} label={regLoading ? 'جاري إرسال الكود...' : 'إرسال كود التفعيل'} />
                           <p className="text-center text-xs text-slate-500">
                             بإنشاء الحساب توافق على{' '}
-                            <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-slate-400 underline hover:text-slate-300">شروط الاستخدام</a>
+                            <a href="/terms" target="_blank" rel="noopener noreferrer" className={linkMutedClass}>شروط الاستخدام</a>
                             {' '}و{' '}
-                            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-slate-400 underline hover:text-slate-300">سياسة الخصوصية</a>
+                            <a href="/privacy" target="_blank" rel="noopener noreferrer" className={linkMutedClass}>سياسة الخصوصية</a>
                           </p>
                         </form>
                       )}
-                      <p className="mt-4 text-center text-sm text-slate-400">
+                      <p className={footerLinkClass}>
                         لديك حساب؟{' '}
                         <button onClick={() => switchMode('login')} className="font-bold text-cyan-300 hover:text-cyan-200 transition-colors">
                           تسجيل الدخول
@@ -540,9 +569,9 @@ export default function Login({ initialMode = 'login' }) {
 
               {/* Footer stats */}
               <div className="mt-6 grid grid-cols-3 gap-2 text-xs text-slate-300">
-                <TrustItem icon={CheckCircle2} label="بيانات معزولة" />
-                <TrustItem icon={Clock3} label="تنبيهات مباشرة" />
-                <TrustItem icon={MessageCircle} label="واتساب جاهز" />
+                <TrustItem icon={CheckCircle2} label="بيانات معزولة" className={trustItemClass} />
+                <TrustItem icon={Clock3} label="تنبيهات مباشرة" className={trustItemClass} />
+                <TrustItem icon={MessageCircle} label="واتساب جاهز" className={trustItemClass} />
               </div>
 
               <p className="mt-4 text-center text-xs text-slate-500">
@@ -632,9 +661,9 @@ function Feature({ icon: Icon, label, delay = 0 }) {
   )
 }
 
-function TrustItem({ icon: Icon, label }) {
+function TrustItem({ icon: Icon, label, className = 'flex items-center justify-center gap-1.5 rounded-md border border-white/8 bg-white/[0.04] px-2 py-2' }) {
   return (
-    <div className="flex items-center justify-center gap-1.5 rounded-md border border-white/8 bg-white/[0.04] px-2 py-2">
+    <div className={className}>
       <Icon size={13} className="text-cyan-200" />
       <span className="font-semibold">{label}</span>
     </div>
