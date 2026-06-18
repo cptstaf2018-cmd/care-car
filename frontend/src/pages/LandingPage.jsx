@@ -14,7 +14,7 @@ const ABOUT_T = {
     hero: {
       badge: 'من نحن — قصة Care Car',
       title1: 'بنينا النظام الذي',
-      titleAccent: 'تمنّينا وجوده',
+      titleAccent: 'كنا نحتاجه فعلاً',
       sub: 'Care Car وُلد داخل ورشة حقيقية، لا في غرفة اجتماعات بعيدة. مهمتنا واحدة: أن يدير صاحب أي مركز خدمة سيارات عمله بثقة، بأدوات بسيطة بقدر ما هي قوية — من أول سيارة تدخل حتى آخر فاتورة في اليوم.',
       cta1: 'ابدأ الآن مجاناً',
       cta2: 'تعرّف على المنصة',
@@ -29,22 +29,24 @@ const ABOUT_T = {
     ],
     story: {
       eyebrow: 'قصتنا',
-      title: 'بدأت القصة من *دفتر ممزّق، وفوضى آخر النهار*',
+      title: 'بدأت الفكرة من *أوراق مبعثرة وفواتير مفقودة*، وضغط يومي داخل الورشة',
+      lead: 'اليوم أصبحت كل العمليات في مكان واحد.',
       p1: 'في مركز لتغيير الزيت في بغداد، كان كل شيء يُكتب بخط اليد: أرقام اللوحات على ورقة، الأسعار في رأس صاحب المحل، وموعد الزيت القادم… ينساه الزبون غالباً. عند آخر النهار، لا أحد يعرف بدقة كم دخل ولا كم بقي في المخزن.',
       p2: 'رأينا المشكلة عن قرب، فقررنا ألّا نبيع برنامجاً معقّداً مستورداً، بل أن نبني أداة يفهمها أي موظف من أول يوم: تسجّل السيارة، تحسب الفاتورة، تنبّه الزبون، وتقول لك بصدق أين تذهب أرباحك.',
       quote: 'لم نُرد أن نُعلّم المراكز كيف تعمل — أردنا أن نمنحها الوقت لتعمل أكثر.',
       quoteBy: 'فريق Care Car',
     },
     mv: {
-      eyebrow: 'رسالتنا ورؤيتنا',
-      title: 'لماذا *نستيقظ كل صباح*؟',
+      eyebrow: 'رؤيتنا',
+      title: 'لماذا *نعمل كل يوم*؟',
+      lead: 'لنساعد مراكز الصيانة على تحقيق نمو أسرع، وتقليل الهدر، وزيادة الأرباح من خلال إدارة ذكية وسهلة.',
       mission: { tag: 'الرسالة', title: 'نُبسّط إدارة المراكز', desc: 'أن نضع بين يدي كل مركز خدمة سيارات نظاماً واحداً يدير السيارات والخدمات والفواتير والمخزون بثقة — بلغته، وبعملته، وبسعر يقدر عليه.' },
       vision: { tag: 'الرؤية', title: 'بساطة بمستوى عالمي', desc: 'أن يصبح Care Car المعيار الذي تُدار به ورش ومراكز السيارات في كل مكان، حيث تتساوى البساطة مع القوة، والتقنية مع الواقع اليومي.' },
     },
     values: {
       eyebrow: 'قيمنا',
-      title: 'مبادئ *تصمّم كل تفصيل* في Care Car',
-      sub: 'ليست شعارات معلّقة على الجدار، بل القرارات التي نتخذها في كل شاشة.',
+      title: 'الثقة، *البساطة، والنتائج*',
+      sub: 'نطوّر حلولاً عملية تحل المشاكل الحقيقية التي تواجهها الورش يومياً.',
       items: [
         { icon: 'Lightbulb', title: 'بساطة قبل كل شيء', desc: 'إن احتاجت الميزة إلى شرح طويل، فهي غير جاهزة بعد. نختصر حتى يفهمها أي موظف فوراً.' },
         { icon: 'MapPin', title: 'مبني من واقع الورشة', desc: 'بلغتك، وبعملتك المحلية، وبفهمٍ لتفاصيل يومك — لا ترجمة باهتة لمنتج جاهز بعيد عن الواقع.' },
@@ -54,18 +56,36 @@ const ABOUT_T = {
         { icon: 'TrendingUp', title: 'ننمو معك', desc: 'من مركز واحد إلى عدة فروع — النظام يكبر بقدر طموحك دون أن يتعثّر.' },
       ],
     },
+    design: {
+      eyebrow: 'فلسفة التصميم',
+      title: 'كل تفصيل صُمم *ليوفر وقتك*',
+      desc: 'ليست مجرد واجهات جميلة، بل أدوات تساعدك على إنجاز العمل بدقة وسرعة أكبر.',
+    },
     why: {
       eyebrow: 'لماذا Care Car',
-      title: 'الفرق بين أن *"تشتغل"* وأن *"تدير"*',
-      sub: 'هكذا يبدو يومك *قبل* Care Car *وبعده*.',
+      title: 'الفرق بين إدارة *العمل* وإدارة *النمو*',
+      sub: 'حوّل البيانات اليومية إلى *قرارات* ترفع كفاءة التشغيل وتزيد العائد.',
       oldTitle: 'الطريقة التقليدية',
+      oldDesc: 'فواتير متفرقة، متابعة يدوية، وصعوبة معرفة الأرباح الحقيقية.',
       newTitle: 'مع Care Car',
+      newDesc: 'إدارة متكاملة، تقارير فورية، ورؤية واضحة لكل دينار يدخل أو يخرج.',
       rows: [
         { old: 'دفاتر وأوراق تضيع وتتلف', neu: 'كل شيء محفوظ سحابياً ومنظّم' },
         { old: 'الزبون ينسى موعد الزيت', neu: 'تذكير واتساب يصله تلقائياً' },
         { old: 'لا تعرف أرباح اليوم إلا بالحَزر', neu: 'تقرير لحظي بضغطة واحدة' },
         { old: 'المخزون ينفد فجأة', neu: 'خصم تلقائي وتنبيه قبل النفاد' },
         { old: 'فاتورة بخط اليد غير احترافية', neu: 'فاتورة بشعارك جاهزة للطباعة' },
+      ],
+    },
+    results: {
+      eyebrow: 'النتائج',
+      title: 'نتائج *يلاحظها أصحاب الورش*',
+      tagline: 'ورش أكثر تنظيماً تعني أرباحاً أعلى، وهدرًا أقل، وعملاء أكثر ولاءً.',
+      stats: [
+        { val: '٦٠٪', label: 'تقليل الوقت الإداري' },
+        { val: '٩٠٪', label: 'تقليل أخطاء الفواتير' },
+        { val: '٤٠٪', label: 'تحسين متابعة العملاء' },
+        { val: '٣٠٪', label: 'زيادة الأرباح التشغيلية المحتملة' },
       ],
     },
     timeline: {
@@ -86,9 +106,9 @@ const ABOUT_T = {
       pills: ['هندسة بمعايير عالمية', 'ذكاء اصطناعي تطبيقي', 'دعم بالعربية والإنجليزية', 'بنية سحابية آمنة'],
     },
     pricing: {
-      eyebrow: 'أسعار واضحة',
+      eyebrow: 'الخطط',
       title: 'اختر الخطة التي *تناسب مركزك*',
-      sub: 'أسعار شفافة بالدينار العراقي والدولار. بدون رسوم خفية. ألغِ في أي وقت.',
+      sub: 'ابدأ اليوم، ووسّع أعمالك بثقة مع نظام ينمو مع نمو ورشتك — أسعار شفافة بالدينار العراقي والدولار، بدون رسوم خفية، وألغِ في أي وقت.',
       trialNote: 'كل خطة تبدأ بـ ٧ أيام تجربة مجانية كاملة المزايا، بدون بطاقة ائتمان.',
       currency: 'د.ع / شهرياً',
       popular: 'الأكثر طلباً',
@@ -114,7 +134,7 @@ const ABOUT_T = {
     hero: {
       badge: 'About — the Care Car story',
       title1: 'We built the system',
-      titleAccent: 'we wished existed',
+      titleAccent: 'we actually needed',
       sub: "Care Car was born inside a real workshop, not a distant boardroom. Our mission is singular: let any car-service center owner run the business with confidence, using tools as simple as they are powerful — from the first car in to the last invoice of the day.",
       cta1: 'Start Free Now',
       cta2: 'Explore the platform',
@@ -129,22 +149,24 @@ const ABOUT_T = {
     ],
     story: {
       eyebrow: 'Our story',
-      title: 'It started with *a torn notebook and end-of-day chaos*',
+      title: 'It started with *scattered papers and missing invoices*, and daily workshop chaos',
+      lead: 'Today, every operation lives in one place.',
       p1: "At an oil-change center in Baghdad, everything was handwritten: plate numbers on a scrap of paper, prices in the owner's head, and the next oil date… usually forgotten by the customer. At day's end, nobody knew exactly how much came in or what was left in stock.",
       p2: 'We saw the problem up close, so we decided not to sell a complex imported program, but to build a tool any employee understands on day one: it logs the car, totals the invoice, reminds the customer, and tells you honestly where your profit goes.',
       quote: 'We never wanted to teach centers how to work — we wanted to give them the time to work more.',
       quoteBy: 'The Care Car team',
     },
     mv: {
-      eyebrow: 'Mission & Vision',
-      title: 'Why *we get up every morning*',
+      eyebrow: 'Our purpose',
+      title: 'Why *we show up every day*',
+      lead: 'To help service centers grow faster, cut waste, and increase profit through smart, easy management.',
       mission: { tag: 'Mission', title: 'Make center management simple', desc: "To put in every car-service center's hands one system that runs cars, services, invoices, and inventory with confidence — in their language, in their currency, at a price they can afford." },
       vision: { tag: 'Vision', title: 'Simplicity, world-class', desc: 'For Care Car to become the standard by which car workshops and centers are run everywhere, where simplicity meets power and technology meets daily reality.' },
     },
     values: {
       eyebrow: 'Our values',
-      title: 'The principles that *shape every detail* of Care Car',
-      sub: "Not slogans on a wall, just the decisions we make on every screen.",
+      title: 'Trust, *simplicity, and results*',
+      sub: 'We build practical solutions that solve the real problems workshops face every day.',
       items: [
         { icon: 'Lightbulb', title: 'Simplicity first', desc: "If a feature needs a long explanation, it isn't ready yet. We trim until any employee gets it instantly." },
         { icon: 'MapPin', title: 'Built from the workshop floor', desc: 'In your language, in your local currency, with a real grasp of your day — not a faded translation of an off-the-shelf product.' },
@@ -154,18 +176,36 @@ const ABOUT_T = {
         { icon: 'TrendingUp', title: 'We grow with you', desc: 'From a single center to multiple branches — the system scales with your ambition without stumbling.' },
       ],
     },
+    design: {
+      eyebrow: 'Design philosophy',
+      title: 'Every detail is designed *to save your time*',
+      desc: 'Not just pretty screens — tools that help you get work done with more accuracy and speed.',
+    },
     why: {
       eyebrow: 'Why Care Car',
-      title: 'The difference between *"working"* and *"running"*',
-      sub: "Here's what your day looks like *before* Care Car *and after*.",
+      title: 'The difference between running the *work*, and running the *growth*',
+      sub: 'Turn daily data into *decisions* that raise efficiency and grow revenue.',
       oldTitle: 'The traditional way',
+      oldDesc: 'Scattered invoices, manual follow-up, and no clear view of real profit.',
       newTitle: 'With Care Car',
+      newDesc: 'Integrated management, instant reports, and a clear view of every dollar in and out.',
       rows: [
         { old: 'Notebooks and papers that get lost or damaged', neu: 'Everything stored in the cloud and organized' },
         { old: 'The customer forgets the oil date', neu: 'A WhatsApp reminder reaches them automatically' },
         { old: "You only guess today's profit", neu: 'A live report with one tap' },
         { old: 'Inventory runs out suddenly', neu: 'Auto-deduction and a low-stock alert' },
         { old: 'An unprofessional handwritten invoice', neu: 'An invoice with your logo, ready to print' },
+      ],
+    },
+    results: {
+      eyebrow: 'Results',
+      title: 'Results *workshop owners actually notice*',
+      tagline: 'A more organized workshop means higher profit, less waste, and more loyal customers.',
+      stats: [
+        { val: '60%', label: 'Less administrative time' },
+        { val: '90%', label: 'Fewer invoice errors' },
+        { val: '40%', label: 'Better customer follow-up' },
+        { val: '30%', label: 'Potential operating-profit increase' },
       ],
     },
     timeline: {
@@ -186,9 +226,9 @@ const ABOUT_T = {
       pills: ['World-class engineering', 'Applied AI', 'Arabic & English support', 'Secure cloud infrastructure'],
     },
     pricing: {
-      eyebrow: 'Clear pricing',
+      eyebrow: 'Plans',
       title: 'Pick the plan *that fits your center*',
-      sub: 'Transparent pricing in IQD and USD. No hidden fees. Cancel anytime.',
+      sub: 'Start today, and scale with confidence using a system that grows as your workshop grows — transparent pricing in IQD and USD, no hidden fees, cancel anytime.',
       trialNote: 'Every plan starts with a 7-day free trial, full features, no credit card required.',
       currency: 'IQD / month',
       popular: 'Most Popular',
@@ -281,13 +321,13 @@ export default function LandingPage() {
       </nav>
 
       {/* ── Hero ── */}
-      <header id="top" className="relative min-h-[88vh] flex items-center overflow-hidden pt-16">
+      <header id="top" className="relative min-h-[68vh] md:min-h-[88vh] flex items-center overflow-hidden pt-16">
         <div className="absolute inset-0">
           <img src="/hero-suv.png" alt="" aria-hidden="true"
-            className={`w-full h-full object-cover ${isRtl ? 'object-left' : 'object-right'}`} />
+            className={`w-full h-full object-cover ${isRtl ? 'object-[30%_center]' : 'object-[70%_center]'}`} />
           <div className={`absolute inset-0 ${isRtl
-            ? 'bg-gradient-to-l from-[#060a14]/96 via-[#060a14]/78 to-[#060a14]/15'
-            : 'bg-gradient-to-r from-[#060a14]/96 via-[#060a14]/78 to-[#060a14]/15'}`} />
+            ? 'bg-gradient-to-l from-[#060a14]/96 via-[#060a14]/85 to-[#060a14]/30'
+            : 'bg-gradient-to-r from-[#060a14]/96 via-[#060a14]/85 to-[#060a14]/30'}`} />
         </div>
         <div className="relative z-10 w-full max-w-6xl mx-auto px-5 py-20">
           <div className={`max-w-xl ${isRtl ? 'mr-0 ml-auto' : 'ml-0 mr-auto'}`}>
@@ -340,7 +380,8 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-14 items-center">
           <div className="order-2 lg:order-1">
             <Eyebrow>{c.story.eyebrow}</Eyebrow>
-            <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-6 text-slate-900 leading-tight"><Headline text={c.story.title} /></h2>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-3 text-slate-900 leading-tight"><Headline text={c.story.title} /></h2>
+            <p className="accent-text font-semibold text-lg mb-6">{c.story.lead}</p>
             <p className="text-slate-500 leading-relaxed text-lg mb-4">{c.story.p1}</p>
             <p className="text-slate-500 leading-relaxed text-lg mb-8">{c.story.p2}</p>
             <div className="relative rounded-2xl accent-soft-bg border border-slate-200/60 p-6 pr-7">
@@ -363,7 +404,8 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto">
           <div className="text-center max-w-2xl mx-auto mb-14">
             <Eyebrow>{c.mv.eyebrow}</Eyebrow>
-            <h2 className="text-3xl md:text-5xl font-black tracking-tight text-slate-900"><Headline text={c.mv.title} /></h2>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight mb-4 text-slate-900"><Headline text={c.mv.title} /></h2>
+            <p className="text-slate-500 text-lg">{c.mv.lead}</p>
           </div>
           <div className="grid md:grid-cols-2 gap-6">
             {[{ d: c.mv.mission, Icon: Target }, { d: c.mv.vision, Icon: Eye }].map(({ d, Icon }, i) => (
@@ -405,9 +447,23 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── Design philosophy ── */}
+      <section className="relative px-5 py-20 bg-slate-50 border-y border-slate-100">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-10 items-center">
+          <div>
+            <Eyebrow>{c.design.eyebrow}</Eyebrow>
+            <h2 className="text-3xl md:text-4xl font-black tracking-tight mb-4 text-slate-900 leading-tight"><Headline text={c.design.title} /></h2>
+            <p className="text-slate-500 leading-relaxed text-lg">{c.design.desc}</p>
+          </div>
+          <div className="flex justify-center">
+            <img src="/car-red.png" alt="" className="w-full max-w-sm drop-shadow-2xl" />
+          </div>
+        </div>
+      </section>
+
       {/* ── Visual break ── */}
       <div className="relative overflow-hidden h-64 md:h-80 mx-5 my-4 rounded-3xl lp-soft-shadow">
-        <img src="/hero-suv.png" alt="" aria-hidden="true"
+        <img src="/hero-car.png" alt="" aria-hidden="true"
           className={`absolute inset-0 w-full h-full object-cover ${isRtl ? 'object-left' : 'object-right'}`} />
         <div className={`absolute inset-0 ${isRtl
           ? 'bg-gradient-to-l from-slate-950/90 via-slate-900/65 to-transparent'
@@ -415,11 +471,14 @@ export default function LandingPage() {
         <div className={`absolute inset-0 flex items-center ${isRtl ? 'justify-end px-10 md:px-16' : 'justify-start px-10 md:px-16'}`}>
           <div className="max-w-md">
             <p className="accent-text-light text-xs font-bold mb-3 uppercase tracking-widest flex items-center gap-2">
-              <Cpu size={14} />{isRtl ? 'ذكاء اصطناعي للورشة' : 'AI for the workshop'}
+              <Cpu size={14} />{isRtl ? 'الذكاء الاصطناعي' : 'Artificial intelligence'}
             </p>
-            <h3 className="text-white text-2xl md:text-3xl font-black leading-snug">
-              <Headline accentClass="accent-text-light" text={isRtl ? 'بُني *داخل الورشة*، لا بعيداً عنها' : 'Built *inside the workshop*, not far from it'} />
+            <h3 className="text-white text-2xl md:text-3xl font-black leading-snug mb-2">
+              <Headline accentClass="accent-text-light" text={isRtl ? 'ذكاء اصطناعي *يفهم الورش*' : 'AI *that understands workshops*'} />
             </h3>
+            <p className="text-white/65 text-sm leading-relaxed">
+              {isRtl ? 'تم تطويره اعتماداً على احتياجات مراكز الصيانة لمساعدتك في اتخاذ قرارات أسرع وإدارة أفضل.' : 'Built around what service centers actually need, to help you decide faster and manage better.'}
+            </p>
           </div>
         </div>
       </div>
@@ -434,10 +493,11 @@ export default function LandingPage() {
           </div>
           <div className="grid sm:grid-cols-2 gap-px rounded-3xl overflow-hidden border border-slate-200 bg-slate-200 lp-card-shadow">
             <div className="bg-white p-6 sm:p-7">
-              <div className="flex items-center gap-2 mb-5 text-slate-400 font-bold">
+              <div className="flex items-center gap-2 mb-2 text-slate-400 font-bold">
                 <span className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center"><X size={16} /></span>
                 {c.why.oldTitle}
               </div>
+              <p className="text-slate-400 text-sm leading-relaxed mb-5">{c.why.oldDesc}</p>
               <ul className="space-y-4">
                 {c.why.rows.map((r, i) => (
                   <li key={i} className="flex items-start gap-3 text-slate-400 text-[15px] leading-snug">
@@ -449,10 +509,11 @@ export default function LandingPage() {
             <div className="bg-white p-6 sm:p-7 relative">
               <div className="absolute inset-0 accent-soft-bg opacity-50 pointer-events-none" />
               <div className="relative">
-                <div className="flex items-center gap-2 mb-5 accent-text font-bold">
+                <div className="flex items-center gap-2 mb-2 accent-text font-bold">
                   <span className="w-7 h-7 rounded-lg accent-bg text-white flex items-center justify-center"><Check size={16} /></span>
                   {c.why.newTitle}
                 </div>
+                <p className="text-slate-500 text-sm leading-relaxed mb-5">{c.why.newDesc}</p>
                 <ul className="space-y-4">
                   {c.why.rows.map((r, i) => (
                     <li key={i} className="flex items-start gap-3 text-slate-700 text-[15px] font-medium leading-snug">
@@ -463,6 +524,25 @@ export default function LandingPage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ── Results ── */}
+      <section className="relative px-5 py-28">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center max-w-2xl mx-auto mb-14">
+            <Eyebrow>{c.results.eyebrow}</Eyebrow>
+            <h2 className="text-3xl md:text-5xl font-black tracking-tight text-slate-900"><Headline text={c.results.title} /></h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-10">
+            {c.results.stats.map((s, i) => (
+              <div key={i} className="rounded-2xl border border-slate-200 bg-white p-6 text-center lp-card-shadow">
+                <div className="text-3xl md:text-4xl font-black lp-gradient-text mb-2">{s.val}</div>
+                <div className="text-sm text-slate-500">{s.label}</div>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-slate-500 text-lg max-w-2xl mx-auto">{c.results.tagline}</p>
         </div>
       </section>
 
