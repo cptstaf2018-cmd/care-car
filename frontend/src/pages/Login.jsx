@@ -265,7 +265,7 @@ export default function Login({ initialMode = 'login' }) {
             {/* Mobile hero */}
             <div className="mb-8 lg:hidden">
               <div className="mb-5 aspect-[7/4] max-h-56 overflow-hidden rounded-lg border border-white/10 shadow-2xl shadow-black/30">
-                <img src={centerHero} alt="care-car-saas" className="h-full w-full origin-left scale-[1.9] object-cover object-left" />
+                <img src={centerHero} alt="care-car-saas" className="h-full w-full origin-left scale-[1.55] object-cover object-left" />
               </div>
               <p className="text-sm font-extrabold uppercase text-cyan-300">care-car-saas</p>
               <h1 className="mt-2 text-3xl font-extrabold leading-tight">منصة إدارة مراكز السيارات</h1>
