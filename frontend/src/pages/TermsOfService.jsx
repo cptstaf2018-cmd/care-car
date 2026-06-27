@@ -9,7 +9,7 @@ export default function TermsOfService() {
         </div>
 
         <h1 className="mb-2 text-3xl font-black text-slate-900">شروط الاستخدام</h1>
-        <p className="mb-8 text-sm text-slate-500">آخر تحديث: يونيو 2025</p>
+        <p className="mb-8 text-sm text-slate-500">آخر تحديث: يونيو 2026</p>
 
         <div className="space-y-8 text-slate-700">
           <section>
@@ -84,6 +84,8 @@ export default function TermsOfService() {
 
         <div className="mt-10 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
           <Link to="/privacy" className="hover:underline">سياسة الخصوصية</Link>
+          <span className="mx-2">·</span>
+          <Link to="/support" className="hover:underline">الدعم</Link>
           <span className="mx-2">·</span>
           <Link to="/about" className="hover:underline">عن المنصة</Link>
         </div>

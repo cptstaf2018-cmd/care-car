@@ -4,8 +4,8 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Activity, BadgeDollarSign, Bandage, Battery, Brush, Car, CarFront, CircleDot,
-  CircleGauge, Cog, Cpu, Disc3, Droplets, Eraser, Fan, Gauge, Hammer, Camera, CameraOff,
-  Keyboard, Lightbulb, MonitorCog, Package, PaintRoller, Paintbrush,
+  CircleGauge, Cog, Disc3, Droplets, Eraser, Fan, Gauge, Hammer, Camera, CameraOff,
+  Keyboard, Lightbulb, MonitorCog, Package, PaintRoller,
   PlayCircle, PlugZap, Printer, RotateCw, ScanSearch, Search, ShieldCheck,
   Snowflake, Sparkles, SprayCan, ThermometerSnowflake, Trash2,
   UserPlus, Wallet, Wind, Wrench, Zap, CheckCircle2, PlusCircle,

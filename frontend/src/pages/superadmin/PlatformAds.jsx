@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Image, Plus, Trash2, Eye, EyeOff, Upload, X } from 'lucide-react'
+import { Image, Plus, Trash2, Eye, EyeOff, Upload } from 'lucide-react'
 import { getPlatformAdsAdmin, uploadPlatformAd, updatePlatformAd, deletePlatformAd } from '../../api/platform'
 import Layout from '../../components/Layout'
 

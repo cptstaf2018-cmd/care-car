@@ -9,7 +9,7 @@ export default function PrivacyPolicy() {
         </div>
 
         <h1 className="mb-2 text-3xl font-black text-slate-900">سياسة الخصوصية</h1>
-        <p className="mb-8 text-sm text-slate-500">آخر تحديث: يونيو 2025</p>
+        <p className="mb-8 text-sm text-slate-500">آخر تحديث: يونيو 2026</p>
 
         <div className="space-y-8 text-slate-700">
           <section>
@@ -60,20 +60,24 @@ export default function PrivacyPolicy() {
             <ul className="list-disc space-y-2 pr-5 leading-7">
               <li><strong>الاطلاع:</strong> يمكنك طلب نسخة من بياناتك في أي وقت.</li>
               <li><strong>التصحيح:</strong> يمكنك تعديل بيانات مركزك من إعدادات المركز.</li>
-              <li><strong>الحذف:</strong> يمكنك حذف حسابك وجميع بياناتك نهائياً من إعدادات المركز ← منطقة الخطر.</li>
+              <li><strong>الحذف:</strong> يمكنك حذف حسابك وجميع بياناتك نهائياً من إعدادات المركز ← منطقة الخطر، أو عبر صفحة <Link to="/account-deletion" className="font-bold text-cyan-700 hover:underline">حذف الحساب</Link>.</li>
             </ul>
           </section>
 
           <section>
             <h2 className="mb-3 text-xl font-black text-slate-900">7. التواصل معنا</h2>
             <p className="leading-7">
-              لأي استفسار عن الخصوصية أو طلب حذف البيانات، تواصل معنا عبر واتساب أو البريد الإلكتروني المذكور في صفحة التواصل.
+              لأي استفسار عن الخصوصية أو طلب حذف البيانات، تواصل معنا عبر البريد الإلكتروني
+              <a href="mailto:support@carecar.online" className="mx-1 font-bold text-cyan-700 hover:underline">support@carecar.online</a>
+              أو من خلال <Link to="/support" className="font-bold text-cyan-700 hover:underline">صفحة الدعم</Link>.
             </p>
           </section>
         </div>
 
         <div className="mt-10 border-t border-slate-200 pt-6 text-center text-xs text-slate-400">
           <Link to="/terms" className="hover:underline">شروط الاستخدام</Link>
+          <span className="mx-2">·</span>
+          <Link to="/support" className="hover:underline">الدعم</Link>
           <span className="mx-2">·</span>
           <Link to="/about" className="hover:underline">عن المنصة</Link>
         </div>

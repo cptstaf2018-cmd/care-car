@@ -24,6 +24,8 @@ import LandingPage from './pages/LandingPage'
 import MobileCamera from './pages/MobileCamera'
 import PrivacyPolicy from './pages/PrivacyPolicy'
 import TermsOfService from './pages/TermsOfService'
+import Support from './pages/Support'
+import AccountDeletion from './pages/AccountDeletion'
 import { useAuthStore } from './store/auth'
 
 const qc = new QueryClient()
@@ -55,6 +57,8 @@ export default function App() {
           <Route path="/about" element={<LandingPage />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/support" element={<Support />} />
+          <Route path="/account-deletion" element={<AccountDeletion />} />
           <Route path="/mobile-camera/:token" element={<MobileCamera />} />
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/center/onboarding" element={<ProtectedRoute allowedRoles={centerRoles}><CenterSetupGate><CenterOnboarding /></CenterSetupGate></ProtectedRoute>} />

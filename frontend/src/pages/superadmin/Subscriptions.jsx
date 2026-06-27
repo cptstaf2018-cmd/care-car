@@ -297,7 +297,6 @@ export default function Subscriptions() {
           {sorted.map(t => {
             const badge = statusBadge(t)
             const isOpen = expanded === t.id
-            const days = daysLeft(t.subscription_ends_at)
             const trial = trialDaysLeft(t.trial_ends_at)
             const hasPending = !!t.subscription_request_ref
             return (

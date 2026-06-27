@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowLeft, BarChart3, Camera, Car, CheckCircle2, Clock3, MessageCircle, ShieldCheck, Sparkles, Zap, Phone, Mail, Sun, Moon } from 'lucide-react'
+import { ArrowLeft, BarChart3, Camera, Car, CheckCircle2, Clock3, MessageCircle, Sparkles, Phone, Mail, Sun, Moon } from 'lucide-react'
 import { activate, confirmPasswordReset, login, register, requestPasswordReset } from '../api/auth'
 import { useAuthStore } from '../store/auth'
 import { DEFAULT_CENTER_SPECIALTY } from '../constants/centerSpecialties'

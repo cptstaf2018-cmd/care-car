@@ -11,7 +11,6 @@ import { getInventory } from '../api/inventory'
 import { getInvoices } from '../api/invoices'
 import { getCenterSettings } from '../api/settings'
 import { getPlatformAds } from '../api/platform'
-import { useAuthStore } from '../store/auth'
 import centerTemplateRed from '../assets/center-template-red.png'
 import centerTemplateSuv from '../assets/center-template-suv.png'
 import centerTemplateWhite from '../assets/center-template-white.png'
@@ -27,7 +26,6 @@ function daysUntilReminder(car) {
 }
 
 export default function Dashboard() {
-  const user = useAuthStore((state) => state.user)
   const [promoIndex, setPromoIndex] = useState(0)
   const today = new Date().toISOString().split('T')[0]
   const now = new Date()
