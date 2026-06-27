@@ -22,10 +22,13 @@ services:
     env_file: ./backend/.env
     environment:
       - DATABASE_URL=postgresql://oiluser:oilpass@db:5432/oildb
+      - EVOLUTION_API_URL=http://evolution-api:8080
       - START_SCHEDULER=false
     depends_on:
       db:
         condition: service_healthy
+      evolution-api:
+        condition: service_started
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
     volumes:
       - ./backend/uploads:/app/uploads
@@ -35,10 +38,13 @@ services:
     env_file: ./backend/.env
     environment:
       - DATABASE_URL=postgresql://oiluser:oilpass@db:5432/oildb
+      - EVOLUTION_API_URL=http://evolution-api:8080
       - START_SCHEDULER=true
     depends_on:
       db:
         condition: service_healthy
+      evolution-api:
+        condition: service_started
     command: python -c "from app.services.scheduler_service import start_scheduler; import time; scheduler = start_scheduler(); time.sleep(10**9)"
     volumes:
       - ./backend/uploads:/app/uploads
@@ -48,5 +54,55 @@ services:
     ports:
       - "127.0.0.1:5173:80"
 
+  evolution-postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: evolution
+    volumes:
+      - evolution_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d evolution"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  evolution-redis:
+    image: redis:7-alpine
+    volumes:
+      - evolution_redisdata:/data
+
+  evolution-api:
+    image: atendai/evolution-api:latest
+    env_file: ./backend/.env
+    environment:
+      - SERVER_TYPE=http
+      - SERVER_PORT=8080
+      - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://postgres:postgres@evolution-postgres:5432/evolution?schema=public
+      - DATABASE_SAVE_DATA_INSTANCE=true
+      - DATABASE_SAVE_DATA_NEW_MESSAGE=true
+      - DATABASE_SAVE_MESSAGE_UPDATE=true
+      - CACHE_REDIS_ENABLED=true
+      - CACHE_REDIS_URI=redis://evolution-redis:6379/6
+      - CACHE_REDIS_PREFIX_KEY=evolution
+      - CACHE_REDIS_SAVE_INSTANCES=false
+      - AUTHENTICATION_TYPE=apikey
+      - AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES=true
+    ports:
+      - "127.0.0.1:4002:8080"
+    depends_on:
+      evolution-postgres:
+        condition: service_healthy
+      evolution-redis:
+        condition: service_started
+    volumes:
+      - evolution_instances:/evolution/instances
+
 volumes:
   pgdata:
+  evolution_pgdata:
+  evolution_redisdata:
+  evolution_instances:

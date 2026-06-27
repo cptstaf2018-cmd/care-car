@@ -2,6 +2,11 @@ from app.core.security import verify_password
 from app.models import Role, User
 
 
+class FakeWhatsappResponse:
+    is_success = True
+    text = "ok"
+
+
 def test_login_success(client, superadmin):
     r = client.post("/auth/login", json={"email": "admin@test.com", "password": "pass123"})
     assert r.status_code == 200
@@ -25,6 +30,66 @@ def test_me_returns_user(client, superadmin_token):
 def test_me_without_token(client):
     r = client.get("/auth/me")
     assert r.status_code == 403
+
+
+def test_register_whatsapp_sends_activation_code_with_evolution_api(client, monkeypatch):
+    sent = {}
+
+    def fake_post(url, json, headers, timeout):
+        sent["url"] = url
+        sent["payload"] = json
+        sent["headers"] = headers
+        sent["timeout"] = timeout
+        return FakeWhatsappResponse()
+
+    monkeypatch.setattr("app.services.wasnder_service.settings.EVOLUTION_API_URL", "http://localhost:4002")
+    monkeypatch.setattr("app.services.wasnder_service.settings.EVOLUTION_API_KEY", "global-key")
+    monkeypatch.setattr("app.services.wasnder_service.settings.EVOLUTION_INSTANCE_NAME", "carecar")
+    monkeypatch.setattr("app.services.wasnder_service.settings.PLATFORM_WASNDER_API_KEY", "")
+    monkeypatch.setattr("app.services.wasnder_service.httpx.post", fake_post)
+
+    r = client.post(
+        "/auth/register",
+        json={
+            "center_name": "WhatsApp Activation Center",
+            "manager_name": "Manager",
+            "phone": "07700000000",
+        },
+    )
+
+    assert r.status_code == 201
+    assert r.json()["delivery_status"] == "sent"
+    assert r.json()["manager_email"] == "9647700000000@carecar.app"
+    assert sent["url"] == "http://localhost:4002/message/sendText/carecar"
+    assert sent["payload"]["number"] == "9647700000000"
+    assert "كود التفعيل الخاص بك" in sent["payload"]["text"]
+    assert sent["headers"]["apikey"] == "global-key"
+
+
+def test_register_whatsapp_rejects_duplicate_phone_with_different_format(client, db, monkeypatch):
+    monkeypatch.setattr("app.api.auth._send_activation_whatsapp", lambda phone, code, center_name: "sent")
+
+    first = client.post(
+        "/auth/register",
+        json={
+            "center_name": "First WhatsApp Center",
+            "manager_name": "First Manager",
+            "phone": "0780 668 8044",
+        },
+    )
+    assert first.status_code == 201
+
+    duplicate = client.post(
+        "/auth/register",
+        json={
+            "center_name": "Second WhatsApp Center",
+            "manager_name": "Second Manager",
+            "phone": "+964 780 668 8044",
+        },
+    )
+
+    assert duplicate.status_code == 409
+    assert "رقم الواتساب مستخدم بالفعل" in duplicate.json()["detail"]
 
 
 def test_password_reset_request_sends_code(client, db, monkeypatch):

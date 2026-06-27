@@ -20,19 +20,15 @@ from app.models.service import Service
 from app.models.tenant import Tenant
 from app.models.user import User, Role
 from app.schemas.tenant import TenantCreate, TenantUpdate, TenantOut
+from app.services.contact_validation import phone_is_already_used
 from app.services.monthly_archive_service import run_monthly_archives
-import httpx
+from app.services.wasnder_service import send_platform_whatsapp_message
 
 router = APIRouter(prefix="/tenants", tags=["tenants"])
 ACTIVATION_CODE_EXPIRE_MINUTES = 30
 
 
 def _send_activation_whatsapp(phone: str, code: str, center_name: str) -> str:
-    if not settings.PLATFORM_WASNDER_API_KEY or not settings.PLATFORM_WHATSAPP_NUMBER:
-        return "not_configured"
-    recipient = phone.strip()
-    if recipient.startswith("0"):
-        recipient = "+964" + recipient[1:]
     message = (
         f"مرحباً بك في منصة Care Car 🚗\n"
         f"تم إنشاء حساب مركز «{center_name}» بنجاح.\n"
@@ -41,16 +37,8 @@ def _send_activation_whatsapp(phone: str, code: str, center_name: str) -> str:
         f"https://carecar.online/activate\n"
         f"الكود صالح لمدة {ACTIVATION_CODE_EXPIRE_MINUTES} دقيقة فقط."
     )
-    try:
-        resp = httpx.post(
-            settings.WASNDER_API_URL,
-            json={"to": recipient, "text": message},
-            headers={"Authorization": f"Bearer {settings.PLATFORM_WASNDER_API_KEY}"},
-            timeout=10,
-        )
-        return "sent" if resp.is_success else "failed"
-    except Exception:
-        return "failed"
+    status, _ = send_platform_whatsapp_message(phone, message)
+    return status
 
 
 class TenantWithManagerCreate(BaseModel):
@@ -216,6 +204,10 @@ def monitor_tenants(db: Session = Depends(get_db), _=Depends(require_superadmin)
 
 @router.post("/", status_code=201)
 def create_tenant(body: TenantWithManagerCreate, db: Session = Depends(get_db), _=Depends(require_superadmin)):
+    candidate_phone = body.manager_phone or body.tenant.whatsapp_number or body.tenant.contact_phone
+    if candidate_phone and phone_is_already_used(db, candidate_phone):
+        raise HTTPException(status_code=409, detail="رقم الواتساب مستخدم بالفعل لمركز آخر")
+
     tenant = Tenant(**body.tenant.model_dump())
     db.add(tenant)
     db.flush()

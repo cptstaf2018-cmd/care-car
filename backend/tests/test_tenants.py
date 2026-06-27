@@ -28,6 +28,27 @@ def test_create_tenant_superadmin(client, db, superadmin, superadmin_token):
     assert r.json()["name"] == "New Garage"
 
 
+def test_create_tenant_rejects_duplicate_manager_phone(client, db, superadmin, superadmin_token):
+    existing = Tenant(name="Existing Phone Center", plan="basic", contact_phone="0780 668 8044", whatsapp_number="0780 668 8044")
+    db.add(existing)
+    db.commit()
+
+    payload = {
+        "tenant": {"name": "Duplicate Phone Center", "plan": "basic"},
+        "manager_email": "duplicate-phone@garage.com",
+        "manager_phone": "+964 780 668 8044",
+        "manager_name": "Duplicate Manager",
+    }
+    r = client.post(
+        "/tenants/",
+        json=payload,
+        headers={"Authorization": f"Bearer {superadmin_token}"},
+    )
+
+    assert r.status_code == 409
+    assert "رقم الواتساب مستخدم بالفعل" in r.json()["detail"]
+
+
 def test_create_tenant_unauthorized(client, db):
     t = Tenant(name="ExistingCtr", plan="basic")
     db.add(t)

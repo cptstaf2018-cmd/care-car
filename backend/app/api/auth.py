@@ -7,7 +7,6 @@ from collections import defaultdict, deque
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 
-import httpx
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
@@ -19,6 +18,8 @@ from app.core.security import create_access_token, hash_password, verify_passwor
 from app.models.tenant import Plan, Tenant
 from app.models.user import Role, User
 from app.schemas.auth import LoginRequest, TokenResponse, UserOut
+from app.services.contact_validation import normalize_contact_phone, phone_is_already_used
+from app.services.wasnder_service import send_platform_whatsapp_message
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -106,11 +107,6 @@ def _generate_numeric_code() -> str:
 
 
 def _send_activation_whatsapp(phone: str, code: str, center_name: str) -> str:
-    if not settings.PLATFORM_WASNDER_API_KEY or not settings.PLATFORM_WHATSAPP_NUMBER:
-        return "not_configured"
-    recipient = phone.strip()
-    if recipient.startswith("0"):
-        recipient = "+964" + recipient[1:]
     message = "\n".join([
         "مرحباً بك في منصة Care Car 🚗",
         f"تم إنشاء حساب مركز «{center_name}» بنجاح.",
@@ -118,16 +114,8 @@ def _send_activation_whatsapp(phone: str, code: str, center_name: str) -> str:
         "أدخل الكود في صفحة التسجيل لإكمال التفعيل.",
         f"الكود صالح لمدة {ACTIVATION_CODE_EXPIRE_MINUTES} دقيقة فقط.",
     ])
-    try:
-        resp = httpx.post(
-            settings.WASNDER_API_URL,
-            json={"to": recipient, "text": message},
-            headers={"Authorization": f"Bearer {settings.PLATFORM_WASNDER_API_KEY}"},
-            timeout=10,
-        )
-        return "sent" if resp.is_success else "failed"
-    except Exception:
-        return "failed"
+    status, _ = send_platform_whatsapp_message(phone, message)
+    return status
 
 
 def _send_activation_email(email: str, code: str, center_name: str) -> str:
@@ -199,27 +187,14 @@ def _send_activation_email(email: str, code: str, center_name: str) -> str:
 
 
 def _send_password_reset_whatsapp(phone: str, code: str) -> str:
-    if not settings.PLATFORM_WASNDER_API_KEY or not settings.PLATFORM_WHATSAPP_NUMBER:
-        return "not_configured"
-    recipient = phone.strip()
-    if recipient.startswith("0"):
-        recipient = "+964" + recipient[1:]
     message = "\n".join([
         "طلب تغيير كلمة المرور في منصة Care Car",
         f"كود إعادة التعيين الخاص بك: *{code}*",
         f"الكود صالح لمدة {PASSWORD_RESET_CODE_EXPIRE_MINUTES} دقيقة فقط.",
         "إذا لم تطلب تغيير كلمة المرور، تجاهل هذه الرسالة.",
     ])
-    try:
-        resp = httpx.post(
-            settings.WASNDER_API_URL,
-            json={"to": recipient, "text": message},
-            headers={"Authorization": f"Bearer {settings.PLATFORM_WASNDER_API_KEY}"},
-            timeout=10,
-        )
-        return "sent" if resp.is_success else "failed"
-    except Exception:
-        return "failed"
+    status, _ = send_platform_whatsapp_message(phone, message)
+    return status
 
 
 def _send_password_reset_email(email: str, code: str) -> str:
@@ -336,6 +311,8 @@ def _register_with_auto_login(body: RegisterRequest, db: Session, center_name: s
 
     contact_email = str(body.email) if body.contact_method == "email" and body.email else None
     contact_phone = body.whatsapp if body.contact_method == "whatsapp" else None
+    if contact_phone and phone_is_already_used(db, contact_phone):
+        raise HTTPException(status_code=409, detail="رقم الواتساب مستخدم بالفعل لمركز آخر")
     if not contact_email:
         safe_name = center_name.lower().replace(" ", "_")[:30]
         contact_email = f"{safe_name}_{secrets.token_hex(4)}@carecar.internal"
@@ -390,7 +367,10 @@ def _register_with_activation_code(body: RegisterRequest, db: Session, center_na
     if not body.email and not body.phone:
         raise HTTPException(status_code=400, detail="يجب تقديم إيميل أو رقم واتساب")
 
-    manager_email = str(body.email) if body.email else body.phone.strip() + "@carecar.app"
+    if body.phone and phone_is_already_used(db, body.phone):
+        raise HTTPException(status_code=409, detail="رقم الواتساب مستخدم بالفعل لمركز آخر")
+
+    manager_email = str(body.email) if body.email else normalize_contact_phone(body.phone) + "@carecar.app"
     if db.query(User).filter(User.email == manager_email).first():
         raise HTTPException(status_code=400, detail="الحساب مسجل بالفعل، جرب تسجيل الدخول")
 
