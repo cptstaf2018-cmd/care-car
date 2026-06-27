@@ -32,7 +32,7 @@ def test_me_without_token(client):
     assert r.status_code == 403
 
 
-def test_register_whatsapp_sends_activation_code_with_evolution_api(client, monkeypatch):
+def test_register_whatsapp_sends_activation_code_with_wasender_api(client, monkeypatch):
     sent = {}
 
     def fake_post(url, json, headers, timeout):
@@ -42,10 +42,8 @@ def test_register_whatsapp_sends_activation_code_with_evolution_api(client, monk
         sent["timeout"] = timeout
         return FakeWhatsappResponse()
 
-    monkeypatch.setattr("app.services.wasnder_service.settings.EVOLUTION_API_URL", "http://localhost:4002")
-    monkeypatch.setattr("app.services.wasnder_service.settings.EVOLUTION_API_KEY", "global-key")
-    monkeypatch.setattr("app.services.wasnder_service.settings.EVOLUTION_INSTANCE_NAME", "carecar")
-    monkeypatch.setattr("app.services.wasnder_service.settings.PLATFORM_WASNDER_API_KEY", "")
+    monkeypatch.setattr("app.services.wasnder_service.settings.WASNDER_API_URL", "https://www.wasenderapi.com/api/send-message")
+    monkeypatch.setattr("app.services.wasnder_service.settings.PLATFORM_WASNDER_API_KEY", "wasender-key")
     monkeypatch.setattr("app.services.wasnder_service.httpx.post", fake_post)
 
     r = client.post(
@@ -60,10 +58,10 @@ def test_register_whatsapp_sends_activation_code_with_evolution_api(client, monk
     assert r.status_code == 201
     assert r.json()["delivery_status"] == "sent"
     assert r.json()["manager_email"] == "9647700000000@carecar.app"
-    assert sent["url"] == "http://localhost:4002/message/sendText/carecar"
-    assert sent["payload"]["number"] == "9647700000000"
+    assert sent["url"] == "https://www.wasenderapi.com/api/send-message"
+    assert sent["payload"]["to"] == "+9647700000000"
     assert "كود التفعيل الخاص بك" in sent["payload"]["text"]
-    assert sent["headers"]["apikey"] == "global-key"
+    assert sent["headers"]["Authorization"] == "Bearer wasender-key"
 
 
 def test_register_whatsapp_rejects_duplicate_phone_with_different_format(client, db, monkeypatch):

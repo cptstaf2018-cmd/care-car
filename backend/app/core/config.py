@@ -10,9 +10,6 @@ class Settings(BaseSettings):
     WASNDER_API_URL: str = "https://www.wasenderapi.com/api/send-message"
     PLATFORM_WASNDER_API_KEY: str = ""
     PLATFORM_WHATSAPP_NUMBER: str = ""
-    EVOLUTION_API_URL: str = ""
-    EVOLUTION_API_KEY: str = ""
-    EVOLUTION_INSTANCE_NAME: str = ""
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
