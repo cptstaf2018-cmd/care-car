@@ -39,7 +39,8 @@ export default function InstrumentCluster({ centerName, daily, monthly, warnings
         <span className="shrink-0 text-xs text-gauge-light">{dateLabel}</span>
       </header>
 
-      <div className="mt-3 grid grid-cols-2 items-end gap-1 sm:gap-6">
+      <div className="mt-3 grid grid-cols-2 items-end gap-2 sm:gap-4">
+        <div className="mx-auto w-full max-w-[210px]">
         <Gauge
           title="دخل اليوم"
           value={revenueToday}
@@ -50,6 +51,8 @@ export default function InstrumentCluster({ centerName, daily, monthly, warnings
           readout={money(revenueToday)}
           phase={phase}
         />
+        </div>
+        <div className="mx-auto w-full max-w-[210px]">
         <Gauge
           title="سيارات اليوم"
           value={carsToday}
@@ -60,6 +63,7 @@ export default function InstrumentCluster({ centerName, daily, monthly, warnings
           readout={`${carsToday}`}
           phase={phase}
         />
+        </div>
       </div>
 
       <div className="mt-4 flex flex-col items-center gap-1">
