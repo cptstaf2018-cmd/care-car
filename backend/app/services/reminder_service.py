@@ -113,6 +113,7 @@ def get_due_reminders(db: Session, tenant: Tenant) -> list[dict]:
             "plate_number": car.plate_number,
             "owner_name": car.owner_name,
             "phone": car.phone,
+            "car_type": car.car_type,
             "photo_url": car.photo_url,
             "last_service_date": last_service_date,
             "due_date": due_date,

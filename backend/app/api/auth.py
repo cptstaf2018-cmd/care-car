@@ -67,10 +67,24 @@ class PasswordResetConfirmRequest(BaseModel):
     new_password: str
 
 
+_EASTERN_DIGITS = str.maketrans("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹", "01234567890123456789")
+_IRAQI_MOBILE = re.compile(r"^(?:00964|964|0)?(7\d{9})$")
+
+
+def _normalize_iraqi_mobile(raw: str) -> str | None:
+    """Return the number as 07XXXXXXXXX, or None if it is not an Iraqi mobile number."""
+    digits = re.sub(r"\D", "", (raw or "").translate(_EASTERN_DIGITS))
+    match = _IRAQI_MOBILE.match(digits)
+    return "0" + match.group(1) if match else None
+
+
 def _normalize_login_identifier(identifier: str) -> str:
     normalized = identifier.strip()
     if "@" not in normalized:
-        return normalized + "@carecar.app"
+        return (_normalize_iraqi_mobile(normalized) or normalized) + "@carecar.app"
+    local, _, domain = normalized.rpartition("@")
+    if domain == "carecar.app":  # phone-based accounts: accept +964 / 964 / 07 spellings of the same number
+        return (_normalize_iraqi_mobile(local) or local) + "@carecar.app"
     return normalized
 
 
@@ -339,7 +353,13 @@ def _register_with_activation_code(body: RegisterRequest, db: Session, center_na
     if not body.email and not body.phone:
         raise HTTPException(status_code=400, detail="يجب تقديم إيميل أو رقم واتساب")
 
-    manager_email = str(body.email) if body.email else body.phone.strip() + "@carecar.app"
+    phone = None
+    if body.phone:
+        phone = _normalize_iraqi_mobile(body.phone)
+        if not phone:
+            raise HTTPException(status_code=400, detail="اكتب رقم واتساب عراقي صحيح مثل 07801234567")
+
+    manager_email = str(body.email) if body.email else phone + "@carecar.app"
     if db.query(User).filter(User.email == manager_email).first():
         raise HTTPException(status_code=400, detail="الحساب مسجل بالفعل، جرب تسجيل الدخول")
 
@@ -348,8 +368,8 @@ def _register_with_activation_code(body: RegisterRequest, db: Session, center_na
         specialty=specialty,
         plan=Plan.basic,
         is_active=True,
-        contact_phone=body.phone,
-        whatsapp_number=body.phone,
+        contact_phone=phone,
+        whatsapp_number=phone,
         trial_ends_at=datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS),
     )
     db.add(tenant)
@@ -369,7 +389,7 @@ def _register_with_activation_code(body: RegisterRequest, db: Session, center_na
     )
     db.add(manager)
 
-    delivery_status = _send_activation_whatsapp(body.phone, code, center_name) if body.phone else _send_activation_email(str(body.email), code, center_name)
+    delivery_status = _send_activation_whatsapp(phone, code, center_name) if phone else _send_activation_email(str(body.email), code, center_name)
     if delivery_status != "sent":
         db.rollback()
         raise HTTPException(status_code=502, detail="تعذر إرسال كود التفعيل، حاول مرة أخرى أو اختر طريقة أخرى")
@@ -489,17 +509,6 @@ class GoogleCompleteRequest(BaseModel):
     center_name: str
     specialty: str = "quick_service"
     whatsapp: str
-
-
-_EASTERN_DIGITS = str.maketrans("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹", "01234567890123456789")
-_IRAQI_MOBILE = re.compile(r"^(?:00964|964|0)?(7\d{9})$")
-
-
-def _normalize_iraqi_mobile(raw: str) -> str | None:
-    """Return the number as 07XXXXXXXXX, or None if it is not an Iraqi mobile number."""
-    digits = re.sub(r"\D", "", (raw or "").translate(_EASTERN_DIGITS))
-    match = _IRAQI_MOBILE.match(digits)
-    return "0" + match.group(1) if match else None
 
 
 def _read_google_signup_token(token: str) -> dict:

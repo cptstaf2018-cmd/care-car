@@ -1,12 +1,8 @@
 import { useState } from 'react'
-import { CENTER_SPECIALTIES, DEFAULT_CENTER_SPECIALTY } from '../../constants/centerSpecialties'
+import { DEFAULT_CENTER_SPECIALTY } from '../../constants/centerSpecialties'
+import { normalizeIraqiMobile } from '../../utils/iraqiPhone'
 import { authInputClass as inputClass } from './PasswordForms'
-
-const IRAQI_MOBILE = /^(?:00964|964|0)?7\d{9}$/
-const EASTERN_DIGITS = { '٠': '0', '١': '1', '٢': '2', '٣': '3', '٤': '4', '٥': '5', '٦': '6', '٧': '7', '٨': '8', '٩': '9' }
-
-const toWesternDigits = (value) => value.replace(/[٠-٩]/g, (d) => EASTERN_DIGITS[d])
-const isIraqiMobile = (value) => IRAQI_MOBILE.test(toWesternDigits(value).replace(/\D/g, ''))
+import SpecialtyPicker from './SpecialtyPicker'
 
 /** Second signup step after Google: the three things we need to run the center. */
 export default function CenterOnboardingForm({ onSubmit, loading }) {
@@ -15,13 +11,14 @@ export default function CenterOnboardingForm({ onSubmit, loading }) {
   const [whatsapp, setWhatsapp] = useState('')
   const [touched, setTouched] = useState(false)
 
-  const phoneInvalid = touched && whatsapp && !isIraqiMobile(whatsapp)
+  const phone = normalizeIraqiMobile(whatsapp)
+  const phoneInvalid = touched && whatsapp && !phone
 
   const handleSubmit = (e) => {
     e.preventDefault()
     setTouched(true)
-    if (!centerName.trim() || !isIraqiMobile(whatsapp)) return
-    onSubmit({ center_name: centerName.trim(), specialty, whatsapp: toWesternDigits(whatsapp) })
+    if (!centerName.trim() || !phone) return
+    onSubmit({ center_name: centerName.trim(), specialty, whatsapp: phone })
   }
 
   return (
@@ -39,31 +36,7 @@ export default function CenterOnboardingForm({ onSubmit, loading }) {
         {touched && !centerName.trim() && <span className="text-sm text-alert">اكتب اسم المركز</span>}
       </label>
 
-      <fieldset className="grid gap-2">
-        <legend className="mb-2 text-sm font-bold">شنو يشتغل مركزك؟</legend>
-        <div className="grid grid-cols-2 gap-2">
-          {CENTER_SPECIALTIES.map((item) => (
-            <label
-              key={item.value}
-              className={`cursor-pointer rounded-2xl border px-3 py-2.5 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-oil ${
-                specialty === item.value
-                  ? 'border-petrol bg-petrol font-bold text-mint'
-                  : 'border-mint-dim bg-white text-petrol-deep hover:border-gauge'
-              }`}
-            >
-              <input
-                type="radio"
-                name="specialty"
-                value={item.value}
-                checked={specialty === item.value}
-                onChange={() => setSpecialty(item.value)}
-                className="sr-only"
-              />
-              {item.label}
-            </label>
-          ))}
-        </div>
-      </fieldset>
+      <SpecialtyPicker value={specialty} onChange={setSpecialty} />
 
       <label className="grid gap-2">
         <span className="text-sm font-bold">رقم الواتساب</span>

@@ -3,7 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.deps import get_current_user
+from app.models.tenant import Tenant
 from app.models.user import User, Role
+from app.services.reminder_service import REMINDER_INTERVAL_DAYS, get_due_reminders
 from app.services.report_service import get_daily_report, get_monthly_report
 
 router = APIRouter(prefix="/reports", tags=["reports"])
@@ -22,3 +24,18 @@ def monthly_report(year: int = Query(default=None), month: int = Query(default=N
         raise HTTPException(400, detail="Superadmin must specify tenant_id query parameter")
     today = date.today()
     return get_monthly_report(db, user.tenant_id, year or today.year, month or today.month)
+
+
+@router.get("/maintenance-due")
+def maintenance_due(limit: int = Query(default=8, ge=1, le=50),
+                    db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Serviced cars ordered by how soon (or how overdue) their next oil change is."""
+    if user.role == Role.superadmin:
+        raise HTTPException(400, detail="Superadmin must specify tenant_id query parameter")
+    tenant = db.get(Tenant, user.tenant_id)
+    serviced = [r for r in get_due_reminders(db, tenant) if r["days_left"] is not None]
+    serviced.sort(key=lambda r: r["days_left"])
+    return {
+        "interval_days": tenant.reminder_days or REMINDER_INTERVAL_DAYS,
+        "cars": [{k: v for k, v in r.items() if k not in ("is_pre_due", "is_due_today")} for r in serviced[:limit]],
+    }

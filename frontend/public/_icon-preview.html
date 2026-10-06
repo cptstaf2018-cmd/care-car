@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>Icon Preview</title>
+<style>
+  body{font-family:system-ui,Segoe UI,Arial;background:#f1f5f9;margin:0;padding:24px;color:#0f172a}
+  h2{margin:28px 0 12px;font-size:18px}
+  .grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+  .card{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:10px 12px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+  .ic{width:64px;height:64px;border-radius:9999px;display:flex;align-items:center;justify-content:center;
+      background:linear-gradient(135deg,#f8fafc,#e2e8f0);box-shadow:0 8px 16px rgba(2,8,23,.08);flex:0 0 auto}
+  .ic img{width:54px;height:54px;object-fit:contain;filter:drop-shadow(0 2px 3px rgba(0,0,0,.15))}
+  .lbl{font-weight:800;font-size:15px}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const G = {
+ "صيانة سريعة":[["تبديل زيت","oil-jug"],["فلتر زيت","oil-filter"],["فلتر هواء","air-filter"],["فلتر مكيف","ac-filter"],["تبديل ماء رديتر","coolant-jug"],["فحص بطارية","battery"],["تبديل بواجي","spark-plug"],["تعبئة نيتروجين","nitrogen"],["غسيل","wash"],["ميزان","alignment"],["ترصيص","balancing"],["درجة زيت","oil-drop"]],
+ "إطارات":[["تبديل إطار","tire"],["بيع إطار","tire-sale"],["رقعة إطار","tire-patch"],["تبديل بلف","tire-valve"],["تدوير إطارات","tire-rotate"]],
+ "غسيل وعناية":[["غسيل خارجي","wash-exterior"],["تنظيف داخلي","wash-interior"],["بولش","polish"],["واكس","wax"],["نانو سيراميك","nano"],["تعقيم","disinfect"]],
+ "كهرباء":[["فحص كمبيوتر","diagnostic"],["فحص دينمو","alternator"],["تصليح سلف","starter"],["تبديل حساس","sensor"],["تصليح إنارة","headlight"],["تبديل فيوز","fuse"]],
+ "ميكانيك":[["تبديل بريك","brake"],["تبديل جامبين","shock"],["تبديل مقص","control-arm"],["تبديل سير","belt"],["تبديل مضخة ماء","water-pump"],["تصليح رديتر","radiator"],["فحص عام","inspection"]],
+ "تكييف":[["تعبئة غاز مكيف","ac-gas"],["فحص تهريب مكيف","ac-leak"],["تبديل كمبروسر","ac-compressor"],["تنظيف ثلاجة","ac-evaporator"],["تصليح مروحة","fan"]],
+ "سمكرة وصبغ":[["صبغ قطعة","paint"],["سمكرة ضربة","dent"],["بولش خدوش","scratch"],["حماية طلاء","paint-shield"]]
+};
+const root=document.getElementById('root');
+for(const [sec,items] of Object.entries(G)){
+  const h=document.createElement('h2');h.textContent=sec;root.appendChild(h);
+  const g=document.createElement('div');g.className='grid';
+  for(const [label,file] of items){
+    const c=document.createElement('div');c.className='card';
+    c.innerHTML=`<span class="ic"><img src="service-icons/${file}.svg" alt=""></span><span class="lbl">${label}</span>`;
+    g.appendChild(c);
+  }
+  root.appendChild(g);
+}
+</script>
+</body>
+</html>

@@ -167,3 +167,61 @@ def test_legacy_register_uses_14_day_trial(client, db):
     tenant = db.query(Tenant).filter(Tenant.name == "مركز قديم الطريقة").one()
     days_left = (tenant.trial_ends_at.replace(tzinfo=timezone.utc) - datetime.now(timezone.utc)).days
     assert days_left in (13, 14)
+
+
+def _stub_code_delivery(monkeypatch):
+    sent = {}
+
+    def fake_whatsapp(phone, code, center_name):
+        sent.update(channel="whatsapp", to=phone, code=code)
+        return "sent"
+
+    def fake_email(email, code, center_name):
+        sent.update(channel="email", to=email, code=code)
+        return "sent"
+
+    monkeypatch.setattr("app.api.auth._send_activation_whatsapp", fake_whatsapp)
+    monkeypatch.setattr("app.api.auth._send_activation_email", fake_email)
+    return sent
+
+
+@pytest.mark.parametrize("raw", ["+964 780 668 8044", "9647806688044", "0780-668-8044"])
+def test_phone_signup_normalizes_number_and_login_id(client, db, monkeypatch, raw):
+    sent = _stub_code_delivery(monkeypatch)
+
+    r = client.post("/auth/register", json={"center_name": "مركز الرقم", "phone": raw})
+
+    assert r.status_code == 201
+    assert r.json()["manager_email"] == "07806688044@carecar.app"
+    assert sent["to"] == "07806688044"
+    tenant = db.query(Tenant).filter(Tenant.name == "مركز الرقم").one()
+    assert tenant.whatsapp_number == "07806688044"
+
+
+def test_phone_signup_rejects_non_iraqi_number(client, monkeypatch):
+    _stub_code_delivery(monkeypatch)
+    r = client.post("/auth/register", json={"center_name": "مركز غلط", "phone": "12345"})
+    assert r.status_code == 400
+
+
+def test_phone_signup_activation_then_login_with_any_number_format(client, db, monkeypatch):
+    sent = _stub_code_delivery(monkeypatch)
+    client.post("/auth/register", json={"center_name": "مركز الدخول", "phone": "07806688044"})
+
+    r = client.post("/auth/activate", json={"email": "07806688044@carecar.app", "code": sent["code"], "new_password": "Secret123!"})
+    assert r.status_code == 200
+
+    # the frontend strips spaces and appends @carecar.app before calling /auth/login
+    for identifier in ("07806688044", "+9647806688044", "9647806688044"):
+        login = client.post("/auth/login", json={"email": identifier + "@carecar.app", "password": "Secret123!"})
+        assert login.status_code == 200, identifier
+
+
+def test_email_signup_sends_code_to_email(client, db, monkeypatch):
+    sent = _stub_code_delivery(monkeypatch)
+
+    r = client.post("/auth/register", json={"center_name": "مركز الايميل", "email": "owner@example.com"})
+
+    assert r.status_code == 201
+    assert sent["channel"] == "email" and sent["to"] == "owner@example.com"
+    assert r.json()["manager_email"] == "owner@example.com"
