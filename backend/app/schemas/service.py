@@ -6,7 +6,7 @@ class InventoryDeduction(BaseModel):
     quantity: float
 
 class ServiceCreate(BaseModel):
-    car_id: int
+    car_id: int | None = None  # omitted for a walk-in (direct) sale
     oil_type: str
     amount: float
     discount: float = 0.0

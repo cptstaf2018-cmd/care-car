@@ -15,11 +15,15 @@ export default function PitStopBar({ car, startedAt, linesCount, onChange }) {
   return (
     <section aria-label="محطة الخدمة" className="mb-5 grid gap-4 rounded-3xl bg-petrol p-4 text-mint lg:grid-cols-[auto_1fr_auto] lg:items-center">
       <div className="flex items-center justify-between gap-4 lg:justify-start">
-        <IraqiPlate plate={car.plate_number} size="lg" />
+        {car.walkIn ? (
+          <span className="rounded-lg border-2 border-oil px-4 py-2 text-lg font-bold text-oil">بيع مباشر</span>
+        ) : (
+          <IraqiPlate plate={car.plate_number} size="lg" />
+        )}
         <div className="min-w-0 lg:ms-1">
           <p className="truncate font-bold">{car.owner_name || 'زبون'}</p>
           <p className="truncate text-xs text-gauge-light">{car.car_type || 'نوع السيارة غير محدد'}</p>
-          <button onClick={onChange} className="mt-1 text-xs font-bold text-oil underline underline-offset-4">غيّر السيارة</button>
+          <button onClick={onChange} className="mt-1 text-xs font-bold text-oil underline underline-offset-4">{car.walkIn ? 'ألغِ البيع المباشر' : 'غيّر السيارة'}</button>
         </div>
       </div>
 

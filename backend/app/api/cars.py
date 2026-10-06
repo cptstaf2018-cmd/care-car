@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.models.car import Car
+from app.models.car import Car, WALKIN_PLATE
 from app.models.user import User, Role
 from app.schemas.car import CarCreate, CarUpdate, CarOut
 
@@ -20,7 +20,7 @@ def resolve_tenant(user: User, tenant_id_param: int | None = None) -> int:
 def list_cars(tenant_id: int | None = None, search: str | None = None,
               db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     tid = resolve_tenant(user, tenant_id)
-    q = db.query(Car).filter(Car.tenant_id == tid)
+    q = db.query(Car).filter(Car.tenant_id == tid, Car.plate_number != WALKIN_PLATE)
     if search:
         q = q.filter(Car.plate_number.ilike(f"%{search}%"))
     return q.all()

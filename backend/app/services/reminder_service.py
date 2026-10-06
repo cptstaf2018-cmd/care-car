@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-from app.models.car import Car
+from app.models.car import Car, WALKIN_PLATE
 from app.models.debt import Debt
 from app.models.message_log import MessageLog
 from app.models.service import Service
@@ -99,7 +99,7 @@ def get_due_reminders(db: Session, tenant: Tenant) -> list[dict]:
     rows = (
         db.query(Car, last_service_subquery.c.last_service_date)
         .outerjoin(last_service_subquery, Car.id == last_service_subquery.c.car_id)
-        .filter(Car.tenant_id == tenant.id)
+        .filter(Car.tenant_id == tenant.id, Car.plate_number != WALKIN_PLATE)
         .order_by(last_service_subquery.c.last_service_date.asc().nullsfirst(), Car.created_at.desc())
         .all()
     )

@@ -73,6 +73,9 @@ const SERVICE_ICON_MAP = {
   protection: ShieldCheck,
   service: Wrench,
 }
+// Shops that sell over the counter can ring up a sale without a car (the server uses a stand-in customer).
+const DIRECT_SALE_SPECIALTIES = ['parts_store', 'tires']
+const WALK_IN_CUSTOMER = { id: null, plate_number: 'بيع مباشر', owner_name: 'زبون عابر', walkIn: true }
 const QUICK_SERVICE_TYPES = [
   { label: 'تبديل زيت', image: '/service-icons-3d/auto-pack/oil-can.webp', tone: 'cyan', hint: 'الأكثر طلباً' },
   { label: 'فلتر زيت', image: '/service-icons-3d/auto-pack/oil-filter.webp', tone: 'amber', hint: 'فلترة المحرك' },
@@ -521,15 +524,15 @@ export default function NewService() {
       inventory_quantity: line.inventoryQty || null,
     }))
     mutation.mutate({
-      car_id: selectedCar.id,
+      car_id: selectedCar.walkIn ? null : selectedCar.id,
       oil_type: invoiceLines.map(line => line.name).join(' + '),
       amount: invoiceTotal,
       discount: parseFloat(form.discount) || 0,
       mileage: form.mileage ? parseFloat(form.mileage) : null,
       notes: `INVOICE_LINES:${JSON.stringify(invoiceDetails)}`,
       inventory_deductions: deductions,
-      payment_status: paymentMode,
-      paid_amount: effectivePaidAmount,
+      payment_status: selectedCar.walkIn ? 'paid' : paymentMode,
+      paid_amount: selectedCar.walkIn ? normalizedNet : effectivePaidAmount,
       started_at: startedAt ? startedAt.toISOString() : null,
     })
   }
@@ -754,6 +757,16 @@ export default function NewService() {
                 serviceTypes={serviceTypes}
                 specialtyLabel={getSpecialtyLabel(centerSpecialty)}
               />
+              {DIRECT_SALE_SPECIALTIES.includes(centerSpecialty) && (
+                <button type="button" onClick={() => { selectCar(WALK_IN_CUSTOMER); setNewCarForm(null) }}
+                  className="flex w-full items-center justify-between gap-3 rounded-3xl border-2 border-oil bg-oil-light/50 px-5 py-4 text-start transition hover:bg-oil-light">
+                  <span>
+                    <span className="block font-bold text-petrol-deep">بيع مباشر بدون سيارة</span>
+                    <span className="block text-xs text-mint-ink">زبون يشتري قطعة من المحل وينصرف. تُدفع كاملة وتطلع له تذكرة.</span>
+                  </span>
+                  <PlusCircle size={22} className="shrink-0 text-oil-dark" aria-hidden="true" />
+                </button>
+              )}
               <div className="relative">
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={19} />
                 <input value={search} onChange={e => setSearch(e.target.value)}
@@ -891,12 +904,12 @@ export default function NewService() {
                       <Wallet size={16} />
                       <span className="text-sm font-black">طريقة الدفع</span>
                     </div>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className={`grid gap-2 ${selectedCar.walkIn ? 'grid-cols-1' : 'grid-cols-3'}`}>
                       {[
                         ['paid', 'دفع كامل'],
                         ['partial', 'دفع جزء'],
                         ['unpaid', 'لم يدفع'],
-                      ].map(([key, label]) => (
+                      ].filter(([key]) => !selectedCar.walkIn || key === 'paid').map(([key, label]) => (
                         <button
                           key={key}
                           type="button"
