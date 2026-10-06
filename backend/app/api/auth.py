@@ -565,31 +565,38 @@ def google_complete_signup(body: GoogleCompleteRequest, db: Session = Depends(ge
     if db.query(Tenant).filter(Tenant.name == center_name).first():
         raise HTTPException(status_code=409, detail="اسم المركز مستخدم بالفعل، يرجى اختيار اسم آخر")
 
-    specialty = body.specialty if body.specialty in CENTER_SPECIALTIES else "quick_service"
-    tenant = Tenant(
-        name=center_name,
-        specialty=specialty,
-        plan=Plan.basic,
-        is_active=True,
-        contact_phone=whatsapp,
-        whatsapp_number=whatsapp,
-        trial_ends_at=datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS),
-    )
-    db.add(tenant)
-    db.flush()
-    user = User(
-        tenant_id=tenant.id,
-        email=payload["email"],
-        hashed_password=hash_password(secrets.token_urlsafe(32)),
-        full_name=payload.get("name"),
-        role=Role.manager,
-        is_active=True,
-        is_verified=True,
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    logger.info("[GOOGLE REGISTRATION] tenant_id=%s user_id=%s", tenant.id, user.id)
+    try:
+        specialty = body.specialty if body.specialty in CENTER_SPECIALTIES else "quick_service"
+        tenant = Tenant(
+            name=center_name,
+            specialty=specialty,
+            plan=Plan.basic,
+            is_active=True,
+            contact_phone=whatsapp,
+            whatsapp_number=whatsapp,
+            trial_ends_at=datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS),
+        )
+        db.add(tenant)
+        db.flush()
+        user = User(
+            tenant_id=tenant.id,
+            email=payload["email"],
+            hashed_password=hash_password(secrets.token_urlsafe(32)),
+            full_name=payload.get("name"),
+            role=Role.manager,
+            is_active=True,
+            is_verified=True,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        logger.info("[GOOGLE REGISTRATION] tenant_id=%s user_id=%s", tenant.id, user.id)
+    except HTTPException:
+        raise
+    except Exception as exc:  # TEMP diagnostic
+        db.rollback()
+        logger.exception("[GOOGLE REGISTRATION] failed")
+        raise HTTPException(status_code=500, detail=f"تعذر فتح الحساب [{type(exc).__name__}: {str(exc)[:300]}]")
 
     token = create_access_token({"sub": str(user.id), "role": user.role, "tenant_id": user.tenant_id})
     return {"access_token": token, "token_type": "bearer", "role": user.role, "tenant_id": tenant.id}
