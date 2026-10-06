@@ -223,7 +223,7 @@ export default function Login() {
             <MethodPicker value={method} onChange={(m) => { setMethod(m); setError('') }} />
             {method === 'google' ? (
               <div className="grid gap-3">
-                <GoogleSignInButton onCredential={handleGoogle} text="signup_with" disabled={loading} />
+                <GoogleSignInButton onCredential={handleGoogle} label="سجّل بحساب Google" disabled={loading} />
                 <p className="text-center text-sm text-mint-ink">بعدها نسألك عن مركزك: اسمه، شنو يشتغل، ورقم واتسابه.</p>
               </div>
             ) : (
@@ -232,7 +232,7 @@ export default function Login() {
           </>
         ) : (
           <>
-            <GoogleSignInButton onCredential={handleGoogle} text="signin_with" disabled={loading} />
+            <GoogleSignInButton onCredential={handleGoogle} label="ادخل بحساب Google" disabled={loading} />
             <div className="flex items-center gap-3 text-sm text-gauge" aria-hidden="true">
               <span className="h-px flex-1 bg-mint-dim" />أو<span className="h-px flex-1 bg-mint-dim" />
             </div>
