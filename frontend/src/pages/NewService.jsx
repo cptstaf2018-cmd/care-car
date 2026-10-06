@@ -15,7 +15,7 @@ import { getCars, createCar } from '../api/cars'
 import { createService } from '../api/services'
 import PitStopBar from '../components/service/PitStopBar'
 import ProductSale from '../components/service/ProductSale'
-import { SERVICE_TEMPLATES, isSaleSpecialty, termsFor } from '../constants/serviceTemplates'
+import { PARTS_CATEGORIES, SERVICE_TEMPLATES, isSaleSpecialty, termsFor } from '../constants/serviceTemplates'
 import { getInventory } from '../api/inventory'
 import { getCenterSettings } from '../api/settings'
 import { DEFAULT_CENTER_SPECIALTY, getSpecialtyLabel } from '../constants/centerSpecialties'
@@ -732,7 +732,7 @@ export default function NewService() {
           ) : (
             <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
               {isSale ? (
-                <ProductSale items={inventoryItems} loading={!inventoryItems.length && !selectedCar} onAdd={addProductLine} />
+                <ProductSale items={inventoryItems} loading={!inventoryItems.length && !selectedCar} onAdd={addProductLine} categories={PARTS_CATEGORIES} />
               ) : (
                 <div className="surface rounded-lg p-6 space-y-4">
                   <div>

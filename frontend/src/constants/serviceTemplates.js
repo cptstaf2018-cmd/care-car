@@ -110,6 +110,20 @@ const BODY_PAINT = [
   { label: 'حماية طلاء', image: `${IMG}/paint-protection.webp`, tone: 'teal', hint: 'طبقة حماية' },
 ]
 
+/** The parts store's template: the kinds of parts it sells. They filter its stock, like service tiles do for the others. */
+export const PARTS_CATEGORIES = [
+  { label: 'زيوت وسوائل', image: `${IMG}/oil-can.webp`, tone: 'amber', keywords: ['زيت', 'سائل', 'شحم', 'ماء رديتر', 'غاز'] },
+  { label: 'فلاتر', image: `${IMG}/oil-filter.webp`, tone: 'cyan', keywords: ['فلتر'] },
+  { label: 'بطاريات', image: `${IMG}/battery.webp`, tone: 'emerald', keywords: ['بطارية'] },
+  { label: 'إطارات', image: `${IMG}/tire-sale-exact.webp`, tone: 'slate', keywords: ['إطار', 'تاير', 'رنج'] },
+  { label: 'فرامل', image: `${IMG}/brake-pads.webp`, tone: 'rose', keywords: ['فرامل', 'بريك', 'تيل', 'قرص'] },
+  { label: 'تعليق وجامبين', image: `${IMG}/shock.webp`, tone: 'violet', keywords: ['جامبين', 'مقص', 'تعليق', 'بلية'] },
+  { label: 'سيور ومضخات', image: `${IMG}/engine-belt.webp`, tone: 'blue', keywords: ['سير', 'مضخة', 'طرمبة', 'رديتر'] },
+  { label: 'بواجي وإشعال', image: `${IMG}/spark-plug.webp`, tone: 'fuchsia', keywords: ['بواجي', 'شمعات', 'كويل'] },
+  { label: 'كهرباء وإنارة', image: `${IMG}/bulb.webp`, tone: 'teal', keywords: ['مصباح', 'لمبة', 'فيوز', 'حساس', 'دينمو', 'سلف'] },
+  { label: 'مساحات', image: `${IMG}/wipers.webp`, tone: 'indigo', keywords: ['مساحة', 'مساحات'] },
+]
+
 export const SERVICE_TEMPLATES = {
   quick_service: OIL_CHANGE,
   tires: TIRES,
@@ -118,7 +132,7 @@ export const SERVICE_TEMPLATES = {
   mechanic: MECHANIC,
   ac: AC,
   body_paint: BODY_PAINT,
-  parts_store: [], // sells products from stock, not services: see ProductSale
+  parts_store: [], // sells products from stock, not services: see PARTS_CATEGORIES and ProductSale
 }
 
 /** What a template calls itself on screen: a parts store sells, every other center serves. */

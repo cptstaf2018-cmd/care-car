@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Check, Menu, X } from 'lucide-react'
 import BrandMark from '../BrandMark'
 import WhatsAppIcon from '../WhatsAppIcon'
+import StartButton from './StartButton'
 import InstrumentGrid from '../cluster/InstrumentGrid'
 import useScrollProgress from '../cluster/useScrollProgress'
 import { CENTER_SPECIALTIES } from '../../constants/centerSpecialties'
@@ -39,9 +40,7 @@ export function LandingNav() {
         </div>
         <div className="flex items-center gap-2">
           <Link to="/login" className="hidden rounded-full px-4 py-2 text-sm font-bold text-mint hover:bg-petrol-deep sm:block">دخول</Link>
-          <Link to="/register" className="rounded-full bg-oil px-4 py-2 text-sm font-bold text-petrol-deep hover:bg-oil-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint">
-            جرّب مجاناً
-          </Link>
+          <StartButton size="sm" caption="" />
           <button type="button" onClick={() => setOpen((v) => !v)} aria-label="القائمة" aria-expanded={open} className="rounded-full p-2 text-mint md:hidden">
             {open ? <X size={22} /> : <Menu size={22} />}
           </button>
@@ -194,10 +193,11 @@ export function FinalCta() {
   return (
     <section className="bg-petrol px-4 py-20 text-center text-mint">
       <h2 className="mx-auto max-w-[22ch] text-3xl font-bold leading-snug sm:text-4xl">جرّب كير كار هسه. أول خدمة تسجّلها تحس الفرق.</h2>
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
-        <Link to="/register" className="rounded-full bg-oil px-8 py-4 text-lg font-bold text-petrol-deep hover:bg-oil-dark focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-oil/50">
-          جرّب {TRIAL_DAYS} يوم مجاناً
-        </Link>
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-8">
+        <div className="flex flex-col items-center gap-1">
+          <StartButton size="lg" />
+          <span className="text-sm text-gauge-light">اضغط وابدأ {TRIAL_DAYS} يوم مجاناً</span>
+        </div>
         <a href={whatsappLink('مرحبا، أريد أفتح حساب لمركزي بكير كار')} target="_blank" rel="noopener noreferrer"
           className="inline-flex items-center gap-2 rounded-full border border-petrol-soft px-7 py-4 font-bold hover:bg-petrol-deep focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-oil/50">
           <WhatsAppIcon size={20} /> كلّمنا على واتساب

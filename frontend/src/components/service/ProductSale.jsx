@@ -10,15 +10,18 @@ const inputClass = 'w-full rounded-xl border border-mint-dim bg-white px-3 py-2.
  * Over-the-counter selling for a parts store: pick products from stock, set the quantity, and the invoice line
  * (with its stock deduction) is built for you. Anything not in stock can still be sold as a manual item.
  */
-export default function ProductSale({ items, loading, onAdd }) {
+export default function ProductSale({ items, loading, onAdd, categories = [] }) {
   const [search, setSearch] = useState('')
+  const [category, setCategory] = useState(null)
   const [picked, setPicked] = useState(null)
   const [qty, setQty] = useState(1)
   const [price, setPrice] = useState('')
   const [manual, setManual] = useState({ name: '', price: '', qty: '1' })
 
   const query = search.trim().toLowerCase()
-  const visible = items.filter((item) => !query || `${item.oil_type} ${item.category || ''}`.toLowerCase().includes(query))
+  const haystack = (item) => `${item.oil_type} ${item.category || ''}`.toLowerCase()
+  const inCategory = (item, cat) => cat.keywords.some((word) => haystack(item).includes(word.toLowerCase()))
+  const visible = items.filter((item) => (!category || inCategory(item, category)) && (!query || haystack(item).includes(query)))
   const available = picked ? Number(picked.quantity) : 0
   const lineTotal = (Number(price) || 0) * (Number(qty) || 0)
 
@@ -53,6 +56,29 @@ export default function ProductSale({ items, loading, onAdd }) {
           <p className="text-xs text-mint-ink">السعر يجي من سعر البيع المسجّل، وتنقص الكمية تلقائياً.</p>
         </div>
       </div>
+
+      {categories.length > 0 && (
+        <div role="group" aria-label="أنواع القطع" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+          {[{ label: 'الكل', keywords: [] }, ...categories].map((cat) => {
+            const isAll = cat.keywords.length === 0
+            const count = isAll ? items.length : items.filter((item) => inCategory(item, cat)).length
+            const active = isAll ? !category : category?.label === cat.label
+            return (
+              <button
+                key={cat.label}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setCategory(isAll ? null : cat)}
+                className={`flex shrink-0 items-center gap-2 rounded-full border-2 px-3 py-1.5 text-sm font-bold transition ${active ? 'border-oil bg-oil-light/60 text-petrol-deep' : 'border-mint-dim bg-white text-petrol hover:border-gauge'} ${count === 0 && !isAll ? 'opacity-60' : ''}`}
+              >
+                {cat.image && <img src={cat.image} alt="" width="24" height="24" loading="lazy" className="h-6 w-6 object-contain" />}
+                {cat.label}
+                <span className="rounded-full bg-mint px-1.5 text-xs tabular-nums text-petrol">{count}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       <div className="relative">
         <Search className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 text-gauge" size={18} aria-hidden="true" />
@@ -94,7 +120,7 @@ export default function ProductSale({ items, loading, onAdd }) {
               </li>
             )
           })}
-          {visible.length === 0 && <li className="rounded-2xl border border-dashed border-mint-dim p-4 text-center text-sm text-mint-ink sm:col-span-2">ما كو صنف بهذا الاسم.</li>}
+          {visible.length === 0 && <li className="rounded-2xl border border-dashed border-mint-dim p-4 text-center text-sm text-mint-ink sm:col-span-2">ما كو صنف مطابق. جرّب نوع ثاني أو امسح البحث.</li>}
         </ul>
       )}
 
