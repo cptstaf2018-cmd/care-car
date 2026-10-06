@@ -528,7 +528,7 @@ def google_login(body: GoogleLoginRequest, db: Session = Depends(get_db)):
         profile = verify_google_credential(body.credential)
     except ValueError as exc:
         logger.warning("[GOOGLE LOGIN] verification failed: %s", exc)
-        if not settings.GOOGLE_CLIENT_ID:
+        if "not configured" in str(exc):
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="تسجيل Google غير مفعّل بالخادم")
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="تعذر التحقق من حساب Google")
 
