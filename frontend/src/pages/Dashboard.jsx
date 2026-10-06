@@ -44,17 +44,15 @@ export default function Dashboard() {
 
   return (
     <Layout compact>
-      <div className="grid items-start gap-5 pb-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
-        <div className="lg:sticky lg:top-20">
-          <InstrumentCluster
-            centerName={centerName}
-            daily={dailyQuery.data}
-            monthly={monthlyQuery.data}
-            warnings={{ oilDue: isOilCenter ? dueCars.length : undefined, lowStock: lowStockCount, debts: unpaidCount }}
-          />
-        </div>
+      <div className="grid gap-5 pb-10">
+        <InstrumentCluster
+          centerName={centerName}
+          daily={dailyQuery.data}
+          monthly={monthlyQuery.data}
+          warnings={{ oilDue: isOilCenter ? dueCars.length : undefined, lowStock: lowStockCount, debts: unpaidCount }}
+        />
 
-        <div className="grid gap-5">
+        <div className={`grid items-start gap-5 ${isOilCenter ? 'lg:grid-cols-2' : ''}`}>
           {isOilCenter && (
             <section aria-labelledby="due-title" className="grid gap-3">
               <div className="flex items-baseline justify-between">
@@ -96,9 +94,9 @@ export default function Dashboard() {
               </ul>
             )}
           </section>
-
-          {ads.length > 0 && <AdStrip ads={ads} />}
         </div>
+
+        {ads.length > 0 && <AdStrip ads={ads} />}
       </div>
     </Layout>
   )
