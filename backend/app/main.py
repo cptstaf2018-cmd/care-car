@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.api import auth, tenants, cars, services, invoices, inventory, debts, reports, settings, vision, platform, camera_ws, webhook, mobile_camera, users
-from app.core.config import settings
+from app.core.config import settings as app_settings
 from app.services.scheduler_service import start_scheduler
 
 
@@ -21,7 +21,7 @@ app = FastAPI(title="care-car-saas", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origin_regex=settings.CORS_ALLOW_ORIGIN_REGEX,
+    allow_origin_regex=app_settings.CORS_ALLOW_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

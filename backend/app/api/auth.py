@@ -1,4 +1,5 @@
 import logging
+import re
 import secrets
 import smtplib
 import string
@@ -6,22 +7,27 @@ from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from jose import JWTError
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.security import create_access_token, create_signed_token, decode_token, hash_password, verify_password
 from app.models.tenant import Plan, Tenant
 from app.models.user import Role, User
 from app.schemas.auth import LoginRequest, TokenResponse, UserOut
 from app.services.evolution_service import send_platform_whatsapp_message
+from app.services.google_auth_service import verify_google_credential
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 ACTIVATION_CODE_EXPIRE_MINUTES = 30
 PASSWORD_RESET_CODE_EXPIRE_MINUTES = 15
+TRIAL_DAYS = 14
+GOOGLE_SIGNUP_TOKEN_MINUTES = 30
+GOOGLE_SIGNUP_PURPOSE = "google_signup"
 MAX_PASSWORD_RESET_ATTEMPTS = 10
 CENTER_SPECIALTIES = {
     "quick_service",
@@ -230,18 +236,23 @@ def login(body: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == identifier).first()
     if not user or not verify_password(body.password, user.hashed_password):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
-    if user.tenant_id:
-        tenant = db.get(Tenant, user.tenant_id)
-        if not tenant or not tenant.is_active:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account suspended")
-        if tenant.trial_ends_at and not tenant.subscription_ends_at:
-            trial_end = tenant.trial_ends_at
-            if trial_end.tzinfo is None:
-                trial_end = trial_end.replace(tzinfo=timezone.utc)
-            if datetime.now(timezone.utc) > trial_end:
-                raise HTTPException(status_code=402, detail="trial_expired")
+    _ensure_tenant_can_login(user, db)
     token = create_access_token({"sub": str(user.id), "role": user.role, "tenant_id": user.tenant_id})
     return TokenResponse(access_token=token, role=user.role, tenant_id=user.tenant_id)
+
+
+def _ensure_tenant_can_login(user: User, db: Session) -> None:
+    if not user.tenant_id:
+        return
+    tenant = db.get(Tenant, user.tenant_id)
+    if not tenant or not tenant.is_active:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account suspended")
+    if tenant.trial_ends_at and not tenant.subscription_ends_at:
+        trial_end = tenant.trial_ends_at
+        if trial_end.tzinfo is None:
+            trial_end = trial_end.replace(tzinfo=timezone.utc)
+        if datetime.now(timezone.utc) > trial_end:
+            raise HTTPException(status_code=402, detail="trial_expired")
 
 
 @router.get("/me", response_model=UserOut)
@@ -290,7 +301,7 @@ def _register_with_auto_login(body: RegisterRequest, db: Session, center_name: s
             is_active=True,
             contact_phone=contact_phone,
             whatsapp_number=contact_phone,
-            trial_ends_at=datetime.now(timezone.utc) + timedelta(days=3),
+            trial_ends_at=datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS),
         )
         db.add(tenant)
         db.flush()
@@ -339,7 +350,7 @@ def _register_with_activation_code(body: RegisterRequest, db: Session, center_na
         is_active=True,
         contact_phone=body.phone,
         whatsapp_number=body.phone,
-        trial_ends_at=datetime.now(timezone.utc) + timedelta(days=3),
+        trial_ends_at=datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS),
     )
     db.add(tenant)
     db.flush()
@@ -467,3 +478,105 @@ def confirm_password_reset(body: PasswordResetConfirmRequest, db: Session = Depe
     user.activation_attempts = 0
     db.commit()
     return {"message": "تم تغيير كلمة المرور بنجاح"}
+
+
+class GoogleLoginRequest(BaseModel):
+    credential: str
+
+
+class GoogleCompleteRequest(BaseModel):
+    signup_token: str
+    center_name: str
+    specialty: str = "quick_service"
+    whatsapp: str
+
+
+_EASTERN_DIGITS = str.maketrans("٠١٢٣٤٥٦٧٨٩۰۱۲۳۴۵۶۷۸۹", "01234567890123456789")
+_IRAQI_MOBILE = re.compile(r"^(?:00964|964|0)?(7\d{9})$")
+
+
+def _normalize_iraqi_mobile(raw: str) -> str | None:
+    """Return the number as 07XXXXXXXXX, or None if it is not an Iraqi mobile number."""
+    digits = re.sub(r"\D", "", (raw or "").translate(_EASTERN_DIGITS))
+    match = _IRAQI_MOBILE.match(digits)
+    return "0" + match.group(1) if match else None
+
+
+def _read_google_signup_token(token: str) -> dict:
+    try:
+        payload = decode_token(token)
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="انتهت صلاحية التسجيل، سجّل بحساب Google مرة ثانية")
+    if payload.get("purpose") != GOOGLE_SIGNUP_PURPOSE or not payload.get("email"):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="رمز التسجيل غير صالح")
+    return payload
+
+
+@router.post("/google")
+def google_login(body: GoogleLoginRequest, db: Session = Depends(get_db)):
+    try:
+        profile = verify_google_credential(body.credential)
+    except ValueError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="تعذر التحقق من حساب Google")
+
+    user = db.query(User).filter(User.email == profile["email"]).first()
+    if user:
+        if not user.is_active:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account suspended")
+        _ensure_tenant_can_login(user, db)
+        token = create_access_token({"sub": str(user.id), "role": user.role, "tenant_id": user.tenant_id})
+        return {"status": "logged_in", "access_token": token, "token_type": "bearer",
+                "role": user.role, "tenant_id": user.tenant_id}
+
+    signup_token = create_signed_token({
+        "purpose": GOOGLE_SIGNUP_PURPOSE,
+        "email": profile["email"],
+        "name": profile["name"],
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=GOOGLE_SIGNUP_TOKEN_MINUTES),
+    })
+    return {"status": "needs_onboarding", "signup_token": signup_token,
+            "email": profile["email"], "name": profile["name"]}
+
+
+@router.post("/google/complete", status_code=201)
+def google_complete_signup(body: GoogleCompleteRequest, db: Session = Depends(get_db)):
+    payload = _read_google_signup_token(body.signup_token)
+    center_name = body.center_name.strip()
+    if not center_name:
+        raise HTTPException(status_code=400, detail="اسم المركز مطلوب")
+    whatsapp = _normalize_iraqi_mobile(body.whatsapp)
+    if not whatsapp:
+        raise HTTPException(status_code=400, detail="اكتب رقم واتساب عراقي صحيح مثل 07801234567")
+    if db.query(User).filter(User.email == payload["email"]).first():
+        raise HTTPException(status_code=409, detail="هذا الحساب مسجّل مسبقاً، سجّل دخول بحساب Google")
+    if db.query(Tenant).filter(Tenant.name == center_name).first():
+        raise HTTPException(status_code=409, detail="اسم المركز مستخدم بالفعل، يرجى اختيار اسم آخر")
+
+    specialty = body.specialty if body.specialty in CENTER_SPECIALTIES else "quick_service"
+    tenant = Tenant(
+        name=center_name,
+        specialty=specialty,
+        plan=Plan.basic,
+        is_active=True,
+        contact_phone=whatsapp,
+        whatsapp_number=whatsapp,
+        trial_ends_at=datetime.now(timezone.utc) + timedelta(days=TRIAL_DAYS),
+    )
+    db.add(tenant)
+    db.flush()
+    user = User(
+        tenant_id=tenant.id,
+        email=payload["email"],
+        hashed_password=hash_password(secrets.token_urlsafe(32)),
+        full_name=payload.get("name"),
+        role=Role.manager,
+        is_active=True,
+        is_verified=True,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    logger.info("[GOOGLE REGISTRATION] tenant_id=%s user_id=%s", tenant.id, user.id)
+
+    token = create_access_token({"sub": str(user.id), "role": user.role, "tenant_id": user.tenant_id})
+    return {"access_token": token, "token_type": "bearer", "role": user.role, "tenant_id": tenant.id}

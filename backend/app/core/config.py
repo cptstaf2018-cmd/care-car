@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     SMTP_FROM_EMAIL: str = ""
     SMTP_FROM_NAME: str = "Care Car"
     PUBLIC_BASE_URL: str = "https://carecar.online"
+    GOOGLE_CLIENT_ID: str = ""
     CORS_ALLOW_ORIGIN_REGEX: str = r"^(https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+)(:\d+)?|https://carecar\.online|https://www\.carecar\.online|https://[a-z0-9-]+\.vercel\.app)$"
 
     model_config = {"env_file": ".env"}
