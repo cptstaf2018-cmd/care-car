@@ -67,8 +67,10 @@ export default function InstrumentCluster({ centerName, daily, monthly, warnings
         <span className="text-xs text-gauge-light">دخل الشهر بالدينار</span>
       </div>
 
-      <nav aria-label="تنبيهات" className="mt-4 grid grid-cols-3 border-t border-petrol-line pt-3">
-        <Telltale icon={<OilCanIcon />} label="موعد زيت" count={warnings.oilDue} to="/center/cars" selfTest={selfTest} />
+      <nav aria-label="تنبيهات" className="mt-4 grid grid-flow-col auto-cols-fr border-t border-petrol-line pt-3">
+        {warnings.oilDue != null && (
+          <Telltale icon={<OilCanIcon />} label="موعد زيت" count={warnings.oilDue} to="/center/cars" selfTest={selfTest} />
+        )}
         <Telltale icon={<Fuel size={22} aria-hidden="true" />} label="مخزون ناقص" count={warnings.lowStock} to="/center/inventory" selfTest={selfTest} />
         <Telltale icon={<BatteryWarning size={22} aria-hidden="true" />} label="ديون" count={warnings.debts} tone="red" to="/center/debts" selfTest={selfTest} />
       </nav>
