@@ -70,7 +70,7 @@ export default function StartEngineButton({ phase, mode = 'google', formId, onPr
         role="group"
         aria-label={mode === 'google' ? 'شغّل الحساب: سجّل بحساب Google' : 'شغّل المحرك وادخل'}
         style={{ width: BUTTON_SIZE, height: BUTTON_SIZE }}
-        className={`relative -mt-14 rounded-full p-[7px] shadow-[0_16px_30px_-10px_rgba(0,0,0,0.75)] focus-within:ring-4 focus-within:ring-oil/60 ${disabled ? 'pointer-events-none opacity-60' : ''}`}
+        className={`relative rounded-full p-[7px] shadow-[0_16px_30px_-10px_rgba(0,0,0,0.75)] focus-within:ring-4 focus-within:ring-oil/60 ${disabled ? 'pointer-events-none opacity-60' : ''}`}
         onClickCapture={onPress}
       >
         <span

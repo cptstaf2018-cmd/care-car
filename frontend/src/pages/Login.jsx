@@ -7,7 +7,6 @@ import WhatsAppIcon from '../components/WhatsAppIcon'
 import GoogleLoginPill from '../components/auth/GoogleLoginPill'
 import CenterOnboardingForm from '../components/auth/CenterOnboardingForm'
 import { ErrorNote, ForgotPasswordForm, PasswordLoginForm } from '../components/auth/PasswordForms'
-import LaunchScene from '../components/launch/LaunchScene'
 import StartEngineButton from '../components/launch/StartEngineButton'
 import useLaunch, { PHASE_RPM } from '../components/launch/useLaunch'
 import { TRIAL_DAYS, whatsappLink } from '../constants/contact'
@@ -60,11 +59,12 @@ export default function Login() {
 
   const mode = subMode || (location.pathname === '/register' ? 'register' : 'login')
   const launching = phase === 'igniting' || phase === 'driving' || phase === 'away'
-  const shellProps = launching
+  const stepInfo = launching
     ? { step: 3, rpm: STEP_RPM.launch }
     : mode === 'onboarding'
       ? { step: 2, rpm: STEP_RPM.details + formStep * RPM_PER_FORM_STEP }
       : { step: 1, rpm: STEP_RPM.account }
+  const shellProps = { ...stepInfo, phase, idleRpm: PHASE_RPM.parked + (mode === 'onboarding' ? formStep * RPM_PER_FORM_STEP : 0) }
 
   const go = (nextMode) => {
     setError('')
@@ -156,7 +156,6 @@ export default function Login() {
         <div className="mb-4"><ErrorNote>{error}</ErrorNote></div>
         <CenterOnboardingForm formId="onboarding-form" hideSubmit onSubmit={handleOnboarding} onProgress={setFormStep} loading={loading} />
         <div className="mt-6">
-          <LaunchScene phase={phase} idleRpm={PHASE_RPM.parked + formStep * RPM_PER_FORM_STEP} />
           <StartEngineButton mode="submit" formId="onboarding-form" phase={phase} disabled={loading} caption="اضغط وافتح حسابك وانطلق" />
         </div>
       </AuthShell>
@@ -209,7 +208,6 @@ export default function Login() {
 
       {isRegister ? (
         <>
-          <LaunchScene phase={phase} />
           <StartEngineButton phase={phase} onPress={press} onCredential={handleGoogle} disabled={loading} />
           <div className="mt-6 grid gap-5">
             {errorBlock}
@@ -232,7 +230,6 @@ export default function Login() {
             }}
           />
           <div>
-            <LaunchScene phase={phase} />
             <StartEngineButton mode="submit" formId="password-login" phase={phase} disabled={loading} caption="اضغط للدخول" />
           </div>
           <div className="flex items-center gap-3 text-sm text-gauge" aria-hidden="true">

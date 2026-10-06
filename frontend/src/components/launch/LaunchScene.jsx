@@ -10,7 +10,7 @@ const STREAK_DELAYS = [0, 0.13, 0.27, 0.06, 0.2, 0.34]
  * The red car on its garage road with a live RPM dial. `phase` comes from useLaunch;
  * `idleRpm` lets a form raise the idle revs as the user fills it in.
  */
-export default function LaunchScene({ phase, idleRpm = PHASE_RPM.parked, label = 'سيارة كير كار الحمراء' }) {
+export default function LaunchScene({ phase, idleRpm = PHASE_RPM.parked, label = 'سيارة كير كار الحمراء', showTach = true }) {
   const rpm = phase === 'parked' ? idleRpm : PHASE_RPM[phase]
 
   return (
@@ -21,9 +21,11 @@ export default function LaunchScene({ phase, idleRpm = PHASE_RPM.parked, label =
         <circle cx="200" cy="150" r="68" />
       </svg>
 
-      <div className="absolute start-3 top-2 hidden w-[112px] min-[460px]:block" aria-hidden="true">
-        <Gauge value={rpm} max={TACH_MAX_RPM} scaleLabel={(n) => `${Math.round(n)}`} unitLabel="RPM" readout="" title="" compact />
-      </div>
+      {showTach && (
+        <div className="absolute start-3 top-2 hidden w-[112px] min-[460px]:block" aria-hidden="true">
+          <Gauge value={rpm} max={TACH_MAX_RPM} scaleLabel={(n) => `${Math.round(n)}`} unitLabel="RPM" readout="" title="" compact />
+        </div>
+      )}
 
       <div className="launch-road" aria-hidden="true" />
       {STREAKS.map((top, i) => (

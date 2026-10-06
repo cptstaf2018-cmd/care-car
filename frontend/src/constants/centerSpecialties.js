@@ -36,6 +36,12 @@ export const CENTER_SPECIALTIES = [
     description: 'غاز، تهريب، كمبروسر، فلتر مكيف',
   },
   {
+    value: 'parts_store',
+    icon: '/service-icons-3d/auto-pack/brake-pads.webp',
+    label: 'محل قطع غيار',
+    description: 'بيع قطع السيارات: فلاتر، بطاريات، بواجي، فرامل، جامبين',
+  },
+  {
     value: 'body_paint',
     icon: '/service-icons-3d/auto-pack/paint-spray.webp',
     label: 'سمكرة وصبغ',

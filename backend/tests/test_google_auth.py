@@ -225,3 +225,15 @@ def test_email_signup_sends_code_to_email(client, db, monkeypatch):
     assert r.status_code == 201
     assert sent["channel"] == "email" and sent["to"] == "owner@example.com"
     assert r.json()["manager_email"] == "owner@example.com"
+
+
+def test_complete_accepts_parts_store_specialty(client, db, google_ok):
+    r = _complete(client, _signup_token(client), specialty="parts_store")
+    assert r.status_code == 201
+    assert db.query(Tenant).one().specialty == "parts_store"
+
+
+def test_complete_unknown_specialty_falls_back_to_quick_service(client, db, google_ok):
+    r = _complete(client, _signup_token(client), specialty="spaceship")
+    assert r.status_code == 201
+    assert db.query(Tenant).one().specialty == "quick_service"

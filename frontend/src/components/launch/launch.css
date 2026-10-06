@@ -213,6 +213,13 @@
   100% { opacity: 0; transform: translateX(380%); }
 }
 
+/* instruments pulse once per signup step (re-keyed in FeatureGauges) */
+.gauge-pulse { animation: gauge-pulse 0.9s ease-out; }
+@keyframes gauge-pulse {
+  0% { border-color: #F0A33A; box-shadow: 0 0 0 0 rgba(240, 163, 58, 0.55), inset 0 0 24px rgba(240, 163, 58, 0.25); }
+  100% { border-color: #1D5A5E; box-shadow: 0 0 0 16px rgba(240, 163, 58, 0), inset 0 0 0 rgba(240, 163, 58, 0); }
+}
+
 /* engine start button */
 .start-ring-idle { animation: start-pulse 2.4s ease-in-out infinite; }
 @keyframes start-pulse {
@@ -221,8 +228,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .feature-gauges * {
+  .feature-gauges *,
+  .gauge-pulse {
     transition: none !important;
+    animation: none !important;
   }
   .launch-scene *,
   .launch-scene[data-phase] .launch-car,

@@ -37,6 +37,7 @@ CENTER_SPECIALTIES = {
     "mechanic",
     "ac",
     "body_paint",
+    "parts_store",
 }
 
 

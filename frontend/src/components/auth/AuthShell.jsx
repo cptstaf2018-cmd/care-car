@@ -4,7 +4,7 @@ import FeatureGauges from './FeatureGauges'
 import { SUPPORT_WHATSAPP_URL } from '../../constants/contact'
 
 /** Split layout for auth screens: form card on the start side, product promise on the other. */
-export default function AuthShell({ children, step = 1, rpm = 1.5 }) {
+export default function AuthShell({ children, step = 1, rpm = 1.5, phase = 'parked', idleRpm }) {
   return (
     <div dir="rtl" className="min-h-screen bg-petrol text-mint">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5 sm:px-8">
@@ -26,7 +26,7 @@ export default function AuthShell({ children, step = 1, rpm = 1.5 }) {
         </section>
 
         <aside className="lg:pt-6">
-          <FeatureGauges step={step} rpm={rpm} />
+          <FeatureGauges step={step} rpm={rpm} phase={phase} idleRpm={idleRpm} />
         </aside>
       </main>
     </div>
