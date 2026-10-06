@@ -16,7 +16,7 @@
 .launch-stage {
   margin-inline: auto;
   width: 100%;
-  max-width: 760px;
+  max-width: none;
 }
 .launch-stage .launch-scene { height: 220px; }
 .launch-stage-action {

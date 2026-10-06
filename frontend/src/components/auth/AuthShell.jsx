@@ -25,8 +25,8 @@ export default function AuthShell({ children, step = 1, rpm = 1.5, phase = 'park
       <main className="mx-auto max-w-6xl px-4 pb-16 pt-2 sm:px-8 lg:pt-6">
         <FeatureGauges step={step} rpm={rpm} />
 
-        <section className="mx-auto mt-10 w-full max-w-[520px] rounded-[28px] bg-mint p-6 text-petrol-deep shadow-[0_30px_60px_-30px_rgba(0,0,0,0.6)] sm:p-8">
-          {children}
+        <section className="mt-10 w-full rounded-[28px] bg-mint p-6 text-petrol-deep shadow-[0_30px_60px_-30px_rgba(0,0,0,0.6)] sm:p-8">
+          <div className="mx-auto w-full max-w-2xl">{children}</div>
         </section>
 
         <div className="launch-stage mt-10">
