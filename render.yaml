@@ -18,6 +18,24 @@ services:
         value: true
       - key: GOOGLE_CLIENT_ID
         sync: false
+      # Outgoing email (password reset and activation codes). Without these the codes cannot be sent.
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      # WhatsApp codes go through the Evolution API server.
+      - key: EVOLUTION_API_URL
+        sync: false
+      - key: EVOLUTION_API_KEY
+        sync: false
+      - key: EVOLUTION_INSTANCE_NAME
+        sync: false
       - key: PUBLIC_BASE_URL
         value: https://carecar.online
       - key: CORS_ALLOW_ORIGIN_REGEX
