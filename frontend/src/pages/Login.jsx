@@ -100,7 +100,7 @@ export default function Login() {
         setSubMode('onboarding')
         release() // new account: the car comes back for the next step
       } catch (err) {
-        setError(loginErrorMessage(err) || 'ما كدرنا نتحقق من حساب Google. حاول مرة ثانية.')
+        setError(loginErrorMessage(err) || err.response?.data?.detail || 'ما كدرنا نتحقق من حساب Google. حاول مرة ثانية.') // TEMP diagnostic: show server reason
         release()
       } finally {
         setLoading(false)
