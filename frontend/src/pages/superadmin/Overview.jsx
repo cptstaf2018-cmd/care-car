@@ -47,7 +47,6 @@ export default function AdminOverview() {
   })
   const active = tenants.filter(t => t.is_active).length
   const suspended = tenants.length - active
-  const connectedCameras = tenants.filter(t => t.ip_camera_url).length
   const connectedWhatsapp = tenants.filter(t => t.whatsapp_number).length
   const trialCount = tenants.filter(isTrialTenant).length
   const mrr = tenants.filter(t => t.is_active).reduce((sum, t) => sum + tenantPlanPrice(t), 0)
@@ -264,8 +263,8 @@ export default function AdminOverview() {
                   <td className="px-5 py-4">{t.subscription_ends_at || 'غير محدد'}</td>
                   <td className="px-5 py-4">
                     <Badge
-                      text={t.whatsapp_number || t.ip_camera_url ? 'جزئي/جاهز' : 'غير مكتمل'}
-                      tone={t.whatsapp_number || t.ip_camera_url ? 'green' : 'slate'}
+                      text={t.whatsapp_number ? 'جاهز' : 'غير مكتمل'}
+                      tone={t.whatsapp_number ? 'green' : 'slate'}
                     />
                   </td>
                   <td className="px-5 py-4"><Badge text={t.is_active ? 'نشط' : 'موقوف'} tone={t.is_active ? 'green' : 'red'} /></td>
@@ -279,7 +278,6 @@ export default function AdminOverview() {
         <div className="grid gap-4">
           <AdminPanel title="ملخص المنصة" icon={Sparkles}>
             <Alert text={`${connectedWhatsapp}/${tenants.length} مراكز أكملت إعداد واتساب`} />
-            <Alert text={`${connectedCameras}/${tenants.length} مراكز لديها رابط كاميرا محفوظ`} />
             <Alert text={suspended ? `${suspended} مراكز موقوفة بسبب الاشتراك` : 'لا توجد مراكز موقوفة'} />
           </AdminPanel>
           <div className="premium-card rounded-lg p-5">

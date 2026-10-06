@@ -20,6 +20,7 @@ import { getInventory } from '../api/inventory'
 import { getCenterSettings } from '../api/settings'
 import { DEFAULT_CENTER_SPECIALTY, getSpecialtyLabel } from '../constants/centerSpecialties'
 import { hasPlanFeature } from '../constants/plans'
+import { CAMERA_ENABLED } from '../constants/features'
 import { useAuthStore } from '../store/auth'
 
 const WS_CAMERA_BASE = import.meta.env.VITE_WS_BASE_URL || (
@@ -519,137 +520,139 @@ export default function NewService() {
         </div>
       </div>
 
-      <section className="mb-5 grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-        <div className="surface overflow-hidden rounded-lg">
-          <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-white p-4">
-            <div>
-              <p className="text-xs font-black text-cyan-700">كاميرا الاستقبال</p>
-              <h3 className="mt-1 font-black text-slate-950">قراءة لوحة السيارة</h3>
-            </div>
-            <button
-              type="button"
-              onClick={() => cameraEnabled && setReceptionActive(v => !v)}
-              disabled={!cameraEnabled}
-              className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-black transition ${
-                receptionActive
-                  ? 'bg-rose-100 text-rose-700 hover:bg-rose-200'
-                  : 'bg-slate-950 text-white hover:bg-slate-800'
-              } disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400`}
-            >
-              {receptionActive ? <CameraOff size={17} /> : <Camera size={17} />}
-              {receptionActive ? 'إيقاف الكاميرا' : 'تشغيل الكاميرا'}
-            </button>
-          </div>
-          <div className="p-4">
-            <div className="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-950">
-              {receptionFrame ? (
-                <img src={receptionFrame} alt="بث كاميرا الاستقبال" className="aspect-video w-full object-cover" />
-              ) : (
-                <div className="flex aspect-video items-center justify-center bg-slate-100">
-                  <div className="text-center">
-                    <div className={`mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full ${
-                      receptionActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-400'
-                    }`}>
-                      {receptionActive ? <Camera size={30} /> : <CameraOff size={30} />}
-                    </div>
-                    <p className="font-black text-slate-600">
-                      {cameraEnabled ? (receptionActive ? 'بانتظار صورة من الموبايل' : 'الكاميرا متوقفة') : 'قراءة اللوحة ضمن الخطة المميزة'}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {receptionStatus === 'active' && (
-                <div className="absolute right-3 top-3 rounded-full bg-emerald-500 px-3 py-1 text-xs font-black text-white shadow-lg">
-                  يعمل
-                </div>
-              )}
-            </div>
-            <div className="mt-3 min-h-[26px] text-center text-sm font-bold">
-              {receptionStatus === 'connecting' && <span className="text-amber-600">جاري الاتصال بالكاميرا...</span>}
-              {receptionStatus === 'active' && <span className="text-emerald-700">النظام يقرأ اللوحات الآن</span>}
-              {receptionStatus === 'error' && <span className="text-rose-600">{receptionError}</span>}
-              {receptionStatus === 'idle' && cameraEnabled && <span className="text-slate-500">افتح رابط كاميرا الموبايل ثم شغّل الكاميرا هنا</span>}
-              {receptionStatus === 'idle' && !cameraEnabled && (
-                <a href="/center/settings?upgrade=1" className="text-cyan-700 hover:underline">طلب ترقية لتفعيل كاميرا قراءة اللوحة</a>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="surface overflow-hidden rounded-lg">
-          <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-white p-4">
-            <div>
-              <p className="text-xs font-black text-cyan-700">نتائج CTK</p>
-              <h3 className="mt-1 font-black text-slate-950">اللوحات المقروءة</h3>
-            </div>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
-              {receptionCount}
-            </span>
-          </div>
-          <div className="max-h-[430px] space-y-3 overflow-y-auto p-4">
-            {receptionPlates.length ? receptionPlates.map((item, index) => (
-              <motion.div
-                key={`${item.plate}-${item.time}-${index}`}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm sm:grid-cols-[128px_1fr]"
+      {CAMERA_ENABLED && (
+        <section className="mb-5 grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
+          <div className="surface overflow-hidden rounded-lg">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-white p-4">
+              <div>
+                <p className="text-xs font-black text-cyan-700">كاميرا الاستقبال</p>
+                <h3 className="mt-1 font-black text-slate-950">قراءة لوحة السيارة</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => cameraEnabled && setReceptionActive(v => !v)}
+                disabled={!cameraEnabled}
+                className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-black transition ${
+                  receptionActive
+                    ? 'bg-rose-100 text-rose-700 hover:bg-rose-200'
+                    : 'bg-slate-950 text-white hover:bg-slate-800'
+                } disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400`}
               >
-                <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
-                  {item.frame ? (
-                    <img src={item.frame} alt={`لوحة ${item.plate}`} className="h-24 w-full object-cover" />
-                  ) : (
-                    <div className="flex h-24 items-center justify-center">
-                      <CarFront size={28} className="text-slate-400" />
-                    </div>
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-mono text-2xl font-black text-slate-950">{item.plate}</p>
-                        <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${
-                          item.confirmed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                        }`}>
-                          {item.confirmed ? 'مؤكد' : 'مرشح'}
-                        </span>
+                {receptionActive ? <CameraOff size={17} /> : <Camera size={17} />}
+                {receptionActive ? 'إيقاف الكاميرا' : 'تشغيل الكاميرا'}
+              </button>
+            </div>
+            <div className="p-4">
+              <div className="relative overflow-hidden rounded-lg border border-slate-200 bg-slate-950">
+                {receptionFrame ? (
+                  <img src={receptionFrame} alt="بث كاميرا الاستقبال" className="aspect-video w-full object-cover" />
+                ) : (
+                  <div className="flex aspect-video items-center justify-center bg-slate-100">
+                    <div className="text-center">
+                      <div className={`mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full ${
+                        receptionActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-400'
+                      }`}>
+                        {receptionActive ? <Camera size={30} /> : <CameraOff size={30} />}
                       </div>
-                      <p className="mt-1 text-xs font-bold text-slate-500">
-                        {item.confidence ? `ثقة ${Math.round(item.confidence * 100)}%` : 'قراءة أولية'}
-                        {item.votes ? ` · ${item.votes} قراءات` : ''}
+                      <p className="font-black text-slate-600">
+                        {cameraEnabled ? (receptionActive ? 'بانتظار صورة من الموبايل' : 'الكاميرا متوقفة') : 'قراءة اللوحة ضمن الخطة المميزة'}
                       </p>
                     </div>
-                    <span className="text-xs font-bold text-slate-400">{item.time}</span>
                   </div>
-                  <p className={`mt-2 rounded-md px-3 py-2 text-xs font-black ${
-                    item.car ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
-                  }`}>
-                    {item.car ? `${item.car.owner_name || 'زبون معروف'} · ${item.car.car_type || 'سيارة مسجلة'}` : 'سيارة غير مسجلة'}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => chooseReceptionPlate(item)}
-                    className={`mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black transition ${
-                      item.car ? 'bg-slate-950 text-white hover:bg-slate-800' : 'bg-amber-500 text-white hover:bg-amber-600'
-                    }`}
-                  >
-                    {item.car ? <PlayCircle size={16} /> : <UserPlus size={16} />}
-                    {item.car ? 'اختيار السيارة' : 'إضافة السيارة'}
-                  </button>
-                </div>
-              </motion.div>
-            )) : (
-              <div className="flex min-h-[230px] items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 p-5 text-center">
-                <div>
-                  <ScanSearch size={34} className="mx-auto mb-3 text-slate-300" />
-                  <p className="font-black text-slate-600">لا توجد لوحة مقروءة بعد</p>
-                  <p className="mt-1 text-sm font-bold text-slate-400">عند قراءة اللوحة ستظهر هنا مع صورتها.</p>
-                </div>
+                )}
+                {receptionStatus === 'active' && (
+                  <div className="absolute right-3 top-3 rounded-full bg-emerald-500 px-3 py-1 text-xs font-black text-white shadow-lg">
+                    يعمل
+                  </div>
+                )}
               </div>
-            )}
+              <div className="mt-3 min-h-[26px] text-center text-sm font-bold">
+                {receptionStatus === 'connecting' && <span className="text-amber-600">جاري الاتصال بالكاميرا...</span>}
+                {receptionStatus === 'active' && <span className="text-emerald-700">النظام يقرأ اللوحات الآن</span>}
+                {receptionStatus === 'error' && <span className="text-rose-600">{receptionError}</span>}
+                {receptionStatus === 'idle' && cameraEnabled && <span className="text-slate-500">افتح رابط كاميرا الموبايل ثم شغّل الكاميرا هنا</span>}
+                {receptionStatus === 'idle' && !cameraEnabled && (
+                  <a href="/center/settings?upgrade=1" className="text-cyan-700 hover:underline">طلب ترقية لتفعيل كاميرا قراءة اللوحة</a>
+                )}
+              </div>
+            </div>
           </div>
-        </div>
-      </section>
+
+          <div className="surface overflow-hidden rounded-lg">
+            <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-white p-4">
+              <div>
+                <p className="text-xs font-black text-cyan-700">نتائج CTK</p>
+                <h3 className="mt-1 font-black text-slate-950">اللوحات المقروءة</h3>
+              </div>
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600">
+                {receptionCount}
+              </span>
+            </div>
+            <div className="max-h-[430px] space-y-3 overflow-y-auto p-4">
+              {receptionPlates.length ? receptionPlates.map((item, index) => (
+                <motion.div
+                  key={`${item.plate}-${item.time}-${index}`}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="grid gap-3 rounded-lg border border-slate-200 bg-white p-3 shadow-sm sm:grid-cols-[128px_1fr]"
+                >
+                  <div className="overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                    {item.frame ? (
+                      <img src={item.frame} alt={`لوحة ${item.plate}`} className="h-24 w-full object-cover" />
+                    ) : (
+                      <div className="flex h-24 items-center justify-center">
+                        <CarFront size={28} className="text-slate-400" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="font-mono text-2xl font-black text-slate-950">{item.plate}</p>
+                          <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${
+                            item.confirmed ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+                          }`}>
+                            {item.confirmed ? 'مؤكد' : 'مرشح'}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs font-bold text-slate-500">
+                          {item.confidence ? `ثقة ${Math.round(item.confidence * 100)}%` : 'قراءة أولية'}
+                          {item.votes ? ` · ${item.votes} قراءات` : ''}
+                        </p>
+                      </div>
+                      <span className="text-xs font-bold text-slate-400">{item.time}</span>
+                    </div>
+                    <p className={`mt-2 rounded-md px-3 py-2 text-xs font-black ${
+                      item.car ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                    }`}>
+                      {item.car ? `${item.car.owner_name || 'زبون معروف'} · ${item.car.car_type || 'سيارة مسجلة'}` : 'سيارة غير مسجلة'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => chooseReceptionPlate(item)}
+                      className={`mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-black transition ${
+                        item.car ? 'bg-slate-950 text-white hover:bg-slate-800' : 'bg-amber-500 text-white hover:bg-amber-600'
+                      }`}
+                    >
+                      {item.car ? <PlayCircle size={16} /> : <UserPlus size={16} />}
+                      {item.car ? 'اختيار السيارة' : 'إضافة السيارة'}
+                    </button>
+                  </div>
+                </motion.div>
+              )) : (
+                <div className="flex min-h-[230px] items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 p-5 text-center">
+                  <div>
+                    <ScanSearch size={34} className="mx-auto mb-3 text-slate-300" />
+                    <p className="font-black text-slate-600">لا توجد لوحة مقروءة بعد</p>
+                    <p className="mt-1 text-sm font-bold text-slate-400">عند قراءة اللوحة ستظهر هنا مع صورتها.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {selectedCar && startedAt && (
         <PitStopBar car={selectedCar} startedAt={startedAt} linesCount={invoiceLines.length} onChange={clearCar} terms={terms} />

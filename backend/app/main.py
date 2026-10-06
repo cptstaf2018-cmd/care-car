@@ -28,13 +28,13 @@ app.add_middleware(
 )
 
 
-for router in [auth.router, tenants.router, cars.router, services.router,
-               invoices.router, inventory.router, debts.router, reports.router,
-               settings.router, vision.router, platform.router, webhook.router,
-               mobile_camera.router, users.router]:
+routers = [auth.router, tenants.router, cars.router, services.router,
+           invoices.router, inventory.router, debts.router, reports.router,
+           settings.router, vision.router, platform.router, webhook.router, users.router]
+if app_settings.CAMERA_ENABLED:
+    routers += [mobile_camera.router, camera_ws.router]
+for router in routers:
     app.include_router(router)
-
-app.include_router(camera_ws.router)
 
 os.makedirs("/app/uploads/ads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="/app/uploads"), name="uploads")

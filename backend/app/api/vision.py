@@ -1,6 +1,7 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.deps import get_current_user
 from app.models.tenant import Tenant
@@ -28,6 +29,8 @@ async def read_plate(
     file: UploadFile = File(...),
     user: User = Depends(get_current_user),
 ):
+    if not settings.CAMERA_ENABLED:
+        raise HTTPException(404, detail="Plate reading is turned off")
     if user.role == Role.superadmin:
         raise HTTPException(403, detail="Superadmin cannot use vision endpoint")
 

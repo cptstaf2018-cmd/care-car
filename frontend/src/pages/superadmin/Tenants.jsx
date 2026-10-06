@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import {
-  Building2, Phone, Mail, User, Calendar, CreditCard,
-  Camera, MessageCircle, Bell, ShieldCheck, ChevronDown,
+  Building2, Phone, Mail, User, Calendar, CreditCard, MessageCircle, Bell, ShieldCheck, ChevronDown,
   ChevronUp, Tag, Clock, AlertCircle, AtSign, Smartphone
 } from 'lucide-react'
 import Layout from '../../components/Layout'
@@ -212,13 +211,6 @@ function TenantCard({ t, onToggle, onDelete, highlighted }) {
                   <span className="text-slate-500 shrink-0">واسندر API:</span>
                   <span className={`font-semibold text-xs ${t.has_wasnder_api_key ? 'text-emerald-700' : 'text-slate-400'}`}>
                     {t.has_wasnder_api_key ? '✓ مفعّل' : 'غير مفعّل'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-sm">
-                  <Camera size={14} className="text-slate-400 shrink-0" />
-                  <span className="text-slate-500 shrink-0">كاميرا IP:</span>
-                  <span className={`font-semibold text-xs ${t.ip_camera_url ? 'text-emerald-700' : 'text-slate-400'}`}>
-                    {t.ip_camera_url ? '✓ مربوطة' : 'غير مربوطة'}
                   </span>
                 </div>
                 <InfoRow icon={Bell} label="التذكير" value={`${t.reminder_days || 30} يوم قبل`} />

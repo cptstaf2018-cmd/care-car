@@ -21,6 +21,7 @@ import LandingPage from './pages/LandingPage'
 import { PrivacyPage, TermsPage } from './pages/LegalPages'
 import MobileCamera from './pages/MobileCamera'
 import { useAuthStore } from './store/auth'
+import { CAMERA_ENABLED } from './constants/features'
 
 const qc = new QueryClient()
 const centerRoles = ['manager', 'employee']
@@ -42,7 +43,7 @@ export default function App() {
           <Route path="/about" element={<LandingPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
-          <Route path="/mobile-camera/:token" element={<MobileCamera />} />
+          {CAMERA_ENABLED && <Route path="/mobile-camera/:token" element={<MobileCamera />} />}
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/center" element={<ProtectedRoute allowedRoles={centerRoles}><Dashboard /></ProtectedRoute>} />
           <Route path="/center/cars" element={<ProtectedRoute allowedRoles={centerRoles}><Cars /></ProtectedRoute>} />
@@ -53,7 +54,6 @@ export default function App() {
           <Route path="/center/reports" element={<ProtectedRoute allowedRoles={centerRoles}><Reports /></ProtectedRoute>} />
           <Route path="/center/settings" element={<ProtectedRoute allowedRoles={centerRoles}><CenterSettings /></ProtectedRoute>} />
           <Route path="/center/reception" element={<Navigate to="/center/services/new" replace />} />
-          <Route path="/center/camera" element={<Navigate to="/center/services/new" replace />} />
           <Route path="/center/invoices/:id/print" element={<ProtectedRoute allowedRoles={centerRoles}><InvoicePrint /></ProtectedRoute>} />
           <Route path="/cars" element={<Navigate to="/center/cars" replace />} />
           <Route path="/services/new" element={<Navigate to="/center/services/new" replace />} />
