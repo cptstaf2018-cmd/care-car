@@ -5,28 +5,11 @@ import { useAuthStore } from '../store/auth'
 import AuthShell from '../components/auth/AuthShell'
 import GoogleSignInButton from '../components/auth/GoogleSignInButton'
 import WhatsAppIcon from '../components/WhatsAppIcon'
-import ContactSignup from '../components/auth/ContactSignup'
 import CenterOnboardingForm from '../components/auth/CenterOnboardingForm'
 import { ErrorNote, ForgotPasswordForm, PasswordLoginForm } from '../components/auth/PasswordForms'
 import { TRIAL_DAYS, whatsappLink } from '../constants/contact'
 
 const TRIAL_ENDED_MESSAGE = 'انتهت تجربتك المجانية. كلّمنا على الواتساب حتى نفعّل اشتراكك.'
-
-const SIGNUP_METHODS = [
-  { id: 'google', label: 'Google', hint: 'ضغطة وحدة', icon: <GoogleMark /> },
-  { id: 'phone', label: 'رقم الواتساب', hint: 'كود على واتساب', icon: <WhatsAppIcon size={20} /> },
-]
-
-function GoogleMark() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
-      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
-      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
-      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
-    </svg>
-  )
-}
 
 function loginErrorMessage(err) {
   const status = err.response?.status
@@ -53,39 +36,12 @@ function AuthTabs({ isRegister, onChange }) {
   )
 }
 
-function MethodPicker({ value, onChange }) {
-  return (
-    <div role="radiogroup" aria-label="طريقة التسجيل" className="grid grid-cols-2 gap-3">
-      {SIGNUP_METHODS.map((m) => {
-        const selected = value === m.id
-        return (
-          <button
-            key={m.id}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            onClick={() => onChange(m.id)}
-            className={`flex flex-col items-center gap-1 rounded-2xl border-2 px-2 py-3 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oil ${
-              selected ? 'border-oil bg-petrol text-mint' : 'border-transparent bg-white text-petrol-deep hover:border-mint-dim'
-            }`}
-          >
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-white text-petrol-deep">{m.icon}</span>
-            <b className="text-sm">{m.label}</b>
-            <span className={`text-[11px] ${selected ? 'text-gauge-light' : 'text-mint-ink'}`}>{m.hint}</span>
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
 export default function Login() {
   const location = useLocation()
   const navigate = useNavigate()
   const setAuth = useAuthStore((s) => s.login)
 
   const [subMode, setSubMode] = useState(null) // 'forgot' | 'onboarding' on top of the route's mode
-  const [method, setMethod] = useState('google')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [loading, setLoading] = useState(false)
@@ -200,12 +156,12 @@ export default function Login() {
 
       <h1 className="text-2xl font-bold">{isRegister ? 'افتح حساب مركزك' : 'أهلاً بيك من جديد'}</h1>
       <p className="mb-6 mt-2 text-mint-ink">
-        {isRegister ? `${TRIAL_DAYS} يوم مجاناً بكل الميزات. بدون دفع وبدون بطاقة.` : 'ادخل بحساب Google، أو بالرقم والإيميل وكلمة المرور.'}
+        {isRegister ? `${TRIAL_DAYS} يوم مجاناً بكل الميزات. بدون دفع وبدون بطاقة.` : 'ادخل بحساب Google، أو بالإيميل أو الرقم وكلمة المرور.'}
       </p>
 
       <div className="grid gap-5">
         {notice && <p role="status" className="rounded-2xl bg-white px-4 py-3 text-sm font-bold text-petrol">{notice}</p>}
-        {!(isRegister && method !== 'google') && <ErrorNote>{error}</ErrorNote>}
+        <ErrorNote>{error}</ErrorNote>
         {error === TRIAL_ENDED_MESSAGE && (
           <a
             href={whatsappLink('مرحبا، انتهت تجربتي بكير كار وأريد أفعّل الاشتراك')}
@@ -218,17 +174,10 @@ export default function Login() {
         )}
 
         {isRegister ? (
-          <>
-            <MethodPicker value={method} onChange={(m) => { setMethod(m); setError('') }} />
-            {method === 'google' ? (
-              <div className="grid gap-3">
-                <GoogleSignInButton onCredential={handleGoogle} label="سجّل بحساب Google" disabled={loading} />
-                <p className="text-center text-sm text-mint-ink">بعدها نسألك عن مركزك: اسمه، شنو يشتغل، ورقم واتسابه.</p>
-              </div>
-            ) : (
-              <ContactSignup onActivated={enterApp} />
-            )}
-          </>
+          <div className="grid gap-3">
+            <GoogleSignInButton onCredential={handleGoogle} label="سجّل بحساب Google" disabled={loading} />
+            <p className="text-center text-sm text-mint-ink">بعدها نسألك عن مركزك: اسمه، شنو يشتغل، ورقم واتسابه.</p>
+          </div>
         ) : (
           <>
             <GoogleSignInButton onCredential={handleGoogle} label="ادخل بحساب Google" disabled={loading} />
