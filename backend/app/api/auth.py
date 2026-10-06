@@ -553,6 +553,17 @@ def google_login(body: GoogleLoginRequest, db: Session = Depends(get_db)):
 
 @router.post("/google/complete", status_code=201)
 def google_complete_signup(body: GoogleCompleteRequest, db: Session = Depends(get_db)):
+    try:
+        return _google_complete_signup(body, db)
+    except HTTPException:
+        raise
+    except Exception as exc:  # TEMP diagnostic
+        db.rollback()
+        logger.exception("[GOOGLE REGISTRATION] crashed")
+        raise HTTPException(status_code=500, detail=f"تعذر فتح الحساب [{type(exc).__name__}: {str(exc)[:300]}]")
+
+
+def _google_complete_signup(body: GoogleCompleteRequest, db: Session):
     payload = _read_google_signup_token(body.signup_token)
     center_name = body.center_name.strip()
     if not center_name:
