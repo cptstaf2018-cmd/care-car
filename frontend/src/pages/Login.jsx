@@ -149,14 +149,14 @@ export default function Login() {
 
   if (mode === 'onboarding' && signup) {
     return (
-      <AuthShell {...shellProps}>
+      <AuthShell
+        {...shellProps}
+        launch={<StartEngineButton mode="submit" formId="onboarding-form" phase={phase} disabled={loading} caption="اضغط وافتح حسابك وانطلق" onDark />}
+      >
         <h1 className="text-2xl font-bold">أهلاً {signup.name}، عرّفنا على مركزك</h1>
         <p className="mb-6 mt-2 text-mint-ink">كل ما تكمّل معلومة يعلى دوران المحرك. وتجربتك {TRIAL_DAYS} يوم تبدأ لما تضغط START.</p>
         <div className="mb-4"><ErrorNote>{error}</ErrorNote></div>
         <CenterOnboardingForm formId="onboarding-form" hideSubmit onSubmit={handleOnboarding} onProgress={setFormStep} loading={loading} />
-        <div className="mt-6">
-          <StartEngineButton mode="submit" formId="onboarding-form" phase={phase} disabled={loading} caption="اضغط وافتح حسابك وانطلق" />
-        </div>
       </AuthShell>
     )
   }
@@ -196,8 +196,14 @@ export default function Login() {
     </>
   )
 
+  const launch = isRegister ? (
+    <StartEngineButton phase={phase} onPress={press} onCredential={handleGoogle} disabled={loading} onDark />
+  ) : (
+    <StartEngineButton mode="submit" formId="password-login" phase={phase} disabled={loading} caption="اضغط للدخول" onDark />
+  )
+
   return (
-    <AuthShell {...shellProps}>
+    <AuthShell {...shellProps} launch={launch}>
       <AuthTabs isRegister={isRegister} onChange={go} />
 
       <h1 className="text-2xl font-bold">{isRegister ? 'افتح حساب مركزك' : 'أهلاً بيك من جديد'}</h1>
@@ -207,8 +213,7 @@ export default function Login() {
 
       {isRegister ? (
         <>
-          <StartEngineButton phase={phase} onPress={press} onCredential={handleGoogle} disabled={loading} />
-          <div className="mt-6 grid gap-5">
+          <div className="grid gap-5">
             {errorBlock}
             <p className="text-center text-sm text-mint-ink">بعدها نسألك عن مركزك: اسمه، شنو يشتغل، ورقم واتسابه.</p>
           </div>
@@ -228,9 +233,6 @@ export default function Login() {
               go('forgot')
             }}
           />
-          <div>
-            <StartEngineButton mode="submit" formId="password-login" phase={phase} disabled={loading} caption="اضغط للدخول" />
-          </div>
           <div className="flex items-center gap-3 text-sm text-gauge" aria-hidden="true">
             <span className="h-px flex-1 bg-mint-dim" />أو<span className="h-px flex-1 bg-mint-dim" />
           </div>

@@ -12,6 +12,24 @@
   isolation: isolate;
 }
 
+/* signup pages: the car sits in a wide stage with the START button centred under it */
+.launch-stage {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 760px;
+}
+.launch-stage .launch-scene { height: 220px; }
+.launch-stage-action {
+  display: flex;
+  justify-content: center;
+  margin-top: -36px;
+  position: relative;
+  z-index: 1;
+}
+@media (min-width: 640px) {
+  .launch-stage .launch-scene { height: 260px; }
+}
+
 /* faint gauge rings behind the car so the scene reads as an instrument cluster */
 .launch-rings {
   position: absolute;

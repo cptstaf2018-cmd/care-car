@@ -23,7 +23,7 @@ function GoogleMark() {
  * Push-to-start button. It looks like an engine start button, but the real (transparent) Google
  * sign-in icon button sits on top of it, so pressing it opens Google sign-in and also fires `onPress`.
  */
-export default function StartEngineButton({ phase, mode = 'google', formId, onPress, onCredential, disabled = false, caption = 'ببصمة حساب Google' }) {
+export default function StartEngineButton({ phase, mode = 'google', formId, onPress, onCredential, disabled = false, caption = 'ببصمة حساب Google', onDark = false }) {
   const holder = useRef(null)
   const callback = useRef(onCredential)
   const [failed, setFailed] = useState(false)
@@ -101,7 +101,7 @@ export default function StartEngineButton({ phase, mode = 'google', formId, onPr
           <button type="submit" form={formId} disabled={disabled} aria-label="ادخل" className="absolute inset-0 rounded-full focus-visible:outline-none" />
         )}
       </div>
-      <p className="flex items-center gap-1.5 text-sm text-mint-ink">
+      <p className={`flex items-center gap-1.5 text-sm ${onDark ? 'text-mint' : 'text-mint-ink'}`}>
         {mode === 'google' && <GoogleMark />}
         {caption}
       </p>
