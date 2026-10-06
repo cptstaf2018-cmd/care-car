@@ -3,7 +3,7 @@ services:
     name: carecar-api
     runtime: docker
     rootDir: backend
-    plan: starter
+    plan: free
     healthCheckPath: /docs
     envVars:
       - key: DATABASE_URL
@@ -25,4 +25,4 @@ services:
 
 databases:
   - name: carecar-db
-    plan: starter
+    plan: free
