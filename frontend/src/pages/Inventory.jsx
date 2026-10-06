@@ -2,7 +2,11 @@ import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, ArrowDownUp, Check, PackagePlus, Pencil, ReceiptText, Search, SlidersHorizontal, Trash2, X } from 'lucide-react'
 import Layout from '../components/Layout'
+import UpgradePrompt from '../components/UpgradePrompt'
 import { getInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem, addInventoryReceipt } from '../api/inventory'
+import { getCenterSettings } from '../api/settings'
+import { parseReceipt } from '../api/vision'
+import { hasPlanFeature } from '../constants/plans'
 
 const emptyLine = {
   oil_type: '',
@@ -27,9 +31,15 @@ const money = value => Number(value || 0).toLocaleString()
 
 export default function Inventory() {
   const qc = useQueryClient()
+  const { data: center } = useQuery({
+    queryKey: ['center-settings', 'inventory-gate'],
+    queryFn: () => getCenterSettings().then(r => r.data),
+  })
+  const receiptEnabled = hasPlanFeature(center?.plan, 'inventory_receipt')
   const { data: items = [], isLoading } = useQuery({
     queryKey: ['inventory'],
     queryFn: () => getInventory().then(r => r.data),
+    enabled: hasPlanFeature(center?.plan, 'inventory'),
   })
 
   const [mode, setMode] = useState('manual')
@@ -39,7 +49,9 @@ export default function Inventory() {
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({})
   const [manual, setManual] = useState(initialManual)
+  const [receiptFile, setReceiptFile] = useState(null)
   const [receiptImage, setReceiptImage] = useState(null)
+  const [receiptMessage, setReceiptMessage] = useState('')
   const [supplierName, setSupplierName] = useState('')
   const [lines, setLines] = useState([{ ...emptyLine }])
   const [filters, setFilters] = useState({
@@ -67,8 +79,31 @@ export default function Inventory() {
       qc.invalidateQueries({ queryKey: ['inventory'] })
       setLines([{ ...emptyLine }])
       setSupplierName('')
+      setReceiptFile(null)
       setReceiptImage(null)
+      setReceiptMessage('')
     },
+  })
+  const readReceipt = useMutation({
+    mutationFn: parseReceipt,
+    onMutate: () => setReceiptMessage('جاري قراءة الوصل...'),
+    onSuccess: (res) => {
+      const items = res.data?.items || []
+      if (!items.length) {
+        setReceiptMessage('لم نتمكن من قراءة مواد من الصورة. يمكنك تعبئة الجدول يدوياً.')
+        return
+      }
+      setLines(items.map(item => ({
+        oil_type: item.oil_type || item.name || '',
+        category: item.category || '',
+        quantity: item.quantity ? String(item.quantity) : '1',
+        unit_cost: item.unit_cost ?? item.price ?? '',
+        sale_price: item.sale_price ?? '',
+        min_threshold: '10',
+      })))
+      setReceiptMessage(`تمت قراءة ${items.length} مادة من الوصل. راجع الأرقام ثم اعتمد الإضافة.`)
+    },
+    onError: () => setReceiptMessage('تعذرت قراءة الوصل. يمكنك تعبئة الجدول يدوياً.'),
   })
   const deleteItem = useMutation({
     mutationFn: deleteInventoryItem,
@@ -109,6 +144,19 @@ export default function Inventory() {
     }
     return data
   }, [items, filters])
+
+  if (center && !hasPlanFeature(center.plan, 'inventory')) {
+    return (
+      <Layout>
+        <UpgradePrompt
+          center={center}
+          feature="إدارة المخزون وقراءة وصولات الشراء"
+          requiredPlan="pro"
+          benefits={['إضافة مواد للمخزون', 'خصم تلقائي عند الفاتورة', 'تنبيهات نقص المواد']}
+        />
+      </Layout>
+    )
+  }
 
   const setLine = (index, key, value) => {
     setLines(prev => prev.map((line, i) => i === index ? { ...line, [key]: value } : line))
@@ -155,7 +203,7 @@ export default function Inventory() {
           </button>
           <button onClick={() => setMode('receipt')}
             className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-black ${mode === 'receipt' ? 'bg-slate-950 text-white' : 'text-slate-600'}`}>
-            <ReceiptText size={16} /> وصل شراء
+            <ReceiptText size={16} /> وصل شراء {!receiptEnabled && <span className="text-[10px] opacity-70">متوسطة</span>}
           </button>
         </div>
       </div>
@@ -175,6 +223,19 @@ export default function Inventory() {
               حفظ المنتج في المخزون
             </button>
           </div>
+        ) : !receiptEnabled ? (
+          <div className="rounded-xl border border-cyan-100 bg-cyan-50 p-6 text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-slate-950 text-cyan-300">
+              <ReceiptText size={22} />
+            </div>
+            <h3 className="text-xl font-black text-slate-950">قراءة وصل الشراء ضمن الخطة المتوسطة</h3>
+            <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-slate-600">
+              المخزون اليدوي متاح في الأساسية. قراءة الوصل بالصورة، تعبئة المواد تلقائياً، وتنبيهات المخزون الذكية تحتاج ترقية.
+            </p>
+            <a href="/center/settings?upgrade=1" className="mt-4 inline-flex rounded-lg bg-cyan-400 px-5 py-3 text-sm font-black text-slate-950 hover:bg-cyan-300">
+              طلب ترقية الاشتراك
+            </a>
+          </div>
         ) : (
           <div className="grid gap-5 xl:grid-cols-[0.7fr_1.3fr]">
             <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-5">
@@ -182,15 +243,28 @@ export default function Inventory() {
               <input type="file" accept="image/*" capture="environment"
                 onChange={e => {
                   const file = e.target.files?.[0]
-                  if (file) setReceiptImage(URL.createObjectURL(file))
+                  if (file) {
+                    setReceiptFile(file)
+                    setReceiptImage(URL.createObjectURL(file))
+                    setReceiptMessage('تم اختيار الصورة. اضغط قراءة الوصل لتعبئة الجدول.')
+                  }
                 }}
                 className="mt-4 w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm" />
+              <button
+                onClick={() => receiptFile && readReceipt.mutate(receiptFile)}
+                disabled={!receiptFile || readReceipt.isPending}
+                className="mt-3 w-full rounded-lg bg-cyan-700 px-5 py-3 text-sm font-black text-white transition hover:bg-cyan-800 disabled:opacity-50"
+              >
+                {readReceipt.isPending ? 'جاري قراءة الوصل...' : 'قراءة الوصل'}
+              </button>
               <div className="mt-4 aspect-[4/3] overflow-hidden rounded-lg bg-white">
                 {receiptImage ? <img src={receiptImage} alt="وصل المواد" className="h-full w-full object-contain" /> : (
                   <div className="flex h-full items-center justify-center text-sm font-bold text-slate-400">التقط أو ارفع صورة الوصل</div>
                 )}
               </div>
-              <p className="mt-3 text-xs leading-6 text-slate-500">إضافة الوصل هنا هي نفس المخزون، وبعد OCR لاحقاً سيمتلئ الجدول تلقائياً من الصورة.</p>
+              <p className="mt-3 text-xs leading-6 text-slate-500">
+                {receiptMessage || 'ارفع صورة واضحة للوصل وسيتم تعبئة الجدول تلقائياً للمراجعة قبل الإضافة.'}
+              </p>
             </div>
 
             <div>

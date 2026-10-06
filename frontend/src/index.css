@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -109,6 +110,86 @@ button, input, select { font: inherit; }
 .cta-overlay { position: absolute; inset: 0; }
 .cta-overlay-rtl { background: linear-gradient(to left,  rgba(29,78,216,0.95), rgba(30,58,138,0.88), rgba(17,24,39,0.5)); }
 .cta-overlay-ltr { background: linear-gradient(to right, rgba(29,78,216,0.95), rgba(30,58,138,0.88), rgba(17,24,39,0.5)); }
+
+/* ── Hero animated gradient ── */
+@keyframes lp-hero-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.lp-hero-bg {
+  background: linear-gradient(135deg, #060a14 0%, #0d1630 30%, #0f1f48 55%, #060a14 80%, #060a14 100%);
+  background-size: 300% 300%;
+  animation: lp-hero-shift 12s ease infinite;
+}
+.lp-hero-glow-a {
+  background: radial-gradient(ellipse at 30% 60%, rgba(37,99,235,0.28) 0%, transparent 60%);
+}
+.lp-hero-glow-b {
+  background: radial-gradient(ellipse at 75% 30%, rgba(79,70,229,0.2) 0%, transparent 55%);
+}
+.lp-hero-glow-c {
+  background: radial-gradient(ellipse at 50% 100%, rgba(14,165,233,0.12) 0%, transparent 50%);
+}
+
+/* ── Scroll fade-in ── */
+@keyframes lp-fadein {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.lp-reveal { opacity: 0; }
+.lp-reveal.is-visible { animation: lp-fadein 0.55s ease forwards; }
+
+/* ── Gradient border card ── */
+.lp-grad-border {
+  position: relative;
+  background: white;
+  border-radius: 24px;
+}
+.lp-grad-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 24px;
+  padding: 1.5px;
+  background: linear-gradient(135deg, #2563eb, #4f46e5, #0ea5e9);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ── Number gradient ── */
+.lp-num-grad {
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ── Timeline vertical line ── */
+.lp-tl-line {
+  position: absolute;
+  top: 2rem;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  background: linear-gradient(to bottom, #2563eb, #4f46e5, transparent);
+  transform: translateX(-50%);
+}
+
+/* ── Noise texture overlay ── */
+.lp-noise::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  opacity: 0.06;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.lang-en { font-family: 'Plus Jakarta Sans', 'Segoe UI', sans-serif; }
 
 .skeleton {
   position: relative;

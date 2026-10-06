@@ -4,11 +4,12 @@ import { NavLink } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Activity, BarChart3, Building2, Car, ChevronLeft, ChevronRight, CreditCard,
-  Gauge, LogOut, Package, PlusCircle, Receipt, Settings, ShieldCheck
+  Gauge, LogOut, Package, PlusCircle, Receipt, Settings, ShieldCheck, Sparkles
 } from 'lucide-react'
 import { useAuthStore } from '../store/auth'
 import { getCenterSettings } from '../api/settings'
 import { displayUserContact } from '../utils/displayIdentity'
+import { PLAN_RANK } from '../constants/plans'
 
 const centerGroups = [
   {
@@ -54,6 +55,7 @@ function SidebarContent({ collapsed, setCollapsed, onClose }) {
   const centerName = center?.name || 'تشغيل المركز'
   const isAdmin = user?.role === 'superadmin'
   const userContact = displayUserContact(user, center)
+  const canUpgrade = !isAdmin && center?.plan && (PLAN_RANK[center.plan] || 1) < PLAN_RANK.enterprise
 
   return (
     <div className="flex h-full flex-col border-l border-slate-900 bg-[#08111f] text-white">
@@ -111,6 +113,16 @@ function SidebarContent({ collapsed, setCollapsed, onClose }) {
       </nav>
 
       <div className="border-t border-white/10 p-4">
+        {canUpgrade && !collapsed && (
+          <NavLink
+            to="/center/settings?upgrade=1"
+            onClick={onClose}
+            className="mb-3 flex items-center justify-center gap-2 rounded-lg bg-cyan-400 px-3 py-3 text-sm font-black text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:bg-cyan-300"
+          >
+            <Sparkles size={16} />
+            ترقية الاشتراك
+          </NavLink>
+        )}
         {!collapsed && (
           <div className="mb-3 rounded-lg border border-white/10 bg-white/[0.04] p-3">
             {user?.role !== 'superadmin' && <p className="mb-1 truncate text-xs font-bold text-cyan-200">{centerName}</p>}

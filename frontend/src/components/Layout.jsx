@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
+import FloatingAssistant from './FloatingAssistant'
 import { useAuthStore } from '../store/auth'
 import { getCenterSettings } from '../api/settings'
 import { displayUserContact } from '../utils/displayIdentity'
@@ -55,6 +56,7 @@ export default function Layout({ children, hideHeader = false, compact = false }
         )}
         <div className={`px-4 lg:px-7 ${compact ? 'py-3 lg:py-4' : 'py-5 lg:py-6'}`}>{children}</div>
       </main>
+      {user?.role !== 'superadmin' && <FloatingAssistant center={center} />}
     </div>
   )
 }

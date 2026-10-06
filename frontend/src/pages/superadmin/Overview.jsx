@@ -1,11 +1,16 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMemo, useState } from 'react'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
-import { Activity, Building2, CalendarClock, CreditCard, Image, MessageCircle, ShieldAlert, Sparkles } from 'lucide-react'
+import { Activity, Archive, Building2, CalendarClock, CreditCard, Image, MessageCircle, Send, ShieldAlert, Sparkles } from 'lucide-react'
 import Layout from '../../components/Layout'
 import StatCard from '../../components/StatCard'
-import { getTenantMonitoring, getTenants } from '../../api/tenants'
-import { PLAN_DETAILS, PLAN_ORDER, planShortName, IQD } from '../../constants/plans'
+import { getTenantMonitoring, getTenants, runMonthlyArchives } from '../../api/tenants'
+import {
+  PLAN_DETAILS, PLAN_ORDER, planShortName, IQD,
+  isTrialTenant, tenantPlanLabel, tenantPlanPrice, tenantPlanPriceLabel,
+} from '../../constants/plans'
+import { getSpecialtyLabel } from '../../constants/centerSpecialties'
 
 const planPrice = {
   basic: PLAN_DETAILS.basic.adminPrice,
@@ -21,6 +26,16 @@ function remainingDays(date) {
 }
 
 export default function AdminOverview() {
+  const previousArchiveMonth = useMemo(() => {
+    const today = new Date()
+    const previous = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+    return {
+      year: previous.getFullYear(),
+      month: previous.getMonth() + 1,
+      label: previous.toLocaleDateString('ar-IQ', { year: 'numeric', month: 'long' }),
+    }
+  }, [])
+  const [archiveResult, setArchiveResult] = useState(null)
   const { data: tenants = [], isLoading } = useQuery({
     queryKey: ['tenants'],
     queryFn: () => getTenants().then(r => r.data),
@@ -34,13 +49,23 @@ export default function AdminOverview() {
   const suspended = tenants.length - active
   const connectedCameras = tenants.filter(t => t.ip_camera_url).length
   const connectedWhatsapp = tenants.filter(t => t.whatsapp_number).length
-  const mrr = tenants.filter(t => t.is_active).reduce((sum, t) => sum + (planPrice[t.plan] || 0), 0)
+  const trialCount = tenants.filter(isTrialTenant).length
+  const mrr = tenants.filter(t => t.is_active).reduce((sum, t) => sum + tenantPlanPrice(t), 0)
   const visibleTenants = [...tenants].sort((a, b) => Number(a.is_active) - Number(b.is_active) || a.name.localeCompare(b.name, 'ar'))
   const expiringSoon = tenants.filter(t => {
     const days = remainingDays(t.subscription_ends_at)
     return days !== null && days <= 7
   })
   const withoutSubscriptionDate = tenants.filter(t => !t.subscription_ends_at)
+  const archiveMutation = useMutation({
+    mutationFn: () => runMonthlyArchives(previousArchiveMonth).then(r => r.data),
+    onSuccess: data => setArchiveResult(data),
+  })
+
+  function handleRunArchives() {
+    const ok = window.confirm(`سيتم إنشاء ملفات Excel لشهر ${previousArchiveMonth.label} وإرسالها للمراكز حسب بيانات واتساب/الإيميل. هل تريد المتابعة؟`)
+    if (ok) archiveMutation.mutate()
+  }
 
   return (
     <Layout>
@@ -116,8 +141,8 @@ export default function AdminOverview() {
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
             {PLAN_ORDER.map(plan => {
-              const count = tenants.filter(t => t.plan === plan).length
-              const activeCount = tenants.filter(t => t.plan === plan && t.is_active).length
+              const count = tenants.filter(t => !isTrialTenant(t) && t.plan === plan).length
+              const activeCount = tenants.filter(t => !isTrialTenant(t) && t.plan === plan && t.is_active).length
               return (
                 <div key={plan} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
                   <p className="text-xs font-bold text-slate-500">{planShortName(plan)}</p>
@@ -127,6 +152,11 @@ export default function AdminOverview() {
               )
             })}
           </div>
+          {trialCount > 0 && (
+            <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm font-black text-blue-700">
+              {trialCount} مركز داخل الفترة التجريبية ولا يُحسب ضمن الإيراد الشهري
+            </div>
+          )}
         </div>
 
         <div className="premium-card rounded-lg p-5">
@@ -146,7 +176,7 @@ export default function AdminOverview() {
                 <div key={t.id} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
                   <div>
                     <p className="text-sm font-black text-slate-900">{t.name}</p>
-                    <p className="text-xs text-slate-500">{planShortName(t.plan)} · {t.subscription_ends_at || 'بدون تاريخ انتهاء'}</p>
+                    <p className="text-xs text-slate-500">{tenantPlanLabel(t)} · {t.subscription_ends_at || (isTrialTenant(t) ? 'تجريبي' : 'بدون تاريخ انتهاء')}</p>
                   </div>
                   <Badge
                     text={!t.is_active ? 'موقوف' : days === null ? 'أضف تاريخ' : days < 0 ? 'منتهي' : `باقي ${days} يوم`}
@@ -165,6 +195,41 @@ export default function AdminOverview() {
       </section>
 
       {/* Platform Ads quick link */}
+      <section className="mb-5 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-slate-950 text-cyan-300">
+              <Archive size={18} />
+            </div>
+            <div>
+              <h3 className="font-black text-slate-950">أرشيف Excel الشهري</h3>
+              <p className="mt-1 text-xs font-bold text-slate-500">
+                تلقائيًا أول كل شهر، ويمكن تشغيله يدويًا الآن لشهر {previousArchiveMonth.label}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleRunArchives}
+            disabled={archiveMutation.isPending}
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-cyan-400 px-5 text-sm font-black text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Send size={17} />
+            {archiveMutation.isPending ? 'جاري الإرسال...' : 'إرسال أرشيف الشهر السابق'}
+          </button>
+        </div>
+        {archiveMutation.isError && (
+          <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700">
+            تعذر تشغيل الأرشيف الآن. حاول مرة أخرى أو راجع إعدادات الإرسال.
+          </div>
+        )}
+        {archiveResult && (
+          <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800">
+            تم تجهيز أرشيف {archiveResult.tenant_count} مركز لشهر {archiveResult.year}-{String(archiveResult.month).padStart(2, '0')}.
+            <span className="mr-2 text-emerald-700">تم تنظيف {archiveResult.removed_old_files || 0} ملف قديم.</span>
+          </div>
+        )}
+      </section>
+
       <div className="mb-5 flex items-center justify-between rounded-lg border border-slate-900 bg-slate-950 px-5 py-4 text-white">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-400 text-slate-950">
@@ -188,13 +253,14 @@ export default function AdminOverview() {
           </div>
           <table className="w-full text-right">
             <thead className="bg-slate-50 text-xs font-black text-slate-500">
-              <tr>{['المركز', 'الخطة', 'انتهاء الاشتراك', 'حالة الإعداد', 'الحالة'].map(h => <th key={h} className="px-5 py-3">{h}</th>)}</tr>
+              <tr>{['المركز', 'الاختصاص', 'الخطة', 'انتهاء الاشتراك', 'حالة الإعداد', 'الحالة'].map(h => <th key={h} className="px-5 py-3">{h}</th>)}</tr>
             </thead>
             <tbody>
               {visibleTenants.map(t => (
                 <tr key={t.id} className={`border-t border-slate-100 text-sm hover:bg-slate-50 ${!t.is_active ? 'bg-rose-50/45' : ''}`}>
                   <td className="px-5 py-4"><p className="font-black text-slate-950">{t.name}</p><p className="text-xs text-slate-500">{t.contact_phone || 'لا يوجد هاتف'}</p></td>
-                  <td className="px-5 py-4"><Badge text={`${planShortName(t.plan)} · ${((planPrice[t.plan] || 0)/1000).toFixed(0)}K د.ع`} tone="slate" /></td>
+                  <td className="px-5 py-4"><Badge text={getSpecialtyLabel(t.specialty)} tone="cyan" /></td>
+                  <td className="px-5 py-4"><Badge text={`${tenantPlanLabel(t)} · ${tenantPlanPriceLabel(t)}`} tone={isTrialTenant(t) ? 'blue' : 'slate'} /></td>
                   <td className="px-5 py-4">{t.subscription_ends_at || 'غير محدد'}</td>
                   <td className="px-5 py-4">
                     <Badge
@@ -223,7 +289,7 @@ export default function AdminOverview() {
             </div>
             <div className="space-y-2">
               {PLAN_ORDER.map(plan => {
-                const count = tenants.filter(t => t.plan === plan).length
+                const count = tenants.filter(t => !isTrialTenant(t) && t.plan === plan).length
                 return (
                   <div key={plan} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
                     <span className="text-sm font-bold text-slate-700">{planShortName(plan)}</span>
@@ -244,6 +310,8 @@ function Badge({ text, tone }) {
     green: 'bg-emerald-100 text-emerald-700',
     red: 'bg-rose-100 text-rose-700',
     slate: 'bg-slate-100 text-slate-700',
+    cyan: 'bg-cyan-50 text-cyan-700 ring-1 ring-cyan-100',
+    blue: 'bg-blue-50 text-blue-700 ring-1 ring-blue-100',
   }
   return <span className={`rounded-full px-3 py-1 text-xs font-black ${tones[tone]}`}>{text}</span>
 }

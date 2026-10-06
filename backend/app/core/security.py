@@ -17,3 +17,6 @@ def create_access_token(data: dict) -> str:
 
 def decode_token(token: str) -> dict:
     return jwt.decode(token, settings.SECRET_KEY, algorithms=["HS256"])
+
+def create_signed_token(data: dict) -> str:
+    return jwt.encode(data, settings.SECRET_KEY, algorithm="HS256")

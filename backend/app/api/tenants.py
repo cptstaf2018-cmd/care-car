@@ -9,7 +9,6 @@ from pydantic import BaseModel
 from app.core.database import get_db
 from app.core.deps import require_superadmin
 from app.core.security import hash_password
-from app.core.config import settings
 from app.models.car import Car
 from app.models.debt import Debt
 from app.models.inventory import InventoryItem
@@ -19,15 +18,14 @@ from app.models.service import Service
 from app.models.tenant import Tenant
 from app.models.user import User, Role
 from app.schemas.tenant import TenantCreate, TenantUpdate, TenantOut
-import httpx
+from app.services.monthly_archive_service import run_monthly_archives
+from app.services.evolution_service import send_platform_whatsapp_message
 
 router = APIRouter(prefix="/tenants", tags=["tenants"])
 ACTIVATION_CODE_EXPIRE_MINUTES = 30
 
 
 def _send_activation_whatsapp(phone: str, code: str, center_name: str) -> str:
-    if not settings.PLATFORM_WASNDER_API_KEY or not settings.PLATFORM_WHATSAPP_NUMBER:
-        return "not_configured"
     message = (
         f"مرحباً بك في منصة Care Car 🚗\n"
         f"تم إنشاء حساب مركز «{center_name}» بنجاح.\n"
@@ -36,16 +34,8 @@ def _send_activation_whatsapp(phone: str, code: str, center_name: str) -> str:
         f"https://carecar.online/activate\n"
         f"الكود صالح لمدة {ACTIVATION_CODE_EXPIRE_MINUTES} دقيقة فقط."
     )
-    try:
-        resp = httpx.post(
-            settings.WASNDER_API_URL,
-            json={"from": settings.PLATFORM_WHATSAPP_NUMBER, "to": phone, "message": message},
-            headers={"Authorization": f"Bearer {settings.PLATFORM_WASNDER_API_KEY}"},
-            timeout=10,
-        )
-        return "sent" if resp.is_success else "failed"
-    except Exception:
-        return "failed"
+    status, _response = send_platform_whatsapp_message(phone, message)
+    return status
 
 
 class TenantWithManagerCreate(BaseModel):
@@ -61,12 +51,13 @@ def list_tenants(db: Session = Depends(get_db), _=Depends(require_superadmin)):
     result = []
     for t in tenants:
         manager = db.query(User).filter(User.tenant_id == t.id, User.role == Role.manager).first()
+        is_whatsapp_registration = bool(manager and manager.email.endswith('@carecar.app'))
         d = TenantOut.model_validate(t).model_dump()
         d['has_wasnder_api_key'] = bool(t.wasnder_api_key)
-        d['manager_email'] = manager.email if manager else None
+        d['manager_email'] = None if is_whatsapp_registration else (manager.email if manager else None)
         d['manager_name'] = manager.full_name if manager else None
         d['manager_phone'] = t.whatsapp_number or t.contact_phone
-        if manager and manager.email.endswith('@carecar.app'):
+        if is_whatsapp_registration:
             d['registration_method'] = 'whatsapp'
             d['registration_contact'] = t.whatsapp_number or t.contact_phone or manager.email.removesuffix('@carecar.app')
         elif manager:
@@ -162,15 +153,17 @@ def monitor_tenants(db: Session = Depends(get_db), _=Depends(require_superadmin)
         rows.append({
             "tenant_id": tenant.id,
             "name": tenant.name,
+            "specialty": tenant.specialty,
             "plan": tenant.plan,
             "is_active": tenant.is_active,
             "health": health,
             "issues": issues,
             "manager_name": manager.full_name if manager else None,
-            "manager_email": manager.email if manager else None,
+            "manager_email": None if manager and manager.email.endswith('@carecar.app') else (manager.email if manager else None),
             "contact_phone": tenant.contact_phone,
             "whatsapp_number": tenant.whatsapp_number,
             "subscription_ends_at": _iso(tenant.subscription_ends_at),
+            "trial_ends_at": _iso(tenant.trial_ends_at),
             "days_to_expiry": days_to_expiry,
             "last_activity_at": _iso(latest_activity),
             "invoice_count": invoice_count,
@@ -235,11 +228,21 @@ def create_tenant(body: TenantWithManagerCreate, db: Session = Depends(get_db), 
     }
 
 
+@router.post("/monthly-archives/run")
+def run_monthly_archives_now(
+    year: int | None = None,
+    month: int | None = None,
+    db: Session = Depends(get_db),
+    _=Depends(require_superadmin),
+):
+    return run_monthly_archives(db, year, month)
+
+
 # IMPORTANT: subscription_request_plan and subscription_request_ref MUST stay in this set
 # so approvePayment() in Subscriptions.jsx can clear them by sending null values.
 # Also: use exclude_unset=True (not exclude_none) in update_tenant to allow null clearing.
 SUPERADMIN_ALLOWED_FIELDS = {
-    'name', 'plan', 'is_active', 'contact_phone',
+    'name', 'specialty', 'plan', 'is_active', 'contact_phone',
     'subscription_starts_at', 'subscription_ends_at', 'subscription_notes',
     'subscription_request_plan', 'subscription_request_ref',
 }

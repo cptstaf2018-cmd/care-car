@@ -1,4 +1,5 @@
 import io, os, re, base64, requests
+from statistics import mean
 
 try:
     import numpy as np
@@ -68,8 +69,10 @@ def _get_fast_alpr():
     if _fast_alpr is None and FAST_ALPR_AVAILABLE:
         try:
             _fast_alpr = ALPR(
-                detector_model='yolo-v9-t-384-license-plate-end2end',
-                ocr_model='cct-xs-v2-global-model',
+                detector_model='yolo-v9-t-640-license-plate-end2end',
+                detector_conf_thresh=0.2,
+                ocr_model='cct-s-v1-global-model',
+                ocr_device='cpu',
             )
         except Exception:
             return None
@@ -201,11 +204,42 @@ def _ocr_confidence(ocr) -> float:
         value = getattr(ocr, attr, None)
         if value is not None:
             try:
+                if isinstance(value, list):
+                    value = mean([float(item) for item in value]) if value else 0
                 value = float(value)
                 return value / 100 if value > 1 else value
             except (TypeError, ValueError):
                 pass
     return 0.75
+
+
+def _alpr_image_candidates(img) -> list:
+    candidates = [img]
+    height, width = img.shape[:2]
+    lower_half = img[int(height * 0.45):, :]
+    if lower_half.size:
+        candidates.append(lower_half)
+
+    for crop in list(candidates):
+        try:
+            lab = cv2.cvtColor(crop, cv2.COLOR_BGR2LAB)
+            l_channel, a_channel, b_channel = cv2.split(lab)
+            clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(8, 8))
+            l_channel = clahe.apply(l_channel)
+            enhanced = cv2.merge((l_channel, a_channel, b_channel))
+            enhanced = cv2.cvtColor(enhanced, cv2.COLOR_LAB2BGR)
+            blur = cv2.GaussianBlur(enhanced, (0, 0), 1.0)
+            candidates.append(cv2.addWeighted(enhanced, 1.4, blur, -0.4, 0))
+        except Exception:
+            pass
+        if crop.shape[1] < 900:
+            scale = min(4.0, 900 / max(crop.shape[1], 1))
+            candidates.append(cv2.resize(
+                crop,
+                (int(crop.shape[1] * scale), int(crop.shape[0] * scale)),
+                interpolation=cv2.INTER_CUBIC,
+            ))
+    return candidates
 
 
 def fast_alpr_plate_reads(image_bytes: bytes) -> list[dict]:
@@ -218,21 +252,31 @@ def fast_alpr_plate_reads(image_bytes: bytes) -> list[dict]:
     img = _bytes_to_cv2(image_bytes)
     if img is None:
         return []
-    try:
-        results = alpr.predict(img)
-    except Exception:
-        return []
-
     reads = []
     seen = set()
-    for result in results or []:
-        ocr = getattr(result, 'ocr', None)
-        text = getattr(ocr, 'text', '') if ocr else ''
-        candidate = normalize_plate_candidate(text)
-        if candidate and candidate not in seen:
-            seen.add(candidate)
-            reads.append({"plate": candidate, "confidence": _ocr_confidence(ocr)})
-    return reads[:4]
+    for candidate_img in _alpr_image_candidates(img):
+        try:
+            results = alpr.predict(candidate_img)
+        except Exception:
+            continue
+        for result in results or []:
+            ocr = getattr(result, 'ocr', None)
+            text = getattr(ocr, 'text', '') if ocr else ''
+            candidate = normalize_plate_candidate(text)
+            if candidate and candidate not in seen:
+                seen.add(candidate)
+                detection = getattr(result, 'detection', None)
+                box = getattr(detection, 'bounding_box', None)
+                bbox = None
+                if box is not None:
+                    bbox = [
+                        int(getattr(box, 'x1', 0)),
+                        int(getattr(box, 'y1', 0)),
+                        int(getattr(box, 'x2', 0)),
+                        int(getattr(box, 'y2', 0)),
+                    ]
+                reads.append({"plate": candidate, "confidence": _ocr_confidence(ocr), "bbox": bbox})
+    return sorted(reads, key=lambda item: item.get("confidence", 0), reverse=True)[:4]
 
 
 def _cv2_to_bytes(img, quality=95) -> bytes:
@@ -413,10 +457,40 @@ def _paddle_read_bytes(image_bytes: bytes) -> str:
         result = paddle.ocr(img, cls=True)
         if result and result[0]:
             texts = [line[1][0] for line in result[0] if line and line[1][1] > 0.3]
-            return ' '.join(texts).strip()
+            return '\n'.join(texts).strip()
     except Exception:
         pass
     return ''
+
+
+def _tesseract_read_bytes(image_bytes: bytes, lang: str = 'ara+eng') -> str:
+    if not TESSERACT_AVAILABLE:
+        return ''
+
+    configs = [
+        '--psm 6 --oem 1',
+        '--psm 11 --oem 1',
+        '--psm 4 --oem 1',
+    ]
+    texts = []
+    for mode in ('gray', 'contrast', 'threshold', 'sharp'):
+        try:
+            pil_img = Image.open(io.BytesIO(image_bytes)).convert('L')
+            w, h = pil_img.size
+            scale = 3 if max(w, h) < 1600 else 2
+            pil_img = pil_img.resize((w * scale, h * scale), Image.LANCZOS)
+            pil_img = ImageEnhance.Contrast(pil_img).enhance(2.4)
+            if mode == 'threshold':
+                pil_img = pil_img.point(lambda p: 255 if p > 165 else 0)
+            elif mode == 'sharp':
+                pil_img = pil_img.filter(ImageFilter.SHARPEN)
+            for config in configs:
+                text = pytesseract.image_to_string(pil_img, lang=lang, config=config).strip()
+                if text and text not in texts:
+                    texts.append(text)
+        except Exception:
+            pass
+    return '\n'.join(texts).strip()
 
 
 def read_text_from_image(image_bytes: bytes) -> str:
@@ -431,7 +505,38 @@ def read_text_from_image(image_bytes: bytes) -> str:
                 return anns[0].get("description", "").strip()
         except Exception:
             pass
-    return _paddle_read_bytes(image_bytes)
+
+    text = _paddle_read_bytes(image_bytes)
+    if text:
+        return text
+
+    return _tesseract_read_bytes(image_bytes)
+
+
+def read_receipt_text_from_image(image_bytes: bytes) -> str:
+    text = read_text_from_image(image_bytes)
+    if text:
+        return text
+
+    # Some receipt photos have small table text; crop the center and retry OCR.
+    img = _bytes_to_cv2(image_bytes)
+    if img is None:
+        return ''
+    try:
+        h, w = img.shape[:2]
+        crops = [
+            img[int(h * 0.18):int(h * 0.88), int(w * 0.05):int(w * 0.95)],
+            img[int(h * 0.28):int(h * 0.78), int(w * 0.10):int(w * 0.90)],
+        ]
+        texts = []
+        for crop in crops:
+            crop_bytes = _cv2_to_bytes(crop, quality=98)
+            crop_text = _paddle_read_bytes(crop_bytes) or _tesseract_read_bytes(crop_bytes)
+            if crop_text:
+                texts.append(crop_text)
+        return '\n'.join(texts).strip()
+    except Exception:
+        return ''
 
 
 def read_plate_from_image(image_bytes: bytes) -> str:
@@ -501,15 +606,132 @@ def _extract_plate(text: str) -> str:
     return candidates[0] if candidates else ''
 
 
+def _receipt_item_key(name: str) -> str:
+    text = (name or '').translate(ARABIC_DIGITS).lower()
+    text = re.sub(r'(?<=\d)wa0\b', 'w40', text, flags=re.IGNORECASE)
+    text = re.sub(r'(?<=\d)wao\b', 'w40', text, flags=re.IGNORECASE)
+    text = re.sub(r'(?<=\d)w4o\b', 'w40', text, flags=re.IGNORECASE)
+    replacements = {
+        'أ': 'ا',
+        'إ': 'ا',
+        'آ': 'ا',
+        'ة': 'ه',
+        'ى': 'ي',
+    }
+    for old, new in replacements.items():
+        text = text.replace(old, new)
+    text = re.sub(r'[^a-z0-9؀-ۿ]+', ' ', text, flags=re.UNICODE)
+    text = re.sub(r'\b(وحده|حبه|عدد|قطعه|لتر|علبه|كرتون|pcs?|unit)\b', ' ', text, flags=re.IGNORECASE)
+    text = re.sub(r'\s+', ' ', text).strip()
+    tokens = [token for token in text.split() if len(token) > 1]
+    text = ' '.join(tokens)
+    compact = text.replace(' ', '')
+
+    viscosity = re.search(r'\d{1,2}w\d{2}', compact, flags=re.IGNORECASE)
+    if 'زيت' in compact and 'محرك' in compact:
+        return f"زيتمحرك{viscosity.group(0).lower() if viscosity else ''}"
+    if 'فلتر' in compact and 'زيت' in compact:
+        return 'فلترزيت'
+    if 'فلتر' in compact and 'هواء' in compact:
+        return 'فلترهواء'
+    if 'فلتر' in compact and 'مكيف' in compact:
+        return 'فلترمكيف'
+    if 'سائل' in compact and 'تبريد' in compact:
+        return 'سائلتبريد'
+    if 'شمع' in compact or 'بواجي' in compact:
+        return 'شمعات'
+    return compact
+
+
+def _receipt_item_score(item: dict) -> tuple:
+    name = item.get('oil_type') or item.get('name') or ''
+    quantity = float(item.get('quantity') or 0)
+    unit_cost = float(item.get('unit_cost') or item.get('price') or 0)
+    plausible_cost = 0 < unit_cost <= 500
+    plausible_quantity = 0 < quantity <= 20
+    return (1 if plausible_cost else 0, 1 if plausible_quantity else 0, unit_cost if plausible_cost else 0, len(name))
+
+
 def parse_receipt_text(text: str) -> list:
     lines = [l.strip() for l in text.splitlines() if l.strip()]
     items = []
+    noise_words = (
+        'date', 'customer', 'total', 'subtotal', 'kwd', 'iqd', 'receipt', 'received',
+        'tel', 'www', 'http', 'city', 'car:', 'plate', 'authentic', 'detailed', 'photo',
+        'التاريخ', 'المجموع', 'الاجمالي', 'الإجمالي', 'الزبون', 'العميل', 'المورد',
+        'وصل', 'فاتورة', 'شركة', 'خدمات', 'السيارات', 'سيارة', 'توقيع', 'تفويض',
+    )
+    product_words = (
+        'زيت', 'فلتر', 'مكيف', 'هواء', 'بواجي', 'بطارية', 'إطار', 'اطار', 'تاير',
+        'سفايف', 'بريك', 'رديتر', 'ماء', 'سائل', 'كلينر', 'بخاخ', 'لمبة', 'حساس',
+        'كفر', 'كفرات', 'جلنط', 'قشاط', 'سير', 'بستم', 'هوب', 'دهن', 'شحم',
+        'فحمات', 'قماشات', 'دسكات', 'دينمو', 'سلف', 'كويل', 'كمبرسر', 'ثلاجة',
+        'ليزر', 'افلتر', 'فلانت', 'تيوتا', 'تويوتا', 'شمعات', 'شمعة', 'شمعه',
+        'oil', 'filter', 'spark', 'plug', 'battery', 'brake', 'coolant', 'tire', 'tyre',
+        'wiper', 'bulb', 'sensor', 'compressor',
+    )
+    unit_words = (
+        'وحدة', 'حبة', 'عدد', 'قطعة', 'لتر', 'علبة', 'كرتون', 'pcs', 'pc', 'unit',
+    )
+    seen_items = {}
     for line in lines:
-        m = re.search(r'(\d[\d,]*(?:\.\d+)?)', line)
-        if m:
-            try:
-                items.append({"name": line[:m.start()].strip() or line,
-                               "price": float(m.group(1).replace(",", ""))})
-            except ValueError:
-                pass
-    return items
+        normalized = line.translate(ARABIC_DIGITS)
+        normalized = re.sub(r'(?<=\d)[\-:](?=\d{2}\b)', '.', normalized)
+        lower = normalized.lower()
+        if any(word in lower for word in noise_words):
+            continue
+
+        number_pattern = r'(?<![\w-])\d[\d,]*(?:\.\d+)?(?![\w-])'
+        numbers = re.findall(number_pattern, normalized)
+        if not numbers:
+            continue
+
+        text_part = re.sub(number_pattern, ' ', normalized)
+        text_part = re.sub(r'[^\w؀-ۿ\- ]+', ' ', text_part, flags=re.UNICODE)
+        has_unit_word = any(word in lower for word in unit_words)
+        name = re.sub(r'\b(وحدة|حبة|عدد|قطعة|لتر|علبة|كرتون|pcs?|unit)\b', ' ', text_part, flags=re.IGNORECASE)
+        name = re.sub(r'\s+', ' ', name).strip(' -')
+        name = re.sub(r'^(?:[A-Za-z]{1,2}|[اأإآو])\s+', '', name).strip()
+        if len(name) < 2:
+            continue
+        has_product_word = any(word in name.lower() for word in product_words)
+        if not has_product_word and not has_unit_word:
+            continue
+        if not re.search(r'[؀-ۿA-Za-z]{3,}', name):
+            continue
+
+        try:
+            parsed_numbers = [float(value.replace(',', '')) for value in numbers]
+        except ValueError:
+            continue
+
+        quantity = 1.0
+        unit_cost = None
+        if len(parsed_numbers) >= 2:
+            price_candidates = [value for value in parsed_numbers if value > 1]
+            unit_cost = max(price_candidates or parsed_numbers)
+            quantity_candidates = [
+                value for value in parsed_numbers
+                if value != unit_cost and float(value).is_integer() and 0 < value <= 100
+            ]
+            quantity = quantity_candidates[0] if quantity_candidates else 1.0
+        else:
+            unit_cost = parsed_numbers[0]
+
+        item = {
+            "oil_type": name,
+            "name": name,
+            "quantity": quantity,
+            "unit_cost": unit_cost,
+            "price": unit_cost,
+        }
+        key = _receipt_item_key(name)
+        if key in seen_items:
+            current = seen_items[key]
+            if _receipt_item_score(item) > _receipt_item_score(current):
+                seen_items[key] = item
+            continue
+        seen_items[key] = item
+        items.append(item)
+
+    return list(seen_items.values())

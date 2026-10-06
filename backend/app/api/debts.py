@@ -10,7 +10,7 @@ from app.models.tenant import Tenant
 from app.models.user import User, Role
 from app.schemas.debt import DebtListOut, DebtOut, DebtReminderOut, DebtUpdate
 from app.services.reminder_service import log_reminder_message, render_debt_reminder
-from app.services.wasnder_service import send_whatsapp_message
+from app.services.evolution_service import send_whatsapp_message
 
 router = APIRouter(prefix="/debts", tags=["debts"])
 

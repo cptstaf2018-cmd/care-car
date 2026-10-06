@@ -67,6 +67,16 @@ def test_oil_due_reminder_not_repeated_after_it_was_sent(db):
     assert not any(r["car_id"] == car.id and r["reminder_type"] == "due_reminder" for r in reminders)
 
 
+def test_non_oil_center_does_not_get_service_reminders(db):
+    tenant, car, _ = _center_car_service(db, 20)
+    tenant.specialty = "tires"
+    db.commit()
+
+    reminders = get_cars_to_notify(db, tenant)
+
+    assert not any(r["car_id"] == car.id and r["reminder_type"] in {"pre_reminder", "due_reminder"} for r in reminders)
+
+
 def test_debt_reminder_due_every_20_days_while_debt_open(db):
     tenant, car, service = _center_car_service(db, 1)
     invoice = Invoice(
@@ -86,3 +96,24 @@ def test_debt_reminder_due_every_20_days_while_debt_open(db):
 
     assert any(r["car_id"] == car.id and r["reminder_type"] == "debt_reminder" for r in reminders)
     assert "35,000 د.ع" in message
+
+
+def test_non_oil_center_still_gets_debt_reminders(db):
+    tenant, car, service = _center_car_service(db, 20)
+    tenant.specialty = "wash"
+    invoice = Invoice(
+        tenant_id=tenant.id,
+        service_id=service.id,
+        amount=50000,
+        status="unpaid",
+        invoice_date=date.today(),
+    )
+    db.add(invoice)
+    db.flush()
+    db.add(Debt(tenant_id=tenant.id, invoice_id=invoice.id, car_id=car.id, amount=35000))
+    db.commit()
+
+    reminders = get_cars_to_notify(db, tenant)
+
+    assert any(r["car_id"] == car.id and r["reminder_type"] == "debt_reminder" for r in reminders)
+    assert not any(r["car_id"] == car.id and r["reminder_type"] in {"pre_reminder", "due_reminder"} for r in reminders)

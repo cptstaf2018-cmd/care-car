@@ -9,12 +9,18 @@ class Settings(BaseSettings):
     WASNDER_API_URL: str = "https://www.wasenderapi.com/api/send-message"
     PLATFORM_WASNDER_API_KEY: str = ""
     PLATFORM_WHATSAPP_NUMBER: str = ""
+    EVOLUTION_API_URL: str = "http://localhost:8080"
+    EVOLUTION_API_KEY: str = ""
+    EVOLUTION_SEND_TEXT_PATH: str = "/send/text"
+    EVOLUTION_INSTANCE_NAME: str = ""
     SMTP_HOST: str = ""
     SMTP_PORT: int = 587
     SMTP_USER: str = ""
     SMTP_PASSWORD: str = ""
     SMTP_FROM_EMAIL: str = ""
     SMTP_FROM_NAME: str = "Care Car"
+    PUBLIC_BASE_URL: str = "https://carecar.online"
+    CORS_ALLOW_ORIGIN_REGEX: str = r"^(https?://(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+)(:\d+)?|https://carecar\.online|https://www\.carecar\.online|https://[a-z0-9-]+\.vercel\.app)$"
 
     model_config = {"env_file": ".env"}
 

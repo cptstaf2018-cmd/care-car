@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { AlertTriangle, BadgeCheck, Bell, Check, CheckCircle2, ChevronDown, ChevronUp, Clock, Lock, Unlock, X } from 'lucide-react'
 import Layout from '../../components/Layout'
 import { getTenants, updateTenant } from '../../api/tenants'
-import { PLAN_DETAILS, PLAN_ORDER, planShortName } from '../../constants/plans'
+import { PLAN_DETAILS, PLAN_ORDER, planShortName, tenantPlanLabel, tenantPlanPriceLabel } from '../../constants/plans'
 
 const PLAN_IQD = {
   basic: '100,000 IQD',
@@ -211,7 +211,7 @@ export default function Subscriptions() {
                         {hasPending && <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700 border border-amber-200">طلب دفع</span>}
                       </div>
                       <p className="mt-0.5 text-xs text-slate-500">
-                        {planShortName(t.plan)} · {PLAN_IQD[t.plan]}
+                        {tenantPlanLabel(t)} · {tenantPlanPriceLabel(t)}
                         {t.contact_phone ? ` · ${t.contact_phone}` : ''}
                       </p>
                     </div>

@@ -2,9 +2,11 @@ import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from app.core.database import SessionLocal
+from app.core.config import settings
 from app.models.tenant import Tenant
+from app.services.monthly_archive_service import run_monthly_archives
 from app.services.reminder_service import get_cars_to_notify, log_reminder_message, render_pre_reminder, render_due_reminder, render_debt_reminder
-from app.services.wasnder_service import send_whatsapp_message
+from app.services.evolution_service import send_whatsapp_message
 
 logger = logging.getLogger(__name__)
 
@@ -14,9 +16,9 @@ def send_daily_reminders():
     try:
         tenants = db.query(Tenant).filter(
             Tenant.is_active == True,
-            Tenant.wasnder_api_key != None,
             Tenant.whatsapp_number != None,
         ).all()
+        tenants = [tenant for tenant in tenants if tenant.wasnder_api_key or settings.EVOLUTION_API_KEY]
 
         for tenant in tenants:
             cars_to_notify = get_cars_to_notify(db, tenant)
@@ -45,10 +47,27 @@ def send_daily_reminders():
         db.close()
 
 
+def send_monthly_archives():
+    db = SessionLocal()
+    try:
+        result = run_monthly_archives(db)
+        logger.info(
+            "Monthly archives generated for %s centers, old files removed: %s",
+            result["tenant_count"],
+            result["removed_old_files"],
+        )
+    except Exception:
+        logger.exception("Error in monthly archives job")
+    finally:
+        db.close()
+
+
 def start_scheduler():
     scheduler = BackgroundScheduler(timezone="Asia/Baghdad")
     # يفحص يوميا: تذكير الخدمة أو مطالبة الدين كل 20 يوم.
     scheduler.add_job(send_daily_reminders, CronTrigger(hour=8, minute=0))
+    # يرسل أرشيف Excel شهري لكل مركز في أول يوم من الشهر عن الشهر السابق.
+    scheduler.add_job(send_monthly_archives, CronTrigger(day=1, hour=2, minute=30))
     scheduler.start()
-    logger.info("Scheduler started — reminders at 08:00 Baghdad time")
+    logger.info("Scheduler started — reminders daily, monthly archives on day 1")
     return scheduler

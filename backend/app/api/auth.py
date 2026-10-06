@@ -5,7 +5,6 @@ import string
 from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 
-import httpx
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session
@@ -17,16 +16,27 @@ from app.core.security import create_access_token, hash_password, verify_passwor
 from app.models.tenant import Plan, Tenant
 from app.models.user import Role, User
 from app.schemas.auth import LoginRequest, TokenResponse, UserOut
+from app.services.evolution_service import send_platform_whatsapp_message
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/auth", tags=["auth"])
 ACTIVATION_CODE_EXPIRE_MINUTES = 30
 PASSWORD_RESET_CODE_EXPIRE_MINUTES = 15
 MAX_PASSWORD_RESET_ATTEMPTS = 10
+CENTER_SPECIALTIES = {
+    "quick_service",
+    "tires",
+    "wash",
+    "electrical",
+    "mechanic",
+    "ac",
+    "body_paint",
+}
 
 
 class RegisterRequest(BaseModel):
     center_name: str
+    specialty: str = "quick_service"
     full_name: str | None = None
     manager_name: str | None = None
     contact_method: str | None = None
@@ -63,11 +73,6 @@ def _generate_numeric_code() -> str:
 
 
 def _send_activation_whatsapp(phone: str, code: str, center_name: str) -> str:
-    if not settings.PLATFORM_WASNDER_API_KEY or not settings.PLATFORM_WHATSAPP_NUMBER:
-        return "not_configured"
-    recipient = phone.strip()
-    if recipient.startswith("0"):
-        recipient = "+964" + recipient[1:]
     message = "\n".join([
         "مرحباً بك في منصة Care Car 🚗",
         f"تم إنشاء حساب مركز «{center_name}» بنجاح.",
@@ -75,16 +80,8 @@ def _send_activation_whatsapp(phone: str, code: str, center_name: str) -> str:
         "أدخل الكود في صفحة التسجيل لإكمال التفعيل.",
         f"الكود صالح لمدة {ACTIVATION_CODE_EXPIRE_MINUTES} دقيقة فقط.",
     ])
-    try:
-        resp = httpx.post(
-            settings.WASNDER_API_URL,
-            json={"to": recipient, "text": message},
-            headers={"Authorization": f"Bearer {settings.PLATFORM_WASNDER_API_KEY}"},
-            timeout=10,
-        )
-        return "sent" if resp.is_success else "failed"
-    except Exception:
-        return "failed"
+    status, _response = send_platform_whatsapp_message(phone, message)
+    return status
 
 
 def _send_activation_email(email: str, code: str, center_name: str) -> str:
@@ -156,27 +153,14 @@ def _send_activation_email(email: str, code: str, center_name: str) -> str:
 
 
 def _send_password_reset_whatsapp(phone: str, code: str) -> str:
-    if not settings.PLATFORM_WASNDER_API_KEY or not settings.PLATFORM_WHATSAPP_NUMBER:
-        return "not_configured"
-    recipient = phone.strip()
-    if recipient.startswith("0"):
-        recipient = "+964" + recipient[1:]
     message = "\n".join([
         "طلب تغيير كلمة المرور في منصة Care Car",
         f"كود إعادة التعيين الخاص بك: *{code}*",
         f"الكود صالح لمدة {PASSWORD_RESET_CODE_EXPIRE_MINUTES} دقيقة فقط.",
         "إذا لم تطلب تغيير كلمة المرور، تجاهل هذه الرسالة.",
     ])
-    try:
-        resp = httpx.post(
-            settings.WASNDER_API_URL,
-            json={"to": recipient, "text": message},
-            headers={"Authorization": f"Bearer {settings.PLATFORM_WASNDER_API_KEY}"},
-            timeout=10,
-        )
-        return "sent" if resp.is_success else "failed"
-    except Exception:
-        return "failed"
+    status, _response = send_platform_whatsapp_message(phone, message)
+    return status
 
 
 def _send_password_reset_email(email: str, code: str) -> str:
@@ -271,16 +255,17 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="اسم المركز مطلوب")
 
     center_name = body.center_name.strip()
+    specialty = body.specialty if body.specialty in CENTER_SPECIALTIES else "quick_service"
     if db.query(Tenant).filter(Tenant.name == center_name).first():
         raise HTTPException(status_code=409, detail="اسم المركز مستخدم بالفعل، يرجى اختيار اسم آخر")
 
     uses_auto_login_flow = bool(body.full_name or body.contact_method)
     if uses_auto_login_flow:
-        return _register_with_auto_login(body, db, center_name)
-    return _register_with_activation_code(body, db, center_name)
+        return _register_with_auto_login(body, db, center_name, specialty)
+    return _register_with_activation_code(body, db, center_name, specialty)
 
 
-def _register_with_auto_login(body: RegisterRequest, db: Session, center_name: str):
+def _register_with_auto_login(body: RegisterRequest, db: Session, center_name: str, specialty: str):
     if not body.full_name or not body.full_name.strip():
         raise HTTPException(status_code=400, detail="الاسم الكامل مطلوب")
     if body.contact_method == "whatsapp" and not body.whatsapp:
@@ -300,6 +285,7 @@ def _register_with_auto_login(body: RegisterRequest, db: Session, center_name: s
     try:
         tenant = Tenant(
             name=center_name,
+            specialty=specialty,
             plan=Plan.basic,
             is_active=True,
             contact_phone=contact_phone,
@@ -338,7 +324,7 @@ def _register_with_auto_login(body: RegisterRequest, db: Session, center_name: s
         raise HTTPException(status_code=500, detail="حدث خطأ أثناء إنشاء الحساب، حاول مجددًا")
 
 
-def _register_with_activation_code(body: RegisterRequest, db: Session, center_name: str):
+def _register_with_activation_code(body: RegisterRequest, db: Session, center_name: str, specialty: str):
     if not body.email and not body.phone:
         raise HTTPException(status_code=400, detail="يجب تقديم إيميل أو رقم واتساب")
 
@@ -348,6 +334,7 @@ def _register_with_activation_code(body: RegisterRequest, db: Session, center_na
 
     tenant = Tenant(
         name=center_name,
+        specialty=specialty,
         plan=Plan.basic,
         is_active=True,
         contact_phone=body.phone,
