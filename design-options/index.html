@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Care Car — اختر التصميم</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&family=Reem+Kufi:wght@500;700&family=Readex+Pro:wght@400;500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#d9dde3;font-family:'Readex Pro',sans-serif;color:#1e2430}
+  button{font:inherit;cursor:pointer;border:0;background:none}
+  :focus-visible{outline:3px solid #2563eb;outline-offset:2px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+  /* ── Switcher ── */
+  .switch{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid #c9ced6;padding:12px 16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .switch h1{font-size:15px;font-weight:700;margin-inline-end:auto}
+  .switch button{padding:9px 16px;border-radius:999px;border:1.5px solid #c9ced6;font-size:14px;font-weight:500}
+  .switch button[aria-pressed=true]{background:#1e2430;color:#fff;border-color:#1e2430}
+  .dir{display:none}
+  .dir.on{display:block}
+  .note{max-width:1180px;margin:20px auto 0;padding:0 16px;font-size:14px;color:#4a5262;line-height:1.7}
+  .note b{color:#1e2430}
+  .frame-label{max-width:1180px;margin:28px auto 10px;padding:0 16px;font-size:13px;font-weight:700;color:#4a5262}
+  .stage{max-width:1180px;margin:0 auto;padding:0 16px}
+  .duo{max-width:1180px;margin:0 auto;padding:0 16px 60px;display:grid;grid-template-columns:1fr 360px;gap:24px;align-items:start}
+  @media (max-width:900px){.duo{grid-template-columns:1fr}}
+  .phone{width:100%;max-width:360px;margin:0 auto;border-radius:36px;padding:10px;background:#1b1f26;box-shadow:0 30px 60px -20px rgba(20,25,35,.45)}
+  .phone-screen{border-radius:28px;overflow:hidden;min-height:640px}
+  .gbtn{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;background:#fff;color:#1f1f1f;border:1px solid #dadce0;border-radius:10px;padding:13px 16px;font-weight:500;font-size:15px}
+  .gbtn svg{width:20px;height:20px}
+  .wabtn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;border-radius:10px;padding:12px 16px;font-size:14px;font-weight:500}
+  .num{font-variant-numeric:tabular-nums}
+
+  /* ══════════════ A — يافطة الورشة ══════════════ */
+  .A{--yellow:#F5C400;--navy:#0B2545;--red:#D62828;--plate:#fff;--asphalt:#3D4451;font-family:'Vazirmatn',sans-serif}
+  .A .site{background:var(--navy);color:#fff;border-radius:18px;overflow:hidden}
+  .A nav{display:flex;align-items:center;gap:20px;padding:18px 32px}
+  .A .logo{font-family:'Lalezar';font-size:28px;color:var(--yellow);letter-spacing:.5px}
+  .A nav a{color:#c7d2e4;font-size:14px;text-decoration:none}
+  .A nav .call{margin-inline-start:auto;background:#25D366;color:#06301a;font-weight:800;padding:9px 16px;border-radius:8px;font-size:14px}
+  .A .hero{display:grid;grid-template-columns:1.25fr 1fr;gap:40px;padding:28px 32px 48px;align-items:center}
+  @media (max-width:900px){.A .hero{grid-template-columns:1fr}}
+  .A .sign{position:relative;background:var(--yellow);color:var(--navy);padding:36px 34px 30px;border-radius:6px;box-shadow:0 8px 0 #b38f00,0 24px 40px -10px rgba(0,0,0,.5)}
+  .A .sign::before,.A .sign::after{content:'';position:absolute;top:12px;width:10px;height:10px;border-radius:50%;background:#7a6200;box-shadow:0 calc(100% + 0px) 0 #7a6200}
+  .A .sign::before{right:12px}.A .sign::after{left:12px}
+  .A .sign h2{font-family:'Lalezar';font-weight:400;font-size:clamp(38px,5vw,64px);line-height:1.15}
+  .A .sign p{font-size:17px;line-height:1.8;margin-top:14px;max-width:46ch;font-weight:600}
+  .A .ctas{display:flex;gap:12px;margin-top:26px;flex-wrap:wrap}
+  .A .ctas .go{background:var(--navy);color:var(--yellow);padding:14px 22px;border-radius:8px;font-weight:800;font-size:16px}
+  .A .ctas .wa{border:2px solid var(--navy);color:var(--navy);padding:12px 20px;border-radius:8px;font-weight:800}
+  .A .chat{background:#e7ddd3;border-radius:14px;padding:16px;color:#111}
+  .A .chat .head{display:flex;gap:10px;align-items:center;background:#075E54;color:#fff;margin:-16px -16px 14px;padding:12px 16px;border-radius:14px 14px 0 0;font-size:14px;font-weight:600}
+  .A .chat .av{width:32px;height:32px;border-radius:50%;background:var(--yellow);color:var(--navy);display:grid;place-items:center;font-family:'Lalezar'}
+  .A .bubble{background:#fff;border-radius:10px;padding:10px 12px;font-size:14px;line-height:1.7;max-width:88%;box-shadow:0 1px 1px rgba(0,0,0,.1)}
+  .A .bubble.me{background:#d9fdd3;margin-inline-start:auto;margin-top:8px}
+  .A .bubble small{display:block;text-align:left;color:#667;font-size:11px}
+  .A .offer{background:var(--red);color:#fff;display:flex;gap:16px;align-items:center;justify-content:center;flex-wrap:wrap;padding:14px 20px;font-weight:800;font-size:15px}
+  .A .offer .seats{background:#fff;color:var(--red);border-radius:6px;padding:4px 10px}
+  .A .reg{background:#fff;border-radius:18px;overflow:hidden;border:1px solid #c9ced6}
+  .A .reg .top{background:var(--yellow);padding:22px 26px;color:var(--navy)}
+  .A .reg .top h3{font-family:'Lalezar';font-weight:400;font-size:32px}
+  .A .reg .top p{font-weight:600;margin-top:4px}
+  .A .reg .body{padding:26px;display:grid;gap:14px;max-width:440px}
+  .A .or{display:flex;align-items:center;gap:10px;color:#7a8291;font-size:13px}
+  .A .or::before,.A .or::after{content:'';flex:1;height:1px;background:#e1e4ea}
+  .A .wabtn{background:#f0faf3;color:#0d5c2e;border:1px solid #bfe6cc}
+  .A .fine{font-size:13px;color:#5b6474;line-height:1.7}
+  .A .steps{display:flex;gap:8px;font-size:12px;color:#5b6474}
+  .A .steps span{flex:1;border-top:4px solid #e1e4ea;padding-top:6px}
+  .A .steps span.on{border-color:var(--navy);color:var(--navy);font-weight:800}
+  /* A phone */
+  .A .app{background:#f2f4f7;min-height:640px}
+  .A .app .bar{background:var(--navy);color:#fff;padding:18px 18px 54px}
+  .A .app .bar .t{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:#c7d2e4}
+  .A .app .bar .logo{font-size:22px}
+  .A .app .bar .money{margin-top:14px;font-size:13px;color:#c7d2e4}
+  .A .app .bar .money b{display:block;font-family:'Lalezar';font-weight:400;font-size:40px;color:var(--yellow);line-height:1.2}
+  .A .app .new{margin:-34px 16px 0;display:flex;justify-content:center;align-items:center;gap:8px;background:var(--yellow);color:var(--navy);font-family:'Lalezar';font-size:22px;padding:16px;border-radius:12px;box-shadow:0 6px 0 #b38f00;width:calc(100% - 32px)}
+  .A .tiles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:18px 16px 8px}
+  .A .tile{background:#fff;border-radius:10px;padding:10px;text-align:center;font-size:12px;color:#5b6474}
+  .A .tile b{display:block;font-size:22px;color:var(--navy);font-weight:800}
+  .A .tile.warn b{color:var(--red)}
+  .A .list{padding:8px 16px 20px}
+  .A .list h4{font-size:14px;margin:6px 0 8px;color:var(--navy)}
+  .A .row{display:flex;align-items:center;gap:10px;background:#fff;border-radius:10px;padding:10px;margin-bottom:8px}
+  .A .plate{border:2px solid #222;border-radius:5px;padding:2px 6px;font-weight:800;font-size:13px;background:#fff;white-space:nowrap}
+  .A .row .who{flex:1;font-size:13px}
+  .A .row .who small{display:block;color:#7a8291}
+  .A .row .amt{font-weight:800;font-size:14px}
+
+  /* ══════════════ B — الوصل ══════════════ */
+  .B{--paper:#fff;--ground:#E9EDF2;--ink:#1F3FA6;--stamp:#C62F2F;--carbon:#1E2430;--muted:#6B7686;font-family:'Readex Pro',sans-serif}
+  .B .site{background:var(--ground);border-radius:18px;overflow:hidden;color:var(--carbon)}
+  .B nav{display:flex;align-items:center;gap:22px;padding:20px 36px;border-bottom:2px dashed #c7cfdb}
+  .B .logo{font-family:'Reem Kufi';font-weight:700;font-size:26px;color:var(--ink)}
+  .B nav a{color:var(--muted);font-size:14px;text-decoration:none}
+  .B nav .call{margin-inline-start:auto;color:var(--ink);font-weight:700;font-size:14px;border:1.5px solid var(--ink);padding:8px 14px;border-radius:6px}
+  .B .hero{display:grid;grid-template-columns:1.1fr 1fr;gap:48px;padding:52px 36px 56px;align-items:center}
+  @media (max-width:900px){.B .hero{grid-template-columns:1fr}}
+  .B h2{font-family:'Reem Kufi';font-weight:700;font-size:clamp(36px,4.6vw,58px);line-height:1.3;color:var(--carbon)}
+  .B .lede{font-size:18px;line-height:1.9;color:#3d4554;margin-top:16px;max-width:44ch}
+  .B .ctas{display:flex;gap:12px;margin-top:28px;flex-wrap:wrap}
+  .B .ctas .go{background:var(--ink);color:#fff;padding:14px 24px;border-radius:6px;font-weight:700;font-size:16px}
+  .B .ctas .wa{color:var(--ink);padding:14px 10px;font-weight:700;text-decoration:underline;text-underline-offset:6px}
+  .B .offer-line{margin-top:26px;font-size:14px;color:var(--muted);line-height:1.8}
+  .B .offer-line b{color:var(--stamp)}
+  .B .receipt{position:relative;background:var(--paper);padding:26px 26px 36px;max-width:380px;margin-inline:auto;box-shadow:0 18px 40px -18px rgba(30,36,48,.35);transform:rotate(-2deg)}
+  .B .receipt::after{content:'';position:absolute;inset-inline:0;bottom:-12px;height:12px;background:linear-gradient(-45deg,transparent 8px,var(--paper) 0) 0 0/16px 12px,linear-gradient(45deg,transparent 8px,var(--paper) 0) 0 0/16px 12px}
+  .B .receipt h5{font-family:'Reem Kufi';font-size:20px;text-align:center;color:var(--ink)}
+  .B .receipt .sub{text-align:center;font-size:12px;color:var(--muted);margin-bottom:14px}
+  .B .receipt .ln{display:flex;justify-content:space-between;font-size:14px;padding:7px 0;border-bottom:1px dotted #c7cfdb}
+  .B .receipt .tot{display:flex;justify-content:space-between;font-weight:700;font-size:17px;padding-top:12px}
+  .B .receipt .nxt{margin-top:14px;background:#eef2fb;color:var(--ink);font-size:13px;padding:10px;border-radius:4px;line-height:1.7}
+  .B .stamp{position:absolute;left:-18px;top:44%;transform:rotate(-14deg);border:3px solid var(--stamp);color:var(--stamp);font-family:'Reem Kufi';font-weight:700;font-size:20px;padding:6px 14px;border-radius:8px;background:rgba(255,255,255,.6);animation:stamp .5s .6s both cubic-bezier(.2,1.6,.4,1)}
+  @keyframes stamp{from{opacity:0;transform:rotate(-14deg) scale(2.2)}to{opacity:.92;transform:rotate(-14deg) scale(1)}}
+  .B .strip{display:grid;grid-template-columns:repeat(3,1fr);border-top:2px dashed #c7cfdb}
+  @media (max-width:700px){.B .strip{grid-template-columns:1fr}}
+  .B .strip div{padding:22px 36px;font-size:14px;line-height:1.8;color:#3d4554}
+  .B .strip div+div{border-inline-start:2px dashed #c7cfdb}
+  .B .strip b{display:block;font-size:16px;color:var(--carbon)}
+  .B .reg{background:var(--paper);border-radius:4px;padding:30px;box-shadow:0 18px 40px -22px rgba(30,36,48,.35);border-top:6px solid var(--ink);max-width:520px}
+  .B .reg h3{font-family:'Reem Kufi';font-size:30px;color:var(--carbon)}
+  .B .reg .p{color:var(--muted);margin:6px 0 22px;line-height:1.7}
+  .B .reg .gbtn{border-radius:6px}
+  .B .reg .alt{margin-top:14px;font-size:14px;color:var(--muted)}
+  .B .reg .alt button{color:var(--ink);font-weight:700;text-decoration:underline;text-underline-offset:4px}
+  .B .reg ul{list-style:none;margin-top:22px;border-top:1px dotted #c7cfdb;padding-top:16px;display:grid;gap:8px;font-size:14px;color:#3d4554}
+  .B .reg li::before{content:'✓';color:var(--ink);font-weight:700;margin-inline-end:8px}
+  /* B phone */
+  .B .app{background:var(--ground);min-height:640px;padding:18px 16px}
+  .B .app .t{display:flex;justify-content:space-between;align-items:center}
+  .B .app .t .logo{font-size:20px}
+  .B .app .t span{font-size:12px;color:var(--muted)}
+  .B .day{background:var(--paper);margin-top:14px;padding:16px;position:relative}
+  .B .day::after{content:'';position:absolute;inset-inline:0;bottom:-10px;height:10px;background:linear-gradient(-45deg,transparent 7px,var(--paper) 0) 0 0/14px 10px,linear-gradient(45deg,transparent 7px,var(--paper) 0) 0 0/14px 10px}
+  .B .day small{color:var(--muted);font-size:12px}
+  .B .day .big{font-family:'Reem Kufi';font-size:34px;color:var(--carbon);font-weight:700}
+  .B .day .lns{display:grid;grid-template-columns:1fr 1fr 1fr;margin-top:10px;border-top:1px dotted #c7cfdb;padding-top:10px;font-size:12px;color:var(--muted);text-align:center}
+  .B .day .lns b{display:block;font-size:18px;color:var(--carbon)}
+  .B .day .lns .r b{color:var(--stamp)}
+  .B .app .new{margin-top:24px;width:100%;background:var(--ink);color:#fff;padding:15px;border-radius:6px;font-weight:700;font-size:17px}
+  .B .app h4{margin:20px 0 8px;font-size:13px;color:var(--muted);font-weight:500}
+  .B .tk{display:flex;align-items:center;gap:10px;background:var(--paper);padding:11px 12px;border-inline-start:4px solid var(--ink);margin-bottom:8px;font-size:13px}
+  .B .tk.debt{border-color:var(--stamp)}
+  .B .tk .who{flex:1}
+  .B .tk .who small{display:block;color:var(--muted)}
+  .B .tk b{font-size:14px}
+
+  /* ══════════════ C — العدّاد ══════════════ */
+  .C{--petrol:#0D3B3E;--deep:#082628;--amber:#F0A33A;--mint:#E8F1EF;--gauge:#6E8C8A;font-family:'IBM Plex Sans Arabic',sans-serif}
+  .C .site{background:var(--petrol);color:var(--mint);border-radius:18px;overflow:hidden}
+  .C nav{display:flex;align-items:center;gap:22px;padding:20px 36px}
+  .C .logo{font-weight:700;font-size:22px;display:flex;align-items:center;gap:8px}
+  .C .logo i{width:22px;height:22px;border-radius:50%;border:3px solid var(--amber);border-top-color:transparent;display:inline-block;transform:rotate(45deg)}
+  .C nav a{color:#a9c2bf;font-size:14px;text-decoration:none}
+  .C nav .call{margin-inline-start:auto;color:var(--amber);font-weight:700;font-size:14px}
+  .C .site{overflow:clip}
+  .C .scrolly{height:320vh;position:relative}
+  .C .hero{position:sticky;top:56px;min-height:calc(100vh - 56px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 24px 32px;text-align:center}
+  .C .hero .kicker{font-size:17px;color:#a9c2bf}
+  .C .odo{--h:clamp(70px,10vw,120px);display:inline-flex;align-items:center;gap:5px;margin:16px 0 14px;direction:ltr}
+  .C .odo .cell{width:calc(var(--h)*.68);height:var(--h);background:var(--deep);border:1px solid #1d5a5e;border-radius:10px;overflow:hidden;position:relative;box-shadow:inset 0 10px 14px -8px rgba(0,0,0,.6),inset 0 -10px 14px -8px rgba(0,0,0,.6)}
+  .C .odo .cell::after{content:'';position:absolute;inset-inline:0;top:50%;height:1px;background:rgba(0,0,0,.4)}
+  .C .odo .strip{display:flex;flex-direction:column;will-change:transform}
+  .C .odo .strip span{height:var(--h);display:grid;place-items:center;font-size:calc(var(--h)*.72);font-weight:700;color:var(--amber);line-height:1}
+  .C .odo .cell.dim .strip span{color:#3f6f6f}
+  .C .odo .sep{width:10px;height:10px;border-radius:50%;background:#1d5a5e;align-self:end;margin-bottom:12px}
+  .C .odo .unit{padding:0 10px;font-size:calc(var(--h)*.26);color:var(--gauge);font-weight:500}
+  .C .life{display:flex;align-items:center;gap:10px;width:min(420px,100%);font-size:13px;color:#a9c2bf;margin-bottom:18px}
+  .C .life .bar{flex:1;height:8px;border-radius:99px;background:#1d5a5e;overflow:hidden}
+  .C .life .bar i{display:block;height:100%;width:100%;background:var(--amber);transition:background .3s}
+  .C .life.low .bar i{background:#e5533d}
+  .C .life b{width:44px;color:var(--mint)}
+  .C .ping{height:0;opacity:0;transform:translateY(10px) scale(.96);transition:opacity .35s,transform .35s,height .35s;overflow:hidden;width:min(420px,100%)}
+  .C .ping.on{height:auto;opacity:1;transform:none;margin-bottom:18px}
+  .C .ping .bub{background:#d9fdd3;color:#111;border-radius:14px 14px 14px 4px;padding:12px 14px;text-align:start;font-size:14px;line-height:1.7}
+  .C .ping .bub strong{display:block;color:#075E54;font-size:13px}
+  .C .hint{margin-top:-18px;font-size:13px;color:var(--gauge);transition:opacity .3s}
+  .C .hero h2{font-size:clamp(28px,3.6vw,44px);font-weight:700;line-height:1.4;max-width:24ch;margin:0 auto}
+  .C .hero p{color:#a9c2bf;font-size:17px;line-height:1.9;max-width:52ch;margin:14px auto 0}
+  .C .ctas{display:flex;gap:12px;justify-content:center;margin:28px 0 40px;flex-wrap:wrap}
+  .C .ctas .go{background:var(--amber);color:var(--deep);padding:14px 26px;border-radius:999px;font-weight:700;font-size:16px}
+  .C .ctas .wa{border:1.5px solid #2c6d70;color:var(--mint);padding:13px 22px;border-radius:999px;font-weight:500}
+  .C .feats{display:grid;grid-template-columns:repeat(3,1fr);background:var(--deep)}
+  @media (max-width:700px){.C .feats{grid-template-columns:1fr}}
+  .C .feats div{padding:24px 30px;font-size:14px;color:#a9c2bf;line-height:1.8}
+  .C .feats div+div{border-inline-start:1px solid #1d5a5e}
+  .C .feats b{display:block;color:var(--mint);font-size:16px;margin-bottom:2px}
+  .C .offer{display:flex;justify-content:center;gap:12px;align-items:center;flex-wrap:wrap;padding:14px;background:var(--amber);color:var(--deep);font-weight:700}
+  .C .reg{background:var(--mint);border-radius:22px;padding:30px;max-width:520px;color:var(--deep)}
+  .C .reg .gauge{height:8px;border-radius:99px;background:#cfdedb;overflow:hidden;margin-bottom:22px}
+  .C .reg .gauge i{display:block;height:100%;width:33%;background:var(--amber)}
+  .C .reg h3{font-size:28px;font-weight:700}
+  .C .reg .p{color:#3f5f5d;margin:6px 0 22px;line-height:1.7}
+  .C .reg .gbtn{border-radius:999px}
+  .C .reg .wabtn{margin-top:10px;border:1.5px solid #9fbdb9;color:var(--petrol);border-radius:999px}
+  .C .reg .tiny{margin-top:18px;font-size:13px;color:#3f5f5d;line-height:1.7}
+  /* C phone */
+  .C .app{background:var(--petrol);min-height:640px;color:var(--mint);padding:18px 16px}
+  .C .app .t{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#a9c2bf}
+  .C .app .t .logo{font-size:18px;color:var(--mint)}
+  .C .ring{margin:18px auto 6px;width:200px;height:200px;border-radius:50%;background:conic-gradient(var(--amber) 0 68%,#1d5a5e 0);display:grid;place-items:center}
+  .C .ring div{width:166px;height:166px;border-radius:50%;background:var(--petrol);display:grid;place-items:center;text-align:center}
+  .C .ring small{font-size:12px;color:#a9c2bf}
+  .C .ring b{display:block;font-size:30px;color:var(--mint);line-height:1.2}
+  .C .app .goal{text-align:center;font-size:12px;color:#a9c2bf}
+  .C .chips{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:16px 0}
+  .C .chip{background:var(--deep);border-radius:14px;padding:10px;text-align:center;font-size:11px;color:#a9c2bf}
+  .C .chip b{display:block;font-size:20px;color:var(--mint)}
+  .C .chip.hot b{color:var(--amber)}
+  .C .app .new{width:100%;background:var(--amber);color:var(--deep);padding:15px;border-radius:999px;font-weight:700;font-size:17px}
+  .C .app h4{margin:18px 0 8px;font-size:13px;color:#a9c2bf;font-weight:500}
+  .C .due{display:flex;align-items:center;gap:10px;background:var(--deep);border-radius:14px;padding:10px 12px;margin-bottom:8px;font-size:13px}
+  .C .due .km{font-weight:700;color:var(--amber);font-size:13px;white-space:nowrap}
+  .C .due .who{flex:1}
+  .C .due .who small{display:block;color:#a9c2bf}
+  .C .due button{background:#25D366;color:#063;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700}
+</style>
+</head>
+<body>
+
+<div class="switch" role="toolbar" aria-label="الاتجاهات">
+  <h1>Care Car — ثلاث اتجاهات للتصميم</h1>
+  <button data-d="A" aria-pressed="true">أ · يافطة الورشة</button>
+  <button data-d="B" aria-pressed="false">ب · الوصل</button>
+  <button data-d="C" aria-pressed="false">ج · العدّاد</button>
+</div>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="g" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></symbol>
+</svg>
+
+<!-- ═════════ A ═════════ -->
+<section class="dir A on" id="A">
+  <p class="note"><b>يافطة الورشة:</b> مستوحى من يافطات المحلات العراقية المرسومة باليد. أصفر صريح على كحلي، وخط عريض يُقرأ من بعيد. يحس صاحب الورشة أن النظام «من عالمه».</p>
+
+  <p class="frame-label">صفحة التعريف</p>
+  <div class="stage"><div class="site">
+    <nav><span class="logo">كير كار</span><a href="#">شلون يشتغل</a><a href="#">الأسعار</a><a href="#">أسئلة</a><a class="call" href="#">واتساب 07806688044</a></nav>
+    <div class="hero">
+      <div class="sign">
+        <h2>الزبون ينسى موعد الزيت.<br>كير كار ما ينسى.</h2>
+        <p>كل سيارة تطلع من مركزك، توصل لصاحبها رسالة واتساب بموعد التبديل القادم. فيرجع لك، مو لغيرك.</p>
+        <div class="ctas"><button class="go">جرّب 14 يوم مجاناً</button><button class="wa">كلّمنا واتساب</button></div>
+      </div>
+      <div class="chat" aria-label="مثال رسالة تذكير">
+        <div class="head"><span class="av">ك</span>مركز الخليج لتبديل الزيت</div>
+        <div class="bubble">هلا أبو علي، سيارتك الكامري (بغداد ٤٥٢١٨ ب) صار موعد تبديل زيتها. ننتظرك بالمركز، والدهن متوفر.<small>9:00 ص</small></div>
+        <div class="bubble me">تمام، أجي العصر إن شاء الله<small>9:14 ص</small></div>
+      </div>
+    </div>
+    <div class="offer">أول 20 مركز: خصم 40٪ مدى الحياة <span class="seats">باقي 20 مقعد</span></div>
+  </div></div>
+
+  <div class="duo">
+    <div>
+      <p class="frame-label" style="padding:0;margin-top:28px">التسجيل</p>
+      <div class="reg">
+        <div class="top"><h3>افتح حساب مركزك</h3><p>14 يوم مجاناً بكل الميزات، بدون دفع.</p></div>
+        <div class="body">
+          <div class="steps"><span class="on">الحساب</span><span>المركز</span><span>جاهز</span></div>
+          <button class="gbtn"><svg><use href="#g"/></svg>سجّل بحساب Google</button>
+          <div class="or">أو</div>
+          <button class="wabtn">سجّل برقم الواتساب</button>
+          <p class="fine">بعدها نسألك ثلاث أشياء بس: اسم المركز، اختصاصه، ورقم الواتساب اللي تطلع منه التذكيرات.</p>
+        </div>
+      </div>
+    </div>
+    <div>
+      <p class="frame-label" style="padding:0;margin-top:28px;text-align:center">واجهة المركز على الموبايل</p>
+      <div class="phone"><div class="phone-screen"><div class="app">
+        <div class="bar">
+          <div class="t"><span class="logo">كير كار</span><span>الثلاثاء ٦ تشرين الأول</span></div>
+          <div class="money">دخل اليوم<b class="num">1,250,000 د.ع</b></div>
+        </div>
+        <button class="new">+ خدمة جديدة</button>
+        <div class="tiles">
+          <div class="tile"><b class="num">14</b>سيارة اليوم</div>
+          <div class="tile"><b class="num">9</b>تذكير طلع</div>
+          <div class="tile warn"><b class="num">3</b>ديون مستحقة</div>
+        </div>
+        <div class="list">
+          <h4>آخر السيارات</h4>
+          <div class="row"><span class="plate">بغداد ٤٥٢١٨ ب</span><span class="who">كامري ٢٠١٩<small>زيت + فلتر</small></span><span class="amt num">45,000</span></div>
+          <div class="row"><span class="plate">بغداد ١٢٧٧٣ أ</span><span class="who">سوناتا ٢٠٢١<small>زيت + فلتر هواء</small></span><span class="amt num">60,000</span></div>
+          <div class="row"><span class="plate">كربلاء ٣٣٠٩ ج</span><span class="who">لاندكروزر ٢٠١٦<small>زيت جير</small></span><span class="amt num">85,000</span></div>
+        </div>
+      </div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ B ═════════ -->
+<section class="dir B" id="B">
+  <p class="note"><b>الوصل:</b> مبني على الشي اللي يمسكه صاحب المركز كل يوم، الوصل. ورق أبيض وحبر أزرق وختم أحمر. هادئ ومرتب ويبين أن النظام يحفظ الحساب بدقة.</p>
+
+  <p class="frame-label">صفحة التعريف</p>
+  <div class="stage"><div class="site">
+    <nav><span class="logo">كير كار</span><a href="#">شلون يشتغل</a><a href="#">الأسعار</a><a href="#">أسئلة</a><a class="call" href="#">07806688044</a></nav>
+    <div class="hero">
+      <div>
+        <h2>كل وصل يطلع من مركزك يرجّع لك زبون</h2>
+        <p class="lede">تكتب الخدمة مرة وحدة. كير كار يطبع الوصل، يخصم من المخزون، يسجّل الدين إذا ماكو دفع، ويذكّر الزبون بالواتساب لما يجي موعده.</p>
+        <div class="ctas"><button class="go">جرّب 14 يوم مجاناً</button><button class="wa">أو كلّمنا واتساب</button></div>
+        <p class="offer-line">عرض الافتتاح: <b>أول 20 مركز خصم 40٪ مدى الحياة</b>، وندخّل أسعارك ومخزونك بدالك.</p>
+      </div>
+      <div class="receipt" aria-label="مثال وصل">
+        <h5>مركز الخليج لتبديل الزيت</h5>
+        <p class="sub">وصل رقم 1042 · الكامري · بغداد ٤٥٢١٨ ب</p>
+        <div class="ln"><span>زيت 5W-30 (4 لتر)</span><span class="num">32,000</span></div>
+        <div class="ln"><span>فلتر زيت</span><span class="num">8,000</span></div>
+        <div class="ln"><span>أجور</span><span class="num">5,000</span></div>
+        <div class="tot"><span>المجموع</span><span class="num">45,000 د.ع</span></div>
+        <div class="nxt">التبديل القادم: بعد 5,000 كم أو 3 أشهر. نذكّرك بالواتساب.</div>
+        <span class="stamp">رجع الزبون</span>
+      </div>
+    </div>
+    <div class="strip">
+      <div><b>تذكير تلقائي</b>رسالة واتساب باسم مركزك، بموعد التبديل القادم.</div>
+      <div><b>الديون بمكان واحد</b>تعرف منو مطلوب، وتطالبه برسالة وحدة.</div>
+      <div><b>المخزون يخصم نفسه</b>كل خدمة تنقص القطع، وتنبهك قبل ما تخلص.</div>
+    </div>
+  </div></div>
+
+  <div class="duo">
+    <div>
+      <p class="frame-label" style="padding:0;margin-top:28px">التسجيل</p>
+      <div class="reg">
+        <h3>افتح حساب مركزك</h3>
+        <p class="p">دقيقة وحدة. 14 يوم مجاناً بكل الميزات، وبعدها تقرر.</p>
+        <button class="gbtn"><svg><use href="#g"/></svg>سجّل بحساب Google</button>
+        <p class="alt">ما عندك Gmail؟ <button>سجّل برقم الواتساب</button></p>
+        <ul><li>بدون دفع أو بطاقة</li><li>بياناتك محفوظة ومعزولة عن غيرك</li><li>دعم بالواتساب على 07806688044</li></ul>
+      </div>
+    </div>
+    <div>
+      <p class="frame-label" style="padding:0;margin-top:28px;text-align:center">واجهة المركز على الموبايل</p>
+      <div class="phone"><div class="phone-screen"><div class="app">
+        <div class="t"><span class="logo">كير كار</span><span>الثلاثاء ٦ تشرين الأول</span></div>
+        <div class="day">
+          <small>حساب اليوم</small>
+          <div class="big num">1,250,000 د.ع</div>
+          <div class="lns"><div><b class="num">14</b>سيارة</div><div><b class="num">9</b>تذكير</div><div class="r"><b class="num">3</b>دين</div></div>
+        </div>
+        <button class="new">+ وصل جديد</button>
+        <h4>اليوم</h4>
+        <div class="tk"><span class="who">كامري · بغداد ٤٥٢١٨ ب<small>زيت + فلتر</small></span><b class="num">45,000</b></div>
+        <div class="tk"><span class="who">سوناتا · بغداد ١٢٧٧٣ أ<small>زيت + فلتر هواء</small></span><b class="num">60,000</b></div>
+        <div class="tk debt"><span class="who">لاندكروزر · كربلاء ٣٣٠٩ ج<small>دين، باقي عليه</small></span><b class="num">85,000</b></div>
+      </div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═════════ C ═════════ -->
+<section class="dir C" id="C">
+  <p class="note"><b>العدّاد:</b> مبني على عدّاد الكيلومترات، الشي اللي يقرر متى يرجع الزبون. أزرق بترولي غامق ولون الزيت الكهرماني. عصري وتقني، وأقرب لشكل التطبيقات الحديثة.</p>
+
+  <p class="frame-label">صفحة التعريف</p>
+  <div class="stage"><div class="site">
+    <nav><span class="logo"><i></i>كير كار</span><a href="#">شلون يشتغل</a><a href="#">الأسعار</a><a href="#">أسئلة</a><a class="call" href="#">واتساب 07806688044</a></nav>
+    <div class="scrolly" id="scrolly">
+      <div class="hero">
+        <p class="kicker">زبونك بدّل الزيت عندك اليوم. من وقتها مشى</p>
+        <div class="odo" id="odo" aria-live="off" aria-label="عدّاد الكيلومترات"></div>
+        <div class="life" aria-hidden="true"><span>عمر الزيت</span><div class="bar"><i id="lifeBar"></i></div><b id="lifePct" class="num">100٪</b></div>
+        <div class="ping" id="ping">
+          <div class="bub"><strong>مركز الخليج</strong>هلا أبو علي، الكامري مشت 5,000 كم من آخر تبديل. صار موعد الزيت، ننتظرك بالمركز.</div>
+        </div>
+        <h2 id="heroLine">وكير كار يراقب الموعد بدالك</h2>
+        <p>نظام واحد للمركز: وصل، مخزون، ديون، وتذكير تلقائي لكل زبون بموعده. يشتغل على الموبايل والحاسبة.</p>
+        <div class="ctas"><button class="go">جرّب 14 يوم مجاناً</button><button class="wa">كلّمنا واتساب</button></div>
+        <p class="hint" id="hint">انزل لتحت وشوف العدّاد يمشي</p>
+      </div>
+    </div>
+    <div class="offer">أول 20 مركز: خصم 40٪ مدى الحياة · باقي 20 مقعد</div>
+    <div class="feats">
+      <div><b>تذكير بالموعد</b>يحسب الكيلومترات والمدة، ويرسل بوقته.</div>
+      <div><b>ديون بدون إحراج</b>رسالة مطالبة مرتبة باسم مركزك.</div>
+      <div><b>مخزون حي</b>ينقص مع كل خدمة، وينبهك قبل النفاد.</div>
+    </div>
+  </div></div>
+
+  <div class="duo">
+    <div>
+      <p class="frame-label" style="padding:0;margin-top:28px">التسجيل</p>
+      <div class="reg">
+        <div class="gauge" aria-label="الخطوة 1 من 3"><i></i></div>
+        <h3>افتح حساب مركزك</h3>
+        <p class="p">14 يوم مجاناً بكل الميزات. بدون دفع.</p>
+        <button class="gbtn"><svg><use href="#g"/></svg>سجّل بحساب Google</button>
+        <button class="wabtn">سجّل برقم الواتساب</button>
+        <p class="tiny">الخطوة الجاية: اسم المركز واختصاصه ورقم الواتساب. أقل من دقيقة.</p>
+      </div>
+    </div>
+    <div>
+      <p class="frame-label" style="padding:0;margin-top:28px;text-align:center">واجهة المركز على الموبايل</p>
+      <div class="phone"><div class="phone-screen"><div class="app">
+        <div class="t"><span class="logo">كير كار</span><span>الثلاثاء ٦ تشرين الأول</span></div>
+        <div class="ring"><div><span><small>دخل اليوم</small><b class="num">1.25 مليون</b><small>د.ع</small></span></div></div>
+        <p class="goal">68٪ من معدل يومك المعتاد</p>
+        <div class="chips">
+          <div class="chip"><b class="num">14</b>سيارة</div>
+          <div class="chip"><b class="num">9</b>تذكير</div>
+          <div class="chip hot"><b class="num">3</b>دين</div>
+        </div>
+        <button class="new">+ خدمة جديدة</button>
+        <h4>موعدهم قرّب</h4>
+        <div class="due"><span class="km num">120 كم</span><span class="who">أبو علي · كامري<small>بغداد ٤٥٢١٨ ب</small></span><button>ذكّره</button></div>
+        <div class="due"><span class="km num">300 كم</span><span class="who">حيدر · سوناتا<small>بغداد ١٢٧٧٣ أ</small></span><button>ذكّره</button></div>
+      </div></div></div>
+    </div>
+  </div>
+</section>
+
+<script>
+  const btns = document.querySelectorAll('.switch button')
+  btns.forEach(b => b.addEventListener('click', () => {
+    btns.forEach(x => x.setAttribute('aria-pressed', x === b))
+    document.querySelectorAll('.dir').forEach(s => s.classList.toggle('on', s.id === b.dataset.d))
+    window.scrollTo({ top: 0 })
+    updateOdo()
+  }))
+
+  /* ── Odometer driven by scroll: 0 → 5,000 km (one oil-change interval) ── */
+  const OIL_INTERVAL_KM = 5000
+  const odo = document.getElementById('odo')
+  const places = [1000, 100, 10, 1]
+  const strips = []
+  places.forEach((place, i) => {
+    if (i === 1) { const s = document.createElement('span'); s.className = 'sep'; odo.append(s) }
+    const cell = document.createElement('span')
+    cell.className = 'cell'
+    const strip = document.createElement('span')
+    strip.className = 'strip'
+    for (let d = 0; d <= 10; d++) {
+      const n = document.createElement('span')
+      n.textContent = d % 10
+      strip.append(n)
+    }
+    cell.append(strip)
+    odo.append(cell)
+    strips.push({ place, strip })
+  })
+  const unit = document.createElement('span')
+  unit.className = 'unit'
+  unit.textContent = 'كم'
+  odo.append(unit)
+
+  const scrolly = document.getElementById('scrolly')
+  const lifeBar = document.getElementById('lifeBar')
+  const lifePct = document.getElementById('lifePct')
+  const life = lifeBar.closest('.life')
+  const ping = document.getElementById('ping')
+  const hint = document.getElementById('hint')
+  const heroLine = document.getElementById('heroLine')
+
+  // Real odometer carry: a wheel only turns while every wheel to its right is passing 9 → 0.
+  function wheelPosition(km, place) {
+    if (place === 1) return km % 10
+    const base = Math.floor(km / place) % 10
+    const rem = km % place
+    const threshold = place - 1
+    return base + (rem > threshold ? rem - threshold : 0)
+  }
+
+  function updateOdo() {
+    if (!document.getElementById('C').classList.contains('on')) return
+    const rect = scrolly.getBoundingClientRect()
+    const travel = scrolly.offsetHeight - window.innerHeight
+    // Odometer finishes at 80% of the pinned scroll; the last 20% holds the WhatsApp message on screen.
+    const p = Math.min(1, Math.max(0, -rect.top / travel) / 0.8)
+    const km = p * OIL_INTERVAL_KM
+    const h = odo.querySelector('.cell').offsetHeight
+    strips.forEach(({ place, strip }) => {
+      strip.style.transform = `translateY(${-wheelPosition(km, place) * h}px)`
+    })
+    const left = Math.round((1 - p) * 100)
+    lifeBar.style.width = left + '%'
+    lifePct.textContent = left + '٪'
+    life.classList.toggle('low', left <= 20)
+    const done = p >= 0.995
+    ping.classList.toggle('on', done)
+    heroLine.textContent = done ? 'وكير كار ذكّره بوقته. هسه يرجع لمركزك' : 'وكير كار يراقب الموعد بدالك'
+    hint.style.opacity = p > 0.04 ? 0 : 1
+  }
+  window.addEventListener('scroll', updateOdo, { passive: true })
+  window.addEventListener('resize', updateOdo)
+</script>
+</body>
+</html>

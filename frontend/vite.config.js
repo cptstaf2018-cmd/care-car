@@ -16,6 +16,10 @@ export default defineConfig({
       '/reports': 'http://localhost:8000',
       '/settings': 'http://localhost:8000',
       '/vision': 'http://localhost:8000',
+      '/platform': 'http://localhost:8000',
+      '/users': 'http://localhost:8000',
+      '/mobile-camera': 'http://localhost:8000',
+      '/uploads': 'http://localhost:8000',
     },
   },
 })

@@ -36,7 +36,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Login initialMode="register" />} />
+          <Route path="/register" element={<Login />} />
           <Route path="/activate" element={<Activate />} />
           <Route path="/about" element={<LandingPage />} />
           <Route path="/mobile-camera/:token" element={<MobileCamera />} />
