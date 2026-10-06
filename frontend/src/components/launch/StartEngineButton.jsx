@@ -23,7 +23,7 @@ function GoogleMark() {
  * Push-to-start button. It looks like an engine start button, but the real (transparent) Google
  * sign-in icon button sits on top of it, so pressing it opens Google sign-in and also fires `onPress`.
  */
-export default function StartEngineButton({ phase, onPress, onCredential, disabled = false, caption = 'ببصمة حساب Google' }) {
+export default function StartEngineButton({ phase, mode = 'google', formId, onPress, onCredential, disabled = false, caption = 'ببصمة حساب Google' }) {
   const holder = useRef(null)
   const callback = useRef(onCredential)
   const [failed, setFailed] = useState(false)
@@ -33,6 +33,7 @@ export default function StartEngineButton({ phase, onPress, onCredential, disabl
   }, [onCredential])
 
   useEffect(() => {
+    if (mode !== 'google') return undefined
     let cancelled = false
     loadGoogleIdentity()
       .then((google) => {
@@ -50,12 +51,12 @@ export default function StartEngineButton({ phase, onPress, onCredential, disabl
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [mode])
 
   const running = phase !== 'parked'
   const lit = phase === 'igniting' || phase === 'driving'
 
-  if (failed) {
+  if (failed && mode === 'google') {
     return (
       <p role="alert" className="rounded-2xl bg-white px-4 py-3 text-center text-sm text-alert">
         ما انفتح تسجيل Google. تأكد من الإنترنت وحدّث الصفحة.
@@ -67,7 +68,7 @@ export default function StartEngineButton({ phase, onPress, onCredential, disabl
     <div className="flex flex-col items-center gap-2">
       <div
         role="group"
-        aria-label="شغّل الحساب: سجّل بحساب Google"
+        aria-label={mode === 'google' ? 'شغّل الحساب: سجّل بحساب Google' : 'شغّل المحرك وادخل'}
         style={{ width: BUTTON_SIZE, height: BUTTON_SIZE }}
         className={`relative -mt-14 rounded-full p-[7px] shadow-[0_16px_30px_-10px_rgba(0,0,0,0.75)] focus-within:ring-4 focus-within:ring-oil/60 ${disabled ? 'pointer-events-none opacity-60' : ''}`}
         onClickCapture={onPress}
@@ -90,14 +91,18 @@ export default function StartEngineButton({ phase, onPress, onCredential, disabl
             <span className="text-xs font-bold text-gauge-light">{lit ? 'شغّال' : 'ابدأ'}</span>
           </span>
         </span>
-        <div
-          ref={holder}
-          style={{ width: GOOGLE_ICON_SIZE, height: GOOGLE_ICON_SIZE, transform: `translate(-50%, -50%) scale(${OVERLAY_SCALE})` }}
-          className="absolute start-auto left-1/2 top-1/2 overflow-hidden rounded-full opacity-[0.01]"
-        />
+        {mode === 'google' ? (
+          <div
+            ref={holder}
+            style={{ width: GOOGLE_ICON_SIZE, height: GOOGLE_ICON_SIZE, transform: `translate(-50%, -50%) scale(${OVERLAY_SCALE})` }}
+            className="absolute start-auto left-1/2 top-1/2 overflow-hidden rounded-full opacity-[0.01]"
+          />
+        ) : (
+          <button type="submit" form={formId} disabled={disabled} aria-label="ادخل" className="absolute inset-0 rounded-full focus-visible:outline-none" />
+        )}
       </div>
       <p className="flex items-center gap-1.5 text-sm text-mint-ink">
-        <GoogleMark />
+        {mode === 'google' && <GoogleMark />}
         {caption}
       </p>
     </div>

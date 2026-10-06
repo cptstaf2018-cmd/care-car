@@ -4,6 +4,7 @@ import { completeGoogleSignup, googleLogin, login } from '../api/auth'
 import { useAuthStore } from '../store/auth'
 import AuthShell from '../components/auth/AuthShell'
 import WhatsAppIcon from '../components/WhatsAppIcon'
+import GoogleLoginPill from '../components/auth/GoogleLoginPill'
 import CenterOnboardingForm from '../components/auth/CenterOnboardingForm'
 import { ErrorNote, ForgotPasswordForm, PasswordLoginForm } from '../components/auth/PasswordForms'
 import LaunchScene from '../components/launch/LaunchScene'
@@ -127,7 +128,6 @@ export default function Login() {
   const handlePassword = async (loginId, password) => {
     setError('')
     setLoading(true)
-    setLastId(loginId)
     press()
     try {
       const { data } = await login(loginId, password)
@@ -171,52 +171,66 @@ export default function Login() {
 
   const isRegister = mode === 'register'
 
+  const errorBlock = (
+    <>
+      {notice && <p role="status" className="rounded-2xl bg-white px-4 py-3 text-sm font-bold text-petrol">{notice}</p>}
+      <ErrorNote>{error}</ErrorNote>
+      {error === TRIAL_ENDED_MESSAGE && (
+        <a
+          href={whatsappLink('مرحبا، انتهت تجربتي بكير كار وأريد أفعّل الاشتراك')}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-full bg-[#25D366] px-5 py-3 text-center font-bold text-[#063]"
+        >
+          كلّمنا واتساب للتفعيل
+        </a>
+      )}
+    </>
+  )
+
   return (
     <AuthShell>
       <AuthTabs isRegister={isRegister} onChange={go} />
 
       <h1 className="text-2xl font-bold">{isRegister ? 'افتح حساب مركزك' : 'أهلاً بيك من جديد'}</h1>
       <p className="mb-5 mt-2 text-mint-ink">
-        {isRegister ? `${TRIAL_DAYS} يوم مجاناً بكل الميزات. بدون دفع وبدون بطاقة.` : 'اضغط START وادخل بحساب Google، أو بالإيميل أو الرقم وكلمة المرور.'}
+        {isRegister ? `${TRIAL_DAYS} يوم مجاناً بكل الميزات. بدون دفع وبدون بطاقة.` : 'اكتب إيميلك أو رقمك وكلمة المرور، وبعدها اضغط START.'}
       </p>
 
-      <LaunchScene phase={phase} />
-      <StartEngineButton phase={phase} onPress={press} onCredential={handleGoogle} disabled={loading} />
-
-      <div className="mt-6 grid gap-5">
-        {notice && <p role="status" className="rounded-2xl bg-white px-4 py-3 text-sm font-bold text-petrol">{notice}</p>}
-        <ErrorNote>{error}</ErrorNote>
-        {error === TRIAL_ENDED_MESSAGE && (
-          <a
-            href={whatsappLink('مرحبا، انتهت تجربتي بكير كار وأريد أفعّل الاشتراك')}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-full bg-[#25D366] px-5 py-3 text-center font-bold text-[#063]"
-          >
-            كلّمنا واتساب للتفعيل
-          </a>
-        )}
-
-        {isRegister ? (
-          <p className="text-center text-sm text-mint-ink">بعدها نسألك عن مركزك: اسمه، شنو يشتغل، ورقم واتسابه.</p>
-        ) : (
-          <>
-            <div className="flex items-center gap-3 text-sm text-gauge" aria-hidden="true">
-              <span className="h-px flex-1 bg-mint-dim" />أو<span className="h-px flex-1 bg-mint-dim" />
-            </div>
-            <PasswordLoginForm
-              key={lastId}
-              initialId={lastId}
-              loading={loading}
-              onSubmit={handlePassword}
-              onForgot={(id) => {
-                setLastId(id)
-                go('forgot')
-              }}
-            />
-          </>
-        )}
-      </div>
+      {isRegister ? (
+        <>
+          <LaunchScene phase={phase} />
+          <StartEngineButton phase={phase} onPress={press} onCredential={handleGoogle} disabled={loading} />
+          <div className="mt-6 grid gap-5">
+            {errorBlock}
+            <p className="text-center text-sm text-mint-ink">بعدها نسألك عن مركزك: اسمه، شنو يشتغل، ورقم واتسابه.</p>
+          </div>
+        </>
+      ) : (
+        <div className="grid gap-5">
+          {errorBlock}
+          <PasswordLoginForm
+            key={lastId}
+            formId="password-login"
+            hideSubmit
+            initialId={lastId}
+            loading={loading}
+            onSubmit={handlePassword}
+            onForgot={(id) => {
+              setLastId(id)
+              go('forgot')
+            }}
+          />
+          <div>
+            <LaunchScene phase={phase} />
+            <StartEngineButton mode="submit" formId="password-login" phase={phase} disabled={loading} caption="اضغط للدخول" />
+          </div>
+          <div className="flex items-center gap-3 text-sm text-gauge" aria-hidden="true">
+            <span className="h-px flex-1 bg-mint-dim" />أو<span className="h-px flex-1 bg-mint-dim" />
+          </div>
+          <GoogleLoginPill onPress={press} onCredential={handleGoogle} disabled={loading} />
+        </div>
+      )}
 
       <p className="mt-8 flex flex-wrap items-center gap-2 border-t border-mint-dim pt-5 text-sm text-mint-ink">
         تحتاج مساعدة؟

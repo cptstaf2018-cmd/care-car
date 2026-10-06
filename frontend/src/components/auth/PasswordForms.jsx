@@ -13,12 +13,13 @@ export function ErrorNote({ children }) {
 }
 
 /** Email-or-phone + password, for accounts created before Google sign-in and for staff. */
-export function PasswordLoginForm({ onSubmit, loading, initialId = '', onForgot }) {
+export function PasswordLoginForm({ onSubmit, loading, initialId = '', onForgot, formId, hideSubmit = false }) {
   const [loginId, setLoginId] = useState(initialId)
   const [password, setPassword] = useState('')
 
   return (
     <form
+      id={formId}
       className="grid gap-3"
       onSubmit={(e) => {
         e.preventDefault()
@@ -36,9 +37,11 @@ export function PasswordLoginForm({ onSubmit, loading, initialId = '', onForgot 
       <button type="button" onClick={() => onForgot(loginId)} className="justify-self-start text-sm font-bold text-petrol underline underline-offset-4">
         نسيت كلمة المرور؟
       </button>
-      <button type="submit" disabled={loading} className={primaryButton}>
-        {loading ? 'جاري الدخول…' : 'دخول'}
-      </button>
+      {!hideSubmit && (
+        <button type="submit" disabled={loading} className={primaryButton}>
+          {loading ? 'جاري الدخول…' : 'دخول'}
+        </button>
+      )}
     </form>
   )
 }
