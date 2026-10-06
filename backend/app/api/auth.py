@@ -530,7 +530,7 @@ def google_login(body: GoogleLoginRequest, db: Session = Depends(get_db)):
         logger.warning("[GOOGLE LOGIN] verification failed: %s", exc)
         if not settings.GOOGLE_CLIENT_ID:
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="تسجيل Google غير مفعّل بالخادم")
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"تعذر التحقق من حساب Google [{str(exc)[:160]}]")  # TEMP diagnostic
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=f"تعذر التحقق من حساب Google [{str(exc)[:400]!r} len={len(settings.GOOGLE_CLIENT_ID or '')}]")  # TEMP diagnostic
 
     user = db.query(User).filter(User.email == profile["email"]).first()
     if user:
