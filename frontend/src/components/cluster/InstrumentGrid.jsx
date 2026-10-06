@@ -13,8 +13,8 @@ const FUEL_LABELS = { 0: 'E', 1: 'F' }
 
 function Instrument({ title, text, children, pulseKey }) {
   return (
-    <article key={pulseKey} className="gauge-pulse rounded-3xl border border-petrol-line bg-petrol-deep/60 p-4 text-center">
-      <div className="flex min-h-[132px] items-center justify-center">{children}</div>
+    <article key={pulseKey} className="gauge-pulse flex flex-col rounded-3xl border border-petrol-line bg-petrol-deep/60 p-4 text-center">
+      <div className="flex h-[176px] items-center justify-center">{children}</div>
       <h3 className="mt-3 text-base font-bold text-mint">{title}</h3>
       <p className="mt-1 text-sm leading-6 text-gauge-light">{text}</p>
     </article>
@@ -57,7 +57,7 @@ export default function InstrumentGrid({ progress, rpm, step = 1, showSteps = fa
 
       <Instrument pulseKey={pulseKey} title="عدّاد الموعد" text={`كل سيارة تعدّ مسافتها، وعند ${OIL_INTERVAL_KM.toLocaleString('en-US')} كم يوصل زبونك تذكير واتساب.`}>
         <div className="grid justify-items-center gap-2">
-          <Odometer value={progress * OIL_INTERVAL_KM} className="text-4xl font-bold text-oil" />
+          <Odometer value={progress * OIL_INTERVAL_KM} className="text-5xl font-bold text-oil" />
           <span className="text-xs text-gauge">كم</span>
         </div>
       </Instrument>
@@ -79,11 +79,11 @@ export default function InstrumentGrid({ progress, rpm, step = 1, showSteps = fa
       <Instrument pulseKey={pulseKey} title="لمبة الديون" text="تضوي لما أحد يتأخر عليك، وتطالبه برسالة واتساب مرتبة.">
         <div className="grid justify-items-center gap-3">
           <span
-            className={`grid h-20 w-20 place-items-center rounded-full border-2 transition-all duration-500 ${
+            className={`grid h-24 w-24 place-items-center rounded-full border-2 transition-all duration-500 ${
               debtLit ? 'border-alert bg-alert/15 text-alert shadow-[0_0_30px_6px_rgba(229,83,61,0.45)]' : 'border-petrol-line text-petrol-soft'
             }`}
           >
-            <BatteryWarning size={34} aria-hidden="true" />
+            <BatteryWarning size={40} aria-hidden="true" />
           </span>
           <span className="text-xs text-gauge">{debtLit ? '3 ديون متأخرة' : 'ما كو ديون'}</span>
         </div>
