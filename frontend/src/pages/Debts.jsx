@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bell, CheckCircle2, CreditCard, MessageCircle, Phone, Receipt, Search, ToggleLeft, ToggleRight, WalletCards } from 'lucide-react'
 import Layout from '../components/Layout'
+import StatCard from '../components/StatCard'
 import { getDebts, sendDebtReminder, updateDebt } from '../api/debts'
 
 const money = value => `${Number(value || 0).toLocaleString()} IQD`
@@ -75,9 +76,9 @@ export default function Debts() {
       </div>
 
       <section className="mb-5 grid gap-3 md:grid-cols-3">
-        <SummaryCard icon={WalletCards} label="إجمالي الديون" value={money(totals.amount)} tone="rose" />
-        <SummaryCard icon={Bell} label="تذكير تلقائي مفعل" value={totals.auto} tone="cyan" />
-        <SummaryCard icon={CreditCard} label="عدد الديون" value={filteredDebts.length} tone="slate" />
+        <StatCard icon={WalletCards} label="إجمالي الديون" value={money(totals.amount)} color="red" />
+        <StatCard icon={Bell} label="تذكير تلقائي مفعل" value={totals.auto} color="blue" />
+        <StatCard icon={CreditCard} label="عدد الديون" value={filteredDebts.length} color="slate" />
       </section>
 
       <section className="surface mb-5 rounded-lg p-4">
@@ -165,26 +166,5 @@ export default function Debts() {
         )}
       </section>
     </Layout>
-  )
-}
-
-function SummaryCard({ icon: Icon, label, value, tone }) {
-  const colors = {
-    rose: 'bg-rose-50 text-rose-700',
-    cyan: 'bg-cyan-50 text-cyan-700',
-    slate: 'bg-slate-50 text-slate-700',
-  }
-  return (
-    <div className="surface rounded-lg p-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-black text-slate-400">{label}</p>
-          <p className="mt-2 text-2xl font-black text-slate-950">{value}</p>
-        </div>
-        <div className={`rounded-lg p-3 ${colors[tone] || colors.slate}`}>
-          <Icon size={22} />
-        </div>
-      </div>
-    </div>
   )
 }

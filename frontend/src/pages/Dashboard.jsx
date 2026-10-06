@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import Layout from '../components/Layout'
 import InstrumentCluster from '../components/cluster/InstrumentCluster'
-import StartButton from '../components/cluster/StartButton'
 import DueCarsList from '../components/cluster/DueCarsList'
 import { getDailyReport, getMaintenanceDue, getMonthlyReport } from '../api/reports'
 import { getInventory } from '../api/inventory'
@@ -52,7 +51,6 @@ export default function Dashboard() {
           monthly={monthlyQuery.data}
           warnings={{ oilDue: isOilCenter ? dueCars.length : undefined, lowStock: lowStockCount, debts: unpaidCount }}
         />
-        <StartButton />
 
         {isOilCenter && (
           <section aria-labelledby="due-title" className="grid gap-3">

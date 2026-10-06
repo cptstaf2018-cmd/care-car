@@ -6,6 +6,8 @@ import Layout from '../components/Layout'
 import { getCenterSettings, updateCenterSettings, requestSubscription, uploadLogo, getMobileCameraLink } from '../api/settings'
 import { getCenterUsers, createCenterUser, updateCenterUser } from '../api/users'
 import { PLAN_DETAILS, PLAN_ORDER, hasPlanFeature, isHigherPlan, nextPlan, planShortName, planUserLimit } from '../constants/plans'
+import TankGauge from '../components/shell/TankGauge'
+import { tankFor } from '../components/shell/tank'
 
 const PLAN_COLORS = { basic: 'slate', pro: 'cyan', enterprise: 'violet' }
 const PLAN_BADGES = { pro: 'الأكثر طلباً' }
@@ -17,46 +19,18 @@ const PLANS = PLAN_ORDER.map(id => ({
 }))
 
 function TrialBanner({ trialEndsAt, subscriptionEndsAt }) {
-  if (subscriptionEndsAt) {
-    const end = new Date(subscriptionEndsAt)
-    const today = new Date()
-    const daysLeft = Math.ceil((end - today) / 86400000)
-    if (daysLeft > 0) {
-      return (
-        <div className="mb-6 flex items-center gap-3 rounded-xl bg-emerald-50 border border-emerald-200 px-5 py-4">
-          <span className="text-2xl">✅</span>
-          <div>
-            <p className="font-bold text-emerald-800">الاشتراك نشط</p>
-            <p className="text-sm text-emerald-600">{daysLeft} يوم متبقية حتى انتهاء الاشتراك</p>
-          </div>
-        </div>
-      )
-    }
-  }
-  if (!trialEndsAt) return null
-  const end = new Date(trialEndsAt)
-  const today = new Date()
-  const daysLeft = Math.ceil((end - today) / 86400000)
-  if (daysLeft > 0) {
-    return (
-      <div className="mb-6 flex items-center gap-3 rounded-xl bg-amber-50 border border-amber-200 px-5 py-4">
-        <span className="text-2xl">⏳</span>
-        <div>
-          <p className="font-bold text-amber-800">فترة التجربة المجانية</p>
-          <p className="text-sm text-amber-600">
-            {daysLeft === 1 ? 'يوم واحد متبقي' : `${daysLeft} أيام متبقية`} — اشترك الآن لضمان الاستمرارية
-          </p>
-        </div>
-      </div>
-    )
-  }
+  const tank = tankFor({ trial_ends_at: trialEndsAt, subscription_ends_at: subscriptionEndsAt })
+  if (!tank) return null
+  const message =
+    tank.days === 0
+      ? 'فرغ الخزان. اختر خطة بالأسفل ويرجع كل شي يشتغل.'
+      : tank.kind === 'trial'
+        ? 'تجربتك مجانية بكل الميزات. اشترك قبل ما يخلص الخزان حتى ما يوقف شغلك.'
+        : 'اشتراكك شغّال. جدّده قبل ما ينتهي الخزان.'
   return (
-    <div className="mb-6 flex items-center gap-3 rounded-xl bg-rose-50 border border-rose-200 px-5 py-4">
-      <span className="text-2xl">🔒</span>
-      <div>
-        <p className="font-bold text-rose-800">انتهت فترة التجربة</p>
-        <p className="text-sm text-rose-600">اختر خطة واشترك أدناه لاستعادة الوصول الكامل</p>
-      </div>
+    <div className="mb-6 grid gap-4 rounded-3xl bg-petrol-deep p-4 text-mint md:grid-cols-[minmax(0,380px)_1fr] md:items-center">
+      <TankGauge {...tank} />
+      <p className="text-sm leading-7 text-gauge-light">{message}</p>
     </div>
   )
 }
@@ -127,7 +101,7 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
               ترقية إلى {PLAN_DETAILS[targetUpgradePlan]?.shortName}
             </button>
           ) : (
-            <span className="rounded-full bg-violet-50 px-4 py-2 text-sm font-black text-violet-700 ring-1 ring-violet-100">
+            <span className="rounded-full bg-mint px-4 py-2 text-sm font-black text-petrol-deep ring-1 ring-mint-dim">
               أعلى خطة مفعّلة
             </span>
           )}
@@ -171,7 +145,7 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
                 ? plan.color === 'cyan'
                   ? 'border-cyan-500 bg-cyan-50 shadow-lg shadow-cyan-100'
                   : plan.color === 'violet'
-                    ? 'border-violet-500 bg-violet-50 shadow-lg shadow-violet-100'
+                    ? 'border-mint0 bg-mint shadow-lg shadow-mint-dim'
                     : 'border-slate-700 bg-slate-50 shadow-lg'
                 : 'border-slate-200 bg-white hover:border-slate-300'
             }`}
@@ -612,12 +586,12 @@ export default function CenterSettings() {
               </div>
             </div>
           ) : (
-            <div className="mt-5 rounded-xl border border-violet-100 bg-violet-50 p-4">
+            <div className="mt-5 rounded-xl border border-mint-dim bg-mint p-4">
               <p className="font-black text-slate-950">كاميرا الموبايل وقراءة اللوحة ضمن الخطة المميزة</p>
               <p className="mt-2 text-sm leading-7 text-slate-600">
                 يمكنك حفظ رابط كاميرا IP الآن، لكن تشغيل QR كاميرا الموبايل وقراءة اللوحة CTK يتفعّل بعد الترقية.
               </p>
-              <a href="/center/settings?upgrade=1" className="mt-3 inline-flex rounded-lg bg-violet-600 px-4 py-2 text-xs font-black text-white hover:bg-violet-700">
+              <a href="/center/settings?upgrade=1" className="mt-3 inline-flex rounded-lg bg-petrol px-4 py-2 text-xs font-black text-white hover:bg-petrol-deep">
                 طلب ترقية للمميزة
               </a>
             </div>

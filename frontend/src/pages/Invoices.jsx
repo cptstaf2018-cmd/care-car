@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Download, Edit2, Filter, Printer, PlusCircle, Receipt, Search, Trash2, X, Zap } from 'lucide-react'
 import Layout from '../components/Layout'
+import StatCard from '../components/StatCard'
 import { getInvoices, updateInvoice, deleteInvoice } from '../api/invoices'
 
 const statusLabel = { paid: 'مدفوعة', unpaid: 'غير مدفوعة', partial: 'جزئية' }
@@ -126,9 +127,9 @@ export default function Invoices() {
       </div>
 
       <section className="mb-5 grid gap-3 md:grid-cols-3">
-        <SummaryCard title="الإجمالي" value={money(totals.total)} tone="slate" />
-        <SummaryCard title="المدفوع" value={money(totals.paid)} tone="emerald" />
-        <SummaryCard title="المتبقي" value={money(totals.remaining)} tone="rose" />
+        <StatCard icon={Receipt} label="الإجمالي" value={money(totals.total)} color="slate" />
+        <StatCard icon={Receipt} label="المدفوع" value={money(totals.paid)} color="green" fraction={totals.total ? totals.paid / totals.total : 0} />
+        <StatCard icon={Receipt} label="المتبقي" value={money(totals.remaining)} color="red" fraction={totals.total ? totals.remaining / totals.total : 0} />
       </section>
 
       <section className="surface mb-5 rounded-lg p-4">
@@ -296,22 +297,5 @@ function QuickButton({ onClick, icon: Icon, label }) {
       <Icon size={17} />
       {label}
     </button>
-  )
-}
-
-function SummaryCard({ title, value, tone }) {
-  const colors = {
-    slate: 'bg-slate-950 text-white',
-    emerald: 'bg-emerald-600 text-white',
-    rose: 'bg-rose-600 text-white',
-  }
-  return (
-    <div className={`rounded-lg p-5 shadow-xl ${colors[tone]}`}>
-      <div className="mb-3 flex items-center gap-2 text-white/75">
-        <Receipt size={18} />
-        <p className="text-sm font-bold">{title}</p>
-      </div>
-      <p className="text-2xl font-black">{value}</p>
-    </div>
   )
 }

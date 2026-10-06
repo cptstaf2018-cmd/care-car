@@ -1,4 +1,6 @@
 from datetime import date
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -6,7 +8,7 @@ from app.core.deps import get_current_user
 from app.models.tenant import Tenant
 from app.models.user import User, Role
 from app.services.reminder_service import REMINDER_INTERVAL_DAYS, get_due_reminders
-from app.services.report_service import get_daily_report, get_monthly_report
+from app.services.report_service import get_daily_report, get_monthly_report, get_sales_series
 
 router = APIRouter(prefix="/reports", tags=["reports"])
 
@@ -39,3 +41,13 @@ def maintenance_due(limit: int = Query(default=8, ge=1, le=50),
         "interval_days": tenant.reminder_days or REMINDER_INTERVAL_DAYS,
         "cars": [{k: v for k, v in r.items() if k not in ("is_pre_due", "is_due_today")} for r in serviced[:limit]],
     }
+
+
+@router.get("/series")
+def sales_series(period: Literal["weekly", "monthly", "yearly"] = Query(default="monthly"),
+                 year: int = Query(default=None, ge=2000, le=2100), month: int = Query(default=None, ge=1, le=12),
+                 db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    if user.role == Role.superadmin:
+        raise HTTPException(400, detail="Superadmin must specify tenant_id query parameter")
+    today = date.today()
+    return get_sales_series(db, user.tenant_id, period, year or today.year, month or today.month, today)

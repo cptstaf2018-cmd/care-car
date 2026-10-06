@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Car, Check, MessageCircle, Pencil, PlusCircle, Search, Trash2, Wrench, X } from 'lucide-react'
 import Layout from '../components/Layout'
+import StatCard from '../components/StatCard'
 import { getCars, createCar, updateCar, deleteCar } from '../api/cars'
 
 const emptyForm = { plate_number: '', owner_name: '', phone: '', car_type: '' }
@@ -78,8 +79,8 @@ export default function Cars() {
       {/* Stats */}
       <section className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
         <StatCard label="إجمالي السيارات" value={total} color="slate" icon={Car} />
-        <StatCard label="عملاء واتساب" value={withPhone} color="emerald" icon={MessageCircle} />
-        <StatCard label="نتائج البحث" value={search ? cars.length : total} color="cyan" icon={Search} />
+        <StatCard label="عملاء واتساب" value={withPhone} color="green" icon={MessageCircle} />
+        <StatCard label="نتائج البحث" value={search ? cars.length : total} color="blue" icon={Search} />
       </section>
 
       {/* Add car form */}
@@ -255,22 +256,5 @@ export default function Cars() {
         </div>
       )}
     </Layout>
-  )
-}
-
-function StatCard({ label, value, color, icon: Icon }) {
-  const colors = {
-    slate: 'bg-slate-950 text-white',
-    emerald: 'bg-emerald-600 text-white',
-    cyan: 'bg-cyan-500 text-white',
-  }
-  return (
-    <div className={`rounded-xl p-4 shadow-md ${colors[color]}`}>
-      <div className="mb-2 flex items-center gap-2 opacity-80">
-        <Icon size={16} />
-        <p className="text-xs font-bold">{label}</p>
-      </div>
-      <p className="text-2xl font-black">{value ?? '—'}</p>
-    </div>
   )
 }

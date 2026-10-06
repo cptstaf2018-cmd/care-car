@@ -1,0 +1,24 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Frontend (Vite)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "frontend"],
+      "port": 5173
+    },
+    {
+      "name": "Backend (FastAPI)",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"],
+      "cwd": "backend",
+      "port": 8000
+    },
+    {
+      "name": "Backend (dev sqlite)",
+      "runtimeExecutable": "C:/Users/saad/AppData/Local/Temp/claude/C--Users-saad-Desktop----------cear-car/415be5d1-de0c-430d-8f14-7dd0c8913566/scratchpad/venv/Scripts/python.exe",
+      "runtimeArgs": ["C:/Users/saad/AppData/Local/Temp/claude/C--Users-saad-Desktop----------cear-car/415be5d1-de0c-430d-8f14-7dd0c8913566/scratchpad/run_backend.py"],
+      "port": 8000
+    }
+  ]
+}

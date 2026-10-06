@@ -4,28 +4,37 @@ import { NavLink } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Activity, BarChart3, Building2, Car, ChevronLeft, ChevronRight, CreditCard,
-  Gauge, LogOut, Package, PlusCircle, Receipt, Settings, ShieldCheck, Sparkles
+  Gauge, LogOut, Megaphone, Package, Receipt, Settings, ShieldCheck, Sparkles,
 } from 'lucide-react'
 import { useAuthStore } from '../store/auth'
 import { getCenterSettings } from '../api/settings'
+import { getInvoices } from '../api/invoices'
+import { getInventory } from '../api/inventory'
+import { getMaintenanceDue } from '../api/reports'
 import { displayUserContact } from '../utils/displayIdentity'
 import { PLAN_RANK } from '../constants/plans'
+import { CCBadge } from './BrandMark'
+import StartKey from './shell/StartKey'
+import TankGauge from './shell/TankGauge'
+import { tankFor } from './shell/tank'
+
+const OIL_WARNING_DAYS = 5
+const MAINTENANCE_FETCH_LIMIT = 50
 
 const centerGroups = [
   {
     title: 'التشغيل',
     links: [
       { to: '/center', label: 'الرئيسية', icon: Gauge },
-      { to: '/center/services/new', label: 'خدمة سريعة', icon: PlusCircle },
-      { to: '/center/cars', label: 'سيارات الزبائن', icon: Car },
+      { to: '/center/cars', label: 'سيارات الزبائن', icon: Car, badge: 'oilDue' },
     ],
   },
   {
     title: 'الإدارة',
     links: [
       { to: '/center/invoices', label: 'الفواتير', icon: Receipt },
-      { to: '/center/debts', label: 'الديون', icon: CreditCard },
-      { to: '/center/inventory', label: 'المخزون', icon: Package },
+      { to: '/center/debts', label: 'الديون', icon: CreditCard, badge: 'debts', tone: 'alert' },
+      { to: '/center/inventory', label: 'المخزون', icon: Package, badge: 'lowStock' },
       { to: '/center/reports', label: 'التقارير', icon: BarChart3 },
       { to: '/center/settings', label: 'إعدادات المركز', icon: Settings },
     ],
@@ -40,99 +49,147 @@ const adminGroups = [
       { to: '/admin/monitoring', label: 'مراقبة المراكز', icon: Activity },
       { to: '/admin/tenants', label: 'الشركات والمراكز', icon: Building2 },
       { to: '/admin/subscriptions', label: 'الاشتراكات', icon: CreditCard },
+      { to: '/admin/ads', label: 'إعلانات المنصة', icon: Megaphone },
     ],
   },
 ]
 
-function SidebarContent({ collapsed, setCollapsed, onClose }) {
+/** Live counts that light the warning lamps next to menu items (shares query keys with the dashboard). */
+function useWarningCounts(enabled, isOilCenter) {
+  const invoices = useQuery({ queryKey: ['invoices'], queryFn: () => getInvoices().then((r) => r.data), enabled })
+  const inventory = useQuery({ queryKey: ['inventory'], queryFn: () => getInventory().then((r) => r.data), enabled })
+  const due = useQuery({
+    queryKey: ['maintenance-due'],
+    queryFn: () => getMaintenanceDue(MAINTENANCE_FETCH_LIMIT).then((r) => r.data),
+    enabled: enabled && isOilCenter,
+  })
+  return {
+    debts: (invoices.data || []).filter((inv) => inv.status !== 'paid').length,
+    lowStock: (inventory.data || []).filter((item) => item.low_stock).length,
+    oilDue: (due.data?.cars || []).filter((car) => car.days_left <= OIL_WARNING_DAYS).length,
+  }
+}
+
+function NavItem({ link, count, collapsed, onClick }) {
+  return (
+    <NavLink
+      to={link.to}
+      end
+      onClick={onClick}
+      title={collapsed ? link.label : undefined}
+      className={({ isActive }) =>
+        `group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oil ${
+          isActive ? 'bg-petrol text-mint' : 'text-gauge-light hover:bg-petrol/60 hover:text-mint'
+        }`
+      }
+    >
+      {({ isActive }) => (
+        <>
+          <span
+            aria-hidden="true"
+            className={`absolute inset-y-2 end-0 w-1 rounded-full transition-all ${isActive ? 'bg-oil shadow-[0_0_10px_2px_rgba(240,163,58,0.7)]' : 'bg-transparent'}`}
+          />
+          <link.icon size={19} strokeWidth={2.2} className={isActive ? 'text-oil' : ''} aria-hidden="true" />
+          {!collapsed && <span className="font-bold">{link.label}</span>}
+          {count > 0 && (
+            <span
+              className={`${collapsed ? 'absolute end-1 top-1' : 'ms-auto'} grid min-w-[20px] place-items-center rounded-full px-1.5 text-[11px] font-bold leading-5 ${
+                link.tone === 'alert' ? 'bg-alert text-white shadow-[0_0_10px_rgba(229,83,61,0.6)]' : 'bg-oil text-petrol-deep'
+              }`}
+            >
+              {count}
+            </span>
+          )}
+        </>
+      )}
+    </NavLink>
+  )
+}
+
+function SidebarContent({ collapsed, setCollapsed, onClose, showStart = true }) {
   const { user, logout } = useAuthStore()
-  const groups = user?.role === 'superadmin' ? adminGroups : centerGroups
+  const isAdmin = user?.role === 'superadmin'
+  const groups = isAdmin ? adminGroups : centerGroups
   const { data: center } = useQuery({
     queryKey: ['center-settings', 'sidebar'],
-    queryFn: () => getCenterSettings().then(r => r.data),
-    enabled: user?.role !== 'superadmin',
+    queryFn: () => getCenterSettings().then((r) => r.data),
+    enabled: !isAdmin,
   })
+  const counts = useWarningCounts(!isAdmin, (center?.specialty || 'quick_service') === 'quick_service')
   const centerName = center?.name || 'تشغيل المركز'
-  const isAdmin = user?.role === 'superadmin'
   const userContact = displayUserContact(user, center)
+  const tank = isAdmin ? null : tankFor(center)
   const canUpgrade = !isAdmin && center?.plan && (PLAN_RANK[center.plan] || 1) < PLAN_RANK.enterprise
+  const ToggleIcon = collapsed ? ChevronLeft : ChevronRight
 
   return (
-    <div className="flex h-full flex-col border-l border-slate-900 bg-[#08111f] text-white">
-      <div className="border-b border-white/10 p-5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-cyan-400 text-lg font-black text-slate-950 shadow-lg shadow-cyan-500/20">
-              {!isAdmin && center?.logo_url ? (
-                <img src={center.logo_url} alt="" className="h-full w-full bg-white object-contain p-1" />
-              ) : (
-                'CC'
-              )}
-            </div>
-            {!collapsed && (
-              <div>
-                <h2 className="max-w-[170px] truncate font-black text-white">{isAdmin ? 'care-car-saas' : centerName}</h2>
-                <p className="mt-1 text-xs text-slate-400">{isAdmin ? 'لوحة السوبر أدمن' : 'ERP خدمات السيارات'}</p>
-              </div>
-            )}
-          </div>
-          {setCollapsed ? (
-            <button onClick={() => setCollapsed(v => !v)} className="rounded-md border border-white/10 p-1.5 text-slate-300 hover:bg-white/10">
-              {collapsed ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-            </button>
+    <div className="flex h-full flex-col bg-petrol-deep text-mint">
+      <div className="flex items-center justify-between gap-3 border-b border-petrol-line/60 p-4">
+        <div className="flex min-w-0 items-center gap-3">
+          {!isAdmin && center?.logo_url ? (
+            <img src={center.logo_url} alt="" className="h-10 w-10 shrink-0 rounded-[28%] bg-white object-contain p-1" />
           ) : (
-            <button onClick={onClose} className="rounded-md border border-white/10 p-1.5 text-slate-300 hover:bg-white/10">
-              <ChevronRight size={16} />
-            </button>
+            <CCBadge size={40} />
+          )}
+          {!collapsed && (
+            <div className="min-w-0">
+              <h2 className="truncate font-bold">{isAdmin ? 'كير كار' : centerName}</h2>
+              <p className="text-xs text-gauge">{isAdmin ? 'لوحة مدير المنصة' : 'لوحة القيادة'}</p>
+            </div>
           )}
         </div>
+        <button
+          onClick={setCollapsed ? () => setCollapsed((v) => !v) : onClose}
+          aria-label={collapsed ? 'وسّع القائمة' : 'صغّر القائمة'}
+          className="rounded-lg border border-petrol-line p-1.5 text-gauge-light hover:bg-petrol focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oil"
+        >
+          <ToggleIcon size={16} />
+        </button>
       </div>
 
-      <nav className="flex-1 space-y-5 overflow-y-auto p-4">
-        {groups.map(group => (
+      {!isAdmin && showStart && (
+        <div className="grid place-items-center border-b border-petrol-line/60 py-4">
+          <StartKey size={collapsed ? 'sm' : 'md'} onClick={onClose} />
+        </div>
+      )}
+
+      <nav className="flex-1 space-y-5 overflow-y-auto p-3 [scrollbar-color:#1D5A5E_transparent] [scrollbar-width:thin]" aria-label="الأقسام">
+        {groups.map((group) => (
           <div key={group.title}>
-            {!collapsed && <p className="mb-2 px-3 text-xs font-bold text-slate-500">{group.title}</p>}
+            {!collapsed && <p className="mb-2 px-3 text-xs font-bold text-gauge">{group.title}</p>}
             <div className="space-y-1">
-              {group.links.map(link => (
-                <NavLink key={link.to} to={link.to} end
-                  onClick={onClose}
-                  className={({ isActive }) =>
-                    `group relative flex items-center gap-3 rounded-lg px-3 py-3 text-sm transition-all ${
-                      isActive
-                        ? 'bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/20'
-                        : 'text-slate-300 hover:bg-white/10 hover:text-white'
-                    }`
-                  }>
-                  <link.icon size={19} strokeWidth={2.3} />
-                  {!collapsed && <span className="font-bold">{link.label}</span>}
-                </NavLink>
+              {group.links.map((link) => (
+                <NavItem key={link.to} link={link} count={link.badge ? counts[link.badge] : 0} collapsed={collapsed} onClick={onClose} />
               ))}
             </div>
           </div>
         ))}
       </nav>
 
-      <div className="border-t border-white/10 p-4">
+      <div className="space-y-3 border-t border-petrol-line/60 p-3">
+        {tank && !collapsed && <TankGauge {...tank} />}
         {canUpgrade && !collapsed && (
           <NavLink
             to="/center/settings?upgrade=1"
             onClick={onClose}
-            className="mb-3 flex items-center justify-center gap-2 rounded-lg bg-cyan-400 px-3 py-3 text-sm font-black text-slate-950 shadow-lg shadow-cyan-500/20 transition hover:bg-cyan-300"
+            className="flex items-center justify-center gap-2 rounded-full bg-oil px-3 py-2.5 text-sm font-bold text-petrol-deep transition hover:bg-oil-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint"
           >
-            <Sparkles size={16} />
-            ترقية الاشتراك
+            <Sparkles size={16} aria-hidden="true" />
+            عبّي الخزان: ترقية الاشتراك
           </NavLink>
         )}
         {!collapsed && (
-          <div className="mb-3 rounded-lg border border-white/10 bg-white/[0.04] p-3">
-            {user?.role !== 'superadmin' && <p className="mb-1 truncate text-xs font-bold text-cyan-200">{centerName}</p>}
+          <div className="rounded-xl bg-petrol/70 p-3">
             <p className="truncate text-sm font-bold" dir="ltr">{userContact}</p>
-            <p className="mt-1 text-xs text-slate-400">{user?.role === 'superadmin' ? 'مدير المنصة' : 'حساب مركز'}</p>
+            <p className="mt-0.5 text-xs text-gauge">{isAdmin ? 'مدير المنصة' : 'مدير المركز'}</p>
           </div>
         )}
-        <button onClick={logout} className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 py-3 text-sm font-bold text-slate-300 transition hover:border-rose-300/50 hover:bg-rose-500/10 hover:text-rose-100">
-          <LogOut size={17} />
-          {!collapsed && 'تسجيل الخروج'}
+        <button
+          onClick={logout}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-petrol-line py-2.5 text-sm font-bold text-gauge-light transition hover:border-alert/60 hover:bg-alert/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oil"
+        >
+          <LogOut size={17} aria-hidden="true" />
+          {!collapsed && 'إطفاء المحرك (خروج)'}
         </button>
       </div>
     </div>
@@ -144,16 +201,14 @@ export default function Sidebar({ mobileOpen, onClose }) {
 
   return (
     <>
-      {/* Desktop: always visible, collapsible */}
       <motion.aside
-        animate={{ width: collapsed ? 88 : 276 }}
+        animate={{ width: collapsed ? 88 : 288 }}
         transition={{ duration: 0.22 }}
-        className="sticky top-0 hidden h-screen shrink-0 lg:block"
+        className="sticky top-0 hidden h-screen shrink-0 border-l border-petrol-line/40 lg:block"
       >
         <SidebarContent collapsed={collapsed} setCollapsed={setCollapsed} />
       </motion.aside>
 
-      {/* Mobile: slide-in overlay */}
       <AnimatePresence>
         {mobileOpen && (
           <>
@@ -173,7 +228,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
               transition={{ type: 'tween', duration: 0.22 }}
               className="fixed right-0 top-0 z-50 h-full w-72 lg:hidden"
             >
-              <SidebarContent onClose={onClose} />
+              <SidebarContent onClose={onClose} showStart={false} />
             </motion.aside>
           </>
         )}

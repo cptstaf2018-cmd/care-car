@@ -113,7 +113,7 @@ export default function FloatingAssistant({ center }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-5 left-5 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-slate-950 text-white shadow-2xl shadow-slate-900/25 ring-4 ring-white transition hover:-translate-y-0.5 hover:bg-cyan-500"
+        className="fixed bottom-24 left-5 z-40 lg:bottom-5 flex h-14 w-14 items-center justify-center rounded-full bg-slate-950 text-white shadow-2xl shadow-slate-900/25 ring-4 ring-white transition hover:-translate-y-0.5 hover:bg-cyan-500"
         aria-label="مساعد المركز"
       >
         <MessageCircle size={25} />
@@ -123,7 +123,7 @@ export default function FloatingAssistant({ center }) {
       </button>
 
       {open && (
-        <div className="fixed bottom-24 left-5 z-50 w-[min(360px,calc(100vw-32px))] overflow-hidden rounded-xl border border-slate-200 bg-white text-right shadow-2xl" dir="rtl">
+        <div className="fixed bottom-40 left-5 z-50 lg:bottom-24 w-[min(360px,calc(100vw-32px))] overflow-hidden rounded-xl border border-slate-200 bg-white text-right shadow-2xl" dir="rtl">
           <div className="flex items-center justify-between bg-slate-950 px-4 py-3 text-white">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-400 text-slate-950">
