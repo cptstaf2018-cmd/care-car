@@ -11,7 +11,6 @@ import { getCenterSettings } from '../api/settings'
 import { getInvoices } from '../api/invoices'
 import { getInventory } from '../api/inventory'
 import { getMaintenanceDue } from '../api/reports'
-import { displayUserContact } from '../utils/displayIdentity'
 import { PLAN_RANK } from '../constants/plans'
 import { CCBadge } from './BrandMark'
 import StartKey from './shell/StartKey'
@@ -117,14 +116,13 @@ function SidebarContent({ collapsed, setCollapsed, onClose, showStart = true }) 
   })
   const counts = useWarningCounts(!isAdmin, (center?.specialty || 'quick_service') === 'quick_service')
   const centerName = center?.name || 'تشغيل المركز'
-  const userContact = displayUserContact(user, center)
   const tank = isAdmin ? null : tankFor(center)
   const canUpgrade = !isAdmin && center?.plan && (PLAN_RANK[center.plan] || 1) < PLAN_RANK.enterprise
   const ToggleIcon = collapsed ? ChevronLeft : ChevronRight
 
   return (
-    <div className="flex h-full flex-col bg-petrol-deep text-mint">
-      <div className="flex items-center justify-between gap-3 border-b border-petrol-line/60 p-4">
+    <div className="flex h-full min-h-0 flex-col bg-petrol-deep text-mint">
+      <div className="flex items-center justify-between gap-3 border-b border-petrol-line/60 p-3">
         <div className="flex min-w-0 items-center gap-3">
           {!isAdmin && center?.logo_url ? (
             <img src={center.logo_url} alt="" className="h-10 w-10 shrink-0 rounded-[28%] bg-white object-contain p-1" />
@@ -148,12 +146,12 @@ function SidebarContent({ collapsed, setCollapsed, onClose, showStart = true }) 
       </div>
 
       {!isAdmin && showStart && (
-        <div className="grid place-items-center border-b border-petrol-line/60 py-4">
+        <div className="grid place-items-center border-b border-petrol-line/60 py-3">
           <StartKey size={collapsed ? 'sm' : 'md'} onClick={onClose} />
         </div>
       )}
 
-      <nav className="flex-1 space-y-5 overflow-y-auto p-3 [scrollbar-color:#1D5A5E_transparent] [scrollbar-width:thin]" aria-label="الأقسام">
+      <nav className="min-h-0 flex-1 space-y-4 overflow-y-auto p-3 [scrollbar-color:#1D5A5E_transparent] [scrollbar-width:thin]" aria-label="الأقسام">
         {groups.map((group) => (
           <div key={group.title}>
             {!collapsed && <p className="mb-2 px-3 text-xs font-bold text-gauge">{group.title}</p>}
@@ -166,27 +164,21 @@ function SidebarContent({ collapsed, setCollapsed, onClose, showStart = true }) 
         ))}
       </nav>
 
-      <div className="space-y-3 border-t border-petrol-line/60 p-3">
+      <div className="space-y-2 border-t border-petrol-line/60 p-3">
         {tank && !collapsed && <TankGauge {...tank} />}
         {canUpgrade && !collapsed && (
           <NavLink
             to="/center/settings?upgrade=1"
             onClick={onClose}
-            className="flex items-center justify-center gap-2 rounded-full bg-oil px-3 py-2.5 text-sm font-bold text-petrol-deep transition hover:bg-oil-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint"
+            className="flex items-center justify-center gap-2 rounded-full bg-oil px-3 py-2 text-sm font-bold text-petrol-deep transition hover:bg-oil-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mint"
           >
             <Sparkles size={16} aria-hidden="true" />
             عبّي الخزان: ترقية الاشتراك
           </NavLink>
         )}
-        {!collapsed && (
-          <div className="rounded-xl bg-petrol/70 p-3">
-            <p className="truncate text-sm font-bold" dir="ltr">{userContact}</p>
-            <p className="mt-0.5 text-xs text-gauge">{isAdmin ? 'مدير المنصة' : 'مدير المركز'}</p>
-          </div>
-        )}
         <button
           onClick={logout}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-petrol-line py-2.5 text-sm font-bold text-gauge-light transition hover:border-alert/60 hover:bg-alert/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oil"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-petrol-line py-2 text-sm font-bold text-gauge-light transition hover:border-alert/60 hover:bg-alert/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oil"
         >
           <LogOut size={17} aria-hidden="true" />
           {!collapsed && 'إطفاء المحرك (خروج)'}
@@ -202,6 +194,7 @@ export default function Sidebar({ mobileOpen, onClose }) {
   return (
     <>
       <motion.aside
+        initial={false}
         animate={{ width: collapsed ? 88 : 288 }}
         transition={{ duration: 0.22 }}
         className="sticky top-0 hidden h-screen shrink-0 border-l border-petrol-line/40 lg:block"

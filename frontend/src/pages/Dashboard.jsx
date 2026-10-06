@@ -44,57 +44,61 @@ export default function Dashboard() {
 
   return (
     <Layout compact>
-      <div className="mx-auto grid max-w-3xl gap-5 pb-10">
-        <InstrumentCluster
-          centerName={centerName}
-          daily={dailyQuery.data}
-          monthly={monthlyQuery.data}
-          warnings={{ oilDue: isOilCenter ? dueCars.length : undefined, lowStock: lowStockCount, debts: unpaidCount }}
-        />
+      <div className="grid items-start gap-5 pb-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+        <div className="lg:sticky lg:top-20">
+          <InstrumentCluster
+            centerName={centerName}
+            daily={dailyQuery.data}
+            monthly={monthlyQuery.data}
+            warnings={{ oilDue: isOilCenter ? dueCars.length : undefined, lowStock: lowStockCount, debts: unpaidCount }}
+          />
+        </div>
 
-        {isOilCenter && (
-          <section aria-labelledby="due-title" className="grid gap-3">
-            <div className="flex items-baseline justify-between">
-              <h2 id="due-title" className="text-lg font-bold text-petrol-deep">موعدهم قرّب</h2>
-              <Link to="/center/cars" className="text-sm font-bold text-petrol underline underline-offset-4">كل السيارات</Link>
-            </div>
-            <DueCarsList
-              cars={dueCars.slice(0, DUE_LIST_SIZE)}
-              intervalDays={dueQuery.data?.interval_days || 20}
-              centerName={centerName}
-              loading={dueQuery.isLoading}
-            />
-          </section>
-        )}
-
-        <section aria-labelledby="recent-title" className="grid gap-3">
-          <div className="flex items-baseline justify-between">
-            <h2 id="recent-title" className="text-lg font-bold text-petrol-deep">آخر الوصولات</h2>
-            <Link to="/center/invoices" className="text-sm font-bold text-petrol underline underline-offset-4">كلها</Link>
-          </div>
-          {invoices.length === 0 ? (
-            <p className="rounded-3xl border border-dashed border-mint-dim bg-white p-6 text-center text-sm text-mint-ink">
-              لسا ما كو وصولات. أول خدمة تسجّلها تطلع هنا.
-            </p>
-          ) : (
-            <ul className="grid gap-2">
-              {invoices.slice(0, RECENT_INVOICES).map((inv) => (
-                <li key={inv.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-2xl bg-white p-3">
-                  <span className="text-sm font-bold text-gauge" dir="ltr">#{inv.id}</span>
-                  <div>
-                    <p className="text-sm font-bold tabular-nums text-petrol-deep">{Number(inv.amount).toLocaleString('en-US')} د.ع</p>
-                    <p className="text-xs text-mint-ink">{inv.invoice_date}</p>
-                  </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-bold ${inv.status === 'paid' ? 'bg-mint text-petrol' : 'bg-oil-light text-oil-dark'}`}>
-                    {inv.status === 'paid' ? 'مدفوع' : 'دين'}
-                  </span>
-                </li>
-              ))}
-            </ul>
+        <div className="grid gap-5">
+          {isOilCenter && (
+            <section aria-labelledby="due-title" className="grid gap-3">
+              <div className="flex items-baseline justify-between">
+                <h2 id="due-title" className="text-lg font-bold text-petrol-deep">موعدهم قرّب</h2>
+                <Link to="/center/cars" className="text-sm font-bold text-petrol underline underline-offset-4">كل السيارات</Link>
+              </div>
+              <DueCarsList
+                cars={dueCars.slice(0, DUE_LIST_SIZE)}
+                intervalDays={dueQuery.data?.interval_days || 20}
+                centerName={centerName}
+                loading={dueQuery.isLoading}
+              />
+            </section>
           )}
-        </section>
 
-        {ads.length > 0 && <AdStrip ads={ads} />}
+          <section aria-labelledby="recent-title" className="grid gap-3">
+            <div className="flex items-baseline justify-between">
+              <h2 id="recent-title" className="text-lg font-bold text-petrol-deep">آخر الوصولات</h2>
+              <Link to="/center/invoices" className="text-sm font-bold text-petrol underline underline-offset-4">كلها</Link>
+            </div>
+            {invoices.length === 0 ? (
+              <p className="rounded-3xl border border-dashed border-mint-dim bg-white p-6 text-center text-sm text-mint-ink">
+                لسا ما كو وصولات. أول خدمة تسجّلها تطلع هنا.
+              </p>
+            ) : (
+              <ul className="grid gap-2">
+                {invoices.slice(0, RECENT_INVOICES).map((inv) => (
+                  <li key={inv.id} className="grid grid-cols-[auto_1fr_auto] items-center gap-3 rounded-2xl bg-white p-3">
+                    <span className="text-sm font-bold text-gauge" dir="ltr">#{inv.id}</span>
+                    <div>
+                      <p className="text-sm font-bold tabular-nums text-petrol-deep">{Number(inv.amount).toLocaleString('en-US')} د.ع</p>
+                      <p className="text-xs text-mint-ink">{inv.invoice_date}</p>
+                    </div>
+                    <span className={`rounded-full px-3 py-1 text-xs font-bold ${inv.status === 'paid' ? 'bg-mint text-petrol' : 'bg-oil-light text-oil-dark'}`}>
+                      {inv.status === 'paid' ? 'مدفوع' : 'دين'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          {ads.length > 0 && <AdStrip ads={ads} />}
+        </div>
       </div>
     </Layout>
   )

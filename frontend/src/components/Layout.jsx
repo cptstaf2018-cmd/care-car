@@ -44,7 +44,7 @@ export default function Layout({ children, hideHeader = false, compact = false }
       <main className="min-w-0 flex-1 overflow-x-hidden pb-24 lg:pb-0">
         {!hideHeader && (
           <header className="sticky top-0 z-10 border-b border-mint-dim bg-[#EEF4F2]/90 backdrop-blur">
-            <div className="flex items-center justify-between gap-3 px-4 py-3 lg:px-7">
+            <div className="mx-auto flex w-full max-w-[1320px] items-center justify-between gap-3 px-4 py-3 lg:px-7">
               <div className="flex items-center gap-3">
                 {isAdmin && (
                   <button
@@ -74,7 +74,7 @@ export default function Layout({ children, hideHeader = false, compact = false }
             <Menu size={20} />
           </button>
         )}
-        <div className={`px-4 lg:px-7 ${compact ? 'py-3 lg:py-4' : 'py-5 lg:py-6'}`}>{children}</div>
+        <div className={`mx-auto w-full max-w-[1320px] px-4 lg:px-7 ${compact ? 'py-3 lg:py-4' : 'py-5 lg:py-6'}`}>{children}</div>
       </main>
       {!isAdmin && <MobileTabBar onMore={() => setSidebarOpen(true)} />}
       {!isAdmin && <FloatingAssistant center={center} />}
