@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AlertTriangle, ArrowDownUp, Check, PackagePlus, Pencil, ReceiptText, Search, SlidersHorizontal, Trash2, X } from 'lucide-react'
 import Layout from '../components/Layout'
+import FuelLevel from '../components/cluster/FuelLevel'
 import UpgradePrompt from '../components/UpgradePrompt'
 import { getInventory, createInventoryItem, updateInventoryItem, deleteInventoryItem, addInventoryReceipt } from '../api/inventory'
 import { getCenterSettings } from '../api/settings'
@@ -341,125 +342,139 @@ export default function Inventory() {
         </div>
       </section>
 
-      <section className="surface overflow-hidden rounded-lg">
-        <div className="overflow-x-auto">
-          <table className="min-w-[1100px] w-full text-right text-sm">
-            <thead className="bg-slate-50 text-slate-500">
-              <tr>
-                {['المنتج', 'الكمية', 'شراء', 'بيع', 'الربح', 'التنبيه', 'المورد', ''].map(h => (
-                  <th key={h} className="border-b border-slate-200 px-4 py-3 font-black">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredItems.map(item => {
-                const profit = Number(item.sale_price || 0) - Number(item.unit_cost || 0)
-                const isEditing = editingId === item.id
-                return (
-                  <tr key={item.id} className={`border-b border-slate-100 last:border-0 ${isEditing ? 'bg-amber-50/60' : item.low_stock ? 'bg-rose-50/55' : 'bg-white'}`}>
-                    <td className="px-4 py-4">
-                      {isEditing ? (
-                        <div className="space-y-2">
-                          <input value={editForm.oil_type} onChange={e => setEditForm({ ...editForm, oil_type: e.target.value })}
-                            placeholder="اسم المنتج"
-                            className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 font-black text-slate-950 outline-none focus:ring-2 focus:ring-amber-200" />
-                          <input value={editForm.category} onChange={e => setEditForm({ ...editForm, category: e.target.value })}
-                            placeholder="التصنيف"
-                            className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 outline-none focus:border-amber-300" />
-                        </div>
-                      ) : (
-                        <>
-                          <p className="font-black text-slate-950">{item.oil_type}</p>
-                          <p className="mt-1 text-xs text-slate-500">{item.category || 'بدون تصنيف'}</p>
-                        </>
-                      )}
-                    </td>
-                    <td className="px-4 py-4">
-                      <input type="number" placeholder={money(item.quantity)}
-                        value={qtyInputs[item.id] ?? ''}
-                        onChange={e => setQtyInputs({ ...qtyInputs, [item.id]: e.target.value })}
-                        onBlur={() => {
-                          const val = qtyInputs[item.id]
-                          if (val) update.mutate({ id: item.id, data: { quantity: Number(val) } }, {
-                            onSuccess: () => setQtyInputs(prev => { const next = { ...prev }; delete next[item.id]; return next }),
-                          })
-                        }}
-                        className="w-24 rounded-lg border border-slate-200 px-3 py-2 font-black outline-none focus:border-cyan-400" />
-                    </td>
-                    <td className="px-4 py-4">
-                      <input type="number" placeholder={item.unit_cost ? money(item.unit_cost) : '—'}
-                        value={costInputs[item.id] ?? ''}
-                        onChange={e => setCostInputs({ ...costInputs, [item.id]: e.target.value })}
-                        onBlur={() => {
-                          const val = costInputs[item.id]
-                          if (val !== undefined && val !== '') update.mutate({ id: item.id, data: { unit_cost: Number(val) } }, {
-                            onSuccess: () => setCostInputs(prev => { const next = { ...prev }; delete next[item.id]; return next }),
-                          })
-                        }}
-                        className="w-24 rounded-lg border border-slate-200 px-3 py-2 font-bold text-slate-700 outline-none focus:border-cyan-400" />
-                    </td>
-                    <td className="px-4 py-4">
-                      <input type="number" placeholder={item.sale_price ? money(item.sale_price) : '—'}
-                        value={saleInputs[item.id] ?? ''}
-                        onChange={e => setSaleInputs({ ...saleInputs, [item.id]: e.target.value })}
-                        onBlur={() => {
-                          const val = saleInputs[item.id]
-                          if (val !== undefined && val !== '') update.mutate({ id: item.id, data: { sale_price: Number(val) } }, {
-                            onSuccess: () => setSaleInputs(prev => { const next = { ...prev }; delete next[item.id]; return next }),
-                          })
-                        }}
-                        className="w-24 rounded-lg border border-slate-200 px-3 py-2 font-bold text-slate-950 outline-none focus:border-cyan-400" />
-                    </td>
-                    <td className={`px-4 py-4 font-black ${profit > 0 ? 'text-emerald-700' : 'text-slate-400'}`}>{profit > 0 ? `${money(profit)} IQD` : '-'}</td>
-                    <td className="px-4 py-4">
-                      <span className={`rounded-full px-2.5 py-1 text-xs font-black ${item.low_stock ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                        {item.low_stock ? `ناقص <= ${money(item.min_threshold)}` : `مستقر > ${money(item.min_threshold)}`}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      {isEditing ? (
-                        <input value={editForm.supplier_name} onChange={e => setEditForm({ ...editForm, supplier_name: e.target.value })}
-                          placeholder="المورد"
-                          className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-amber-300" />
-                      ) : (
-                        <span className="font-bold text-slate-600">{item.supplier_name || '-'}</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-4">
-                      {isEditing ? (
-                        <div className="flex gap-2">
-                          <button onClick={() => editItem.mutate({ id: item.id, data: editForm })}
-                            disabled={!editForm.oil_type || editItem.isPending}
-                            className="flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-black text-white disabled:opacity-50 hover:bg-emerald-700">
-                            <Check size={12} /> حفظ
-                          </button>
-                          <button onClick={() => setEditingId(null)}
-                            className="flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50">
-                            <X size={12} /> إلغاء
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex gap-2">
-                          <button onClick={() => startEdit(item)}
-                            className="flex items-center gap-1 rounded-lg bg-amber-50 px-3 py-2 text-xs font-black text-amber-800 hover:bg-amber-100">
-                            <Pencil size={12} /> تعديل
-                          </button>
-                          <button onClick={() => confirmDelete(item)} disabled={deleteItem.isPending}
-                            className="flex items-center gap-1 rounded-lg bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 hover:bg-rose-100 disabled:opacity-50">
-                            <Trash2 size={12} /> حذف
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+      <section aria-label="مواد المخزون" className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {filteredItems.map(item => {
+          const profit = Number(item.sale_price || 0) - Number(item.unit_cost || 0)
+          const isEditing = editingId === item.id
+          return (
+            <article
+              key={item.id}
+              className={`rounded-3xl border p-4 transition-colors ${
+                isEditing ? 'border-oil bg-oil-light/40' : item.low_stock ? 'border-alert/50 bg-white shadow-[0_0_0_3px_rgba(229,83,61,0.08)]' : 'border-mint-dim bg-white'
+              }`}
+            >
+              <header className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <input value={editForm.oil_type} onChange={e => setEditForm({ ...editForm, oil_type: e.target.value })}
+                        placeholder="اسم المنتج"
+                        className="w-full rounded-xl border border-oil bg-white px-3 py-2 font-bold text-petrol-deep outline-none focus:ring-2 focus:ring-oil/40" />
+                      <input value={editForm.category} onChange={e => setEditForm({ ...editForm, category: e.target.value })}
+                        placeholder="التصنيف"
+                        className="w-full rounded-xl border border-mint-dim bg-white px-3 py-2 text-xs text-petrol outline-none focus:border-oil" />
+                    </div>
+                  ) : (
+                    <>
+                      <h3 className="truncate font-bold text-petrol-deep">{item.oil_type}</h3>
+                      <p className="mt-0.5 text-xs text-mint-ink">{item.category || 'بدون تصنيف'}</p>
+                    </>
+                  )}
+                </div>
+                <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${item.low_stock ? 'bg-alert/10 text-alert' : 'bg-mint text-petrol'}`}>
+                  <span aria-hidden="true" className={`h-2 w-2 rounded-full ${item.low_stock ? 'animate-pulse bg-alert' : 'bg-oil'}`} />
+                  {item.low_stock ? 'ناقص' : 'مستقر'}
+                </span>
+              </header>
+
+              <div className="mt-4 flex items-end justify-between">
+                <div>
+                  <p className="text-xs text-mint-ink">المتوفر</p>
+                  <p className="text-3xl font-bold tabular-nums text-petrol-deep">{money(item.quantity)}</p>
+                </div>
+                <p className="text-xs text-mint-ink">مباع {money(item.total_sold)}</p>
+              </div>
+              <div className="mt-2">
+                <FuelLevel quantity={item.quantity} threshold={item.min_threshold} />
+                <p className="mt-1 text-xs text-mint-ink">الحد الأدنى {money(item.min_threshold)}، والعلامة الحمراء تبين مكانه.</p>
+              </div>
+
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <label className="grid gap-1 text-xs font-medium text-mint-ink">
+                  غيّر الكمية
+                  <input type="number" placeholder={money(item.quantity)}
+                    value={qtyInputs[item.id] ?? ''}
+                    onChange={e => setQtyInputs({ ...qtyInputs, [item.id]: e.target.value })}
+                    onBlur={() => {
+                      const val = qtyInputs[item.id]
+                      if (val) update.mutate({ id: item.id, data: { quantity: Number(val) } }, {
+                        onSuccess: () => setQtyInputs(prev => { const next = { ...prev }; delete next[item.id]; return next }),
+                      })
+                    }}
+                    className="w-full rounded-xl border border-mint-dim px-2 py-2 font-bold text-petrol-deep outline-none focus:border-oil" />
+                </label>
+                <label className="grid gap-1 text-xs font-medium text-mint-ink">
+                  شراء
+                  <input type="number" placeholder={item.unit_cost ? money(item.unit_cost) : '—'}
+                    value={costInputs[item.id] ?? ''}
+                    onChange={e => setCostInputs({ ...costInputs, [item.id]: e.target.value })}
+                    onBlur={() => {
+                      const val = costInputs[item.id]
+                      if (val !== undefined && val !== '') update.mutate({ id: item.id, data: { unit_cost: Number(val) } }, {
+                        onSuccess: () => setCostInputs(prev => { const next = { ...prev }; delete next[item.id]; return next }),
+                      })
+                    }}
+                    className="w-full rounded-xl border border-mint-dim px-2 py-2 font-bold text-petrol outline-none focus:border-oil" />
+                </label>
+                <label className="grid gap-1 text-xs font-medium text-mint-ink">
+                  بيع
+                  <input type="number" placeholder={item.sale_price ? money(item.sale_price) : '—'}
+                    value={saleInputs[item.id] ?? ''}
+                    onChange={e => setSaleInputs({ ...saleInputs, [item.id]: e.target.value })}
+                    onBlur={() => {
+                      const val = saleInputs[item.id]
+                      if (val !== undefined && val !== '') update.mutate({ id: item.id, data: { sale_price: Number(val) } }, {
+                        onSuccess: () => setSaleInputs(prev => { const next = { ...prev }; delete next[item.id]; return next }),
+                      })
+                    }}
+                    className="w-full rounded-xl border border-mint-dim px-2 py-2 font-bold text-petrol-deep outline-none focus:border-oil" />
+                </label>
+              </div>
+
+              <footer className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-mint-dim pt-3">
+                <div className="min-w-0 text-xs text-mint-ink">
+                  {isEditing ? (
+                    <input value={editForm.supplier_name} onChange={e => setEditForm({ ...editForm, supplier_name: e.target.value })}
+                      placeholder="المورد"
+                      className="w-32 rounded-xl border border-mint-dim bg-white px-2 py-1.5 text-sm text-petrol outline-none focus:border-oil" />
+                  ) : (
+                    <>
+                      <p className="truncate font-bold text-petrol">{item.supplier_name || 'بدون مورد'}</p>
+                      {profit > 0 && <p className="font-bold text-emerald-700">ربح {money(profit)} IQD</p>}
+                    </>
+                  )}
+                </div>
+                {isEditing ? (
+                  <div className="flex gap-2">
+                    <button onClick={() => editItem.mutate({ id: item.id, data: editForm })}
+                      disabled={!editForm.oil_type || editItem.isPending}
+                      className="flex items-center gap-1 rounded-full bg-petrol px-3 py-1.5 text-xs font-bold text-mint disabled:opacity-50 hover:bg-petrol-deep">
+                      <Check size={12} /> حفظ
+                    </button>
+                    <button onClick={() => setEditingId(null)}
+                      className="flex items-center gap-1 rounded-full border border-mint-dim bg-white px-3 py-1.5 text-xs font-bold text-petrol hover:bg-mint">
+                      <X size={12} /> إلغاء
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <button onClick={() => startEdit(item)}
+                      className="flex items-center gap-1 rounded-full bg-oil-light px-3 py-1.5 text-xs font-bold text-oil-dark hover:bg-oil/30">
+                      <Pencil size={12} /> تعديل
+                    </button>
+                    <button onClick={() => confirmDelete(item)} disabled={deleteItem.isPending}
+                      className="flex items-center gap-1 rounded-full bg-alert/10 px-3 py-1.5 text-xs font-bold text-alert hover:bg-alert/20 disabled:opacity-50">
+                      <Trash2 size={12} /> حذف
+                    </button>
+                  </div>
+                )}
+              </footer>
+            </article>
+          )
+        })}
         {!filteredItems.length && (
-          <div className="py-10 text-center text-sm font-bold text-slate-400">
-            {isLoading ? 'جاري تحميل المخزون...' : 'لا توجد مواد مطابقة للفلاتر'}
+          <div className="rounded-3xl border border-dashed border-mint-dim bg-white/60 py-10 text-center text-sm text-mint-ink md:col-span-2 xl:col-span-3">
+            {isLoading ? 'جاري تحميل المخزون...' : 'ما كو مواد تطابق الفلاتر. ضيف أول منتج من فوق.'}
           </div>
         )}
       </section>

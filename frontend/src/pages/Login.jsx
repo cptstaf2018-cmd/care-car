@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { completeGoogleSignup, googleLogin, login } from '../api/auth'
 import { useAuthStore } from '../store/auth'
 import AuthShell from '../components/auth/AuthShell'
-import WhatsAppIcon from '../components/WhatsAppIcon'
 import GoogleLoginPill from '../components/auth/GoogleLoginPill'
 import CenterOnboardingForm from '../components/auth/CenterOnboardingForm'
 import { ErrorNote, ForgotPasswordForm, PasswordLoginForm } from '../components/auth/PasswordForms'
@@ -239,18 +238,6 @@ export default function Login() {
         </div>
       )}
 
-      <p className="mt-8 flex flex-wrap items-center gap-2 border-t border-mint-dim pt-5 text-sm text-mint-ink">
-        تحتاج مساعدة؟
-        <a
-          className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 font-bold text-petrol-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oil"
-          href={whatsappLink(isRegister ? 'مرحبا، أريد أسجّل مركزي بكير كار' : 'مرحبا، أحتاج مساعدة بالدخول لكير كار')}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <WhatsAppIcon size={18} />
-          كلّمنا على واتساب
-        </a>
-      </p>
     </AuthShell>
   )
 }
