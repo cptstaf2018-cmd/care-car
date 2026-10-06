@@ -14,6 +14,8 @@ import Layout from '../components/Layout'
 import { getCars, createCar } from '../api/cars'
 import { createService } from '../api/services'
 import PitStopBar from '../components/service/PitStopBar'
+import ProductSale from '../components/service/ProductSale'
+import { SERVICE_TEMPLATES, isSaleSpecialty, termsFor } from '../constants/serviceTemplates'
 import { getInventory } from '../api/inventory'
 import { getCenterSettings } from '../api/settings'
 import { DEFAULT_CENTER_SPECIALTY, getSpecialtyLabel } from '../constants/centerSpecialties'
@@ -26,7 +28,6 @@ const WS_CAMERA_BASE = import.meta.env.VITE_WS_BASE_URL || (
     : `ws://${window.location.host}/ws/camera`
 )
 
-const OIL_GRADES = ['15W40', '10W30', '5W30', '5W20', '0W20']
 const SERVICE_ICON_MAP = {
   oil: Droplets,
   oilFilter: Package,
@@ -76,89 +77,6 @@ const SERVICE_ICON_MAP = {
 // Shops that sell over the counter can ring up a sale without a car (the server uses a stand-in customer).
 const DIRECT_SALE_SPECIALTIES = ['parts_store', 'tires']
 const WALK_IN_CUSTOMER = { id: null, plate_number: 'بيع مباشر', owner_name: 'زبون عابر', walkIn: true }
-const QUICK_SERVICE_TYPES = [
-  { label: 'تبديل زيت', image: '/service-icons-3d/auto-pack/oil-can.webp', tone: 'cyan', hint: 'الأكثر طلباً' },
-  { label: 'فلتر زيت', image: '/service-icons-3d/auto-pack/oil-filter.webp', tone: 'amber', hint: 'فلترة المحرك' },
-  { label: 'فلتر هواء', image: '/service-icons-3d/auto-pack/air-filter.webp', tone: 'sky', hint: 'تنفس أنظف' },
-  { label: 'فلتر مكيف', image: '/service-icons-3d/auto-pack/ac-filter.webp', tone: 'violet', hint: 'هواء المقصورة' },
-  { label: 'تبديل ماء رديتر', image: '/service-icons-3d/auto-pack/radiator-coolant-exact.webp', tone: 'blue', hint: 'تبريد المحرك' },
-  { label: 'فحص بطارية', image: '/service-icons-3d/auto-pack/battery-check.webp', tone: 'emerald', hint: 'فولتية وشحن' },
-  { label: 'تبديل بواجي', image: '/service-icons-3d/auto-pack/spark-plug.webp', tone: 'fuchsia', hint: 'تشغيل أنعم' },
-  { label: 'تعبئة نيتروجين', image: '/service-icons-3d/auto-pack/nitrogen.webp', tone: 'teal', hint: 'ضغط مستقر' },
-  { label: 'غسيل', image: '/service-icons-3d/auto-pack/car-wash.webp', tone: 'indigo', hint: 'تنظيف سريع' },
-  { label: 'ميزان', image: '/service-icons-3d/auto-pack/wheel-alignment.webp', tone: 'rose', hint: 'ثبات الطريق' },
-  { label: 'ترصيص', image: '/service-icons-3d/auto-pack/wheel-balancing.webp', tone: 'slate', hint: 'اهتزاز أقل' },
-]
-const SERVICE_TEMPLATES = {
-  quick_service: QUICK_SERVICE_TYPES,
-  tires: [
-    { label: 'تبديل إطار', image: '/service-icons-3d/auto-pack/tire-change-exact.webp', tone: 'slate', hint: 'تركيب إطار' },
-    { label: 'بيع إطار', image: '/service-icons-3d/auto-pack/tire-sale-exact.webp', tone: 'cyan', hint: 'إطار جديد' },
-    { label: 'رقعة إطار', image: '/service-icons-3d/auto-pack/tire-patch.webp', tone: 'amber', hint: 'تصليح بنجر' },
-    { label: 'ترصيص', image: '/service-icons-3d/auto-pack/wheel-balancing-exact.webp', tone: 'rose', hint: 'توازن الإطار' },
-    { label: 'ميزان', image: '/service-icons-3d/auto-pack/wheel-alignment-exact.webp', tone: 'sky', hint: 'ضبط مسار' },
-    { label: 'تعبئة نيتروجين', image: '/service-icons-3d/auto-pack/nitrogen-fill-exact.webp', tone: 'teal', hint: 'ضغط ثابت' },
-    { label: 'تبديل بلف', image: '/service-icons-3d/auto-pack/tire-valve-exact.webp', tone: 'emerald', hint: 'بلف الإطار' },
-    { label: 'تدوير إطارات', image: '/service-icons-3d/auto-pack/tire-rotate.webp', tone: 'violet', hint: 'توزيع التآكل' },
-  ],
-  wash: [
-    { label: 'غسيل خارجي', image: '/service-icons-3d/auto-pack/car-wash-exterior-exact.webp', tone: 'sky', hint: 'تنظيف سريع' },
-    { label: 'غسيل كامل', image: '/service-icons-3d/auto-pack/car-wash-full-exact.webp', tone: 'cyan', hint: 'خارجي وداخلي' },
-    { label: 'تنظيف داخلي', image: '/service-icons-3d/auto-pack/interior-clean.webp', tone: 'indigo', hint: 'المقصورة' },
-    { label: 'بولش', image: '/service-icons-3d/auto-pack/polisher.webp', tone: 'amber', hint: 'لمعان الطلاء' },
-    { label: 'واكس', image: '/service-icons-3d/auto-pack/wax-shield.webp', tone: 'teal', hint: 'حماية الطلاء' },
-    { label: 'نانو سيراميك', image: '/service-icons-3d/auto-pack/nano-shield.webp', tone: 'violet', hint: 'حماية متقدمة' },
-    { label: 'تعقيم', image: '/service-icons-3d/auto-pack/disinfect-spray.webp', tone: 'emerald', hint: 'تنظيف صحي' },
-  ],
-  electrical: [
-    { label: 'فحص كمبيوتر', image: '/service-icons-3d/auto-pack/computer-scan.webp', tone: 'cyan', hint: 'تشخيص أعطال' },
-    { label: 'تبديل بطارية', image: '/service-icons-3d/auto-pack/battery.webp', tone: 'emerald', hint: 'بطارية جديدة' },
-    { label: 'فحص دينمو', image: '/service-icons-3d/auto-pack/alternator.webp', tone: 'amber', hint: 'شحن السيارة' },
-    { label: 'تصليح سلف', image: '/service-icons-3d/auto-pack/starter.webp', tone: 'slate', hint: 'تشغيل المحرك' },
-    { label: 'تبديل حساس', image: '/service-icons-3d/auto-pack/sensor.webp', tone: 'sky', hint: 'حساسات السيارة' },
-    { label: 'تصليح إنارة', image: '/service-icons-3d/auto-pack/headlight.webp', tone: 'violet', hint: 'مصابيح وأسلاك' },
-    { label: 'تبديل فيوز', image: '/service-icons-3d/auto-pack/fuse.webp', tone: 'rose', hint: 'كهرباء داخلية' },
-  ],
-  mechanic: [
-    { label: 'تبديل بريك', image: '/service-icons-3d/auto-pack/brake-replace-exact.webp', tone: 'rose', hint: 'أمان الفرامل' },
-    { label: 'تبديل جامبين', image: '/service-icons-3d/auto-pack/shock.webp', tone: 'slate', hint: 'تعليق السيارة' },
-    { label: 'تبديل مقص', image: '/service-icons-3d/auto-pack/control-arm.webp', tone: 'amber', hint: 'أذرع التعليق' },
-    { label: 'تبديل سير', image: '/service-icons-3d/auto-pack/engine-belt.webp', tone: 'cyan', hint: 'سيور المحرك' },
-    { label: 'تبديل مضخة ماء', image: '/service-icons-3d/auto-pack/water-pump.webp', tone: 'blue', hint: 'تبريد المحرك' },
-    { label: 'تصليح رديتر', image: '/service-icons-3d/auto-pack/radiator.webp', tone: 'sky', hint: 'نظام التبريد' },
-    { label: 'فحص عام', image: '/service-icons-3d/auto-pack/inspection.webp', tone: 'emerald', hint: 'كشف ميكانيكي' },
-  ],
-  ac: [
-    { label: 'تعبئة غاز مكيف', image: '/service-icons-3d/auto-pack/ac-gas-exact.webp', tone: 'cyan', hint: 'تبريد أفضل' },
-    { label: 'فحص تهريب مكيف', image: '/service-icons-3d/auto-pack/ac-leak-exact.webp', tone: 'sky', hint: 'كشف تسريب' },
-    { label: 'تبديل كمبروسر', image: '/service-icons-3d/auto-pack/ac-compressor-exact.webp', tone: 'violet', hint: 'ضاغط المكيف' },
-    { label: 'تبديل فلتر مكيف', image: '/service-icons-3d/auto-pack/ac-filter.webp', tone: 'emerald', hint: 'هواء المقصورة' },
-    { label: 'تنظيف ثلاجة', image: '/service-icons-3d/auto-pack/ac-evaporator-exact.webp', tone: 'teal', hint: 'تنظيف داخلي' },
-    { label: 'تصليح مروحة', image: '/service-icons-3d/auto-pack/fan.webp', tone: 'amber', hint: 'هواء وتبريد' },
-  ],
-  parts_store: [
-    { label: 'بيع زيت محرك', image: '/service-icons-3d/auto-pack/oil-can.webp', tone: 'amber', hint: 'زيوت وإضافات' },
-    { label: 'بيع فلتر زيت', image: '/service-icons-3d/auto-pack/oil-filter.webp', tone: 'cyan', hint: 'فلاتر المحرك' },
-    { label: 'بيع فلتر هواء', image: '/service-icons-3d/auto-pack/air-filter.webp', tone: 'sky', hint: 'فلاتر الهواء' },
-    { label: 'بيع بطارية', image: '/service-icons-3d/auto-pack/battery.webp', tone: 'emerald', hint: 'بطاريات السيارات' },
-    { label: 'بيع بواجي', image: '/service-icons-3d/auto-pack/spark-plug.webp', tone: 'fuchsia', hint: 'شمعات الإشعال' },
-    { label: 'بيع تيل فرامل', image: '/service-icons-3d/auto-pack/brake-pads.webp', tone: 'rose', hint: 'أمان الفرامل' },
-    { label: 'بيع جامبين', image: '/service-icons-3d/auto-pack/shock.webp', tone: 'slate', hint: 'تعليق السيارة' },
-    { label: 'بيع سير', image: '/service-icons-3d/auto-pack/engine-belt.webp', tone: 'violet', hint: 'سيور المحرك' },
-    { label: 'بيع مضخة ماء', image: '/service-icons-3d/auto-pack/water-pump.webp', tone: 'blue', hint: 'تبريد المحرك' },
-    { label: 'بيع مصابيح', image: '/service-icons-3d/auto-pack/bulb.webp', tone: 'teal', hint: 'إنارة السيارة' },
-    { label: 'بيع مساحات', image: '/service-icons-3d/auto-pack/wipers.webp', tone: 'indigo', hint: 'رؤية أوضح' },
-    { label: 'بيع إطار', image: '/service-icons-3d/auto-pack/tire-sale-exact.webp', tone: 'slate', hint: 'إطارات جديدة' },
-  ],
-  body_paint: [
-    { label: 'صبغ قطعة', image: '/service-icons-3d/auto-pack/paint-spray.webp', tone: 'rose', hint: 'دهان موضعي' },
-    { label: 'سمكرة ضربة', image: '/service-icons-3d/auto-pack/dent-repair.webp', tone: 'slate', hint: 'تعديل الهيكل' },
-    { label: 'تلميع', image: '/service-icons-3d/auto-pack/polisher.webp', tone: 'amber', hint: 'لمعان الطلاء' },
-    { label: 'بولش خدوش', image: '/service-icons-3d/auto-pack/scratch-polish.webp', tone: 'cyan', hint: 'إزالة آثار' },
-    { label: 'حماية طلاء', image: '/service-icons-3d/auto-pack/paint-protection.webp', tone: 'teal', hint: 'طبقة حماية' },
-  ],
-}
-
 const SERVICE_TONES = {
   amber: {
     icon: 'bg-gradient-to-br from-amber-50 via-orange-100 to-amber-200 text-orange-600 ring-orange-200 shadow-orange-200/70',
@@ -251,7 +169,7 @@ export default function NewService() {
   const [selectedCar, setSelectedCar] = useState(null)
   const [newCarForm, setNewCarForm] = useState(null) // { plate_number, car_type, car_color }
   const [serviceType, setServiceType] = useState('')
-  const [oilGrade, setOilGrade] = useState('15W40')
+  const [details, setDetails] = useState({}) // the chosen detail (oil grade, gas type, size...) per service
   const [form, setForm] = useState({ amount: '', discount: '0', mileage: '', notes: '' })
   const [lineInventoryId, setLineInventoryId] = useState('')
   const [lineInventoryQty, setLineInventoryQty] = useState('1')
@@ -286,7 +204,12 @@ export default function NewService() {
   const inventoryAutomationEnabled = centerSettings && hasPlanFeature(centerSettings.plan, 'inventory_auto_deduct')
   const serviceTypes = SERVICE_TEMPLATES[centerSpecialty] || SERVICE_TEMPLATES[DEFAULT_CENTER_SPECIALTY]
   const defaultServiceType = serviceTypes[0]?.label || 'خدمة'
-  const usesOilGrade = serviceType === 'تبديل زيت'
+  const isSale = isSaleSpecialty(centerSpecialty)
+  const terms = termsFor(centerSpecialty)
+  const selectedService = serviceTypes.find(item => item.label === serviceType) || serviceTypes[0]
+  const detail = selectedService?.detail || null
+  const detailValue = detail ? (details[serviceType] ?? (detail.kind === 'choice' ? detail.options[0] : '')) : ''
+  const setDetailValue = (value) => setDetails(prev => ({ ...prev, [serviceType]: value }))
 
   const stopReception = useCallback(() => {
     receptionWsRef.current?.close()
@@ -383,33 +306,14 @@ export default function NewService() {
   const { data: inventoryItems = [] } = useQuery({
     queryKey: ['inventory'],
     queryFn: () => getInventory().then(r => r.data),
-    enabled: !!selectedCar && !!inventoryAutomationEnabled,
+    enabled: !!selectedCar && (!!inventoryAutomationEnabled || isSale),
   })
 
   // Auto-match inventory item when service type or oil grade changes
   useEffect(() => {
     if (!selectedCar || !inventoryAutomationEnabled || inventoryItems.length === 0) return
-    const kwMap = {
-      'تبديل زيت': [oilGrade, oilGrade.replace('W', 'W-'), 'زيت محرك', 'زيت'],
-      'فلتر زيت': ['فلتر زيت'],
-      'فلتر هواء': ['فلتر هواء'],
-      'فلتر مكيف': ['فلتر مكيف'],
-      'تبديل ماء رديتر': ['ماء رديتر', 'رديتر'],
-      'تبديل بواجي': ['شمعات', 'بواجي'],
-      'ترصيص': ['أوزان', 'ترصيص'],
-      'تبديل إطار': ['إطار', 'تاير'],
-      'بيع إطار': ['إطار', 'تاير'],
-      'رقعة إطار': ['رقعة', 'لصق'],
-      'تبديل بلف': ['بلف'],
-      'تعبئة نيتروجين': ['نيتروجين'],
-      'تبديل بطارية': ['بطارية'],
-      'تبديل فلتر مكيف': ['فلتر مكيف'],
-      'تعبئة غاز مكيف': ['غاز مكيف', 'فريون'],
-      'تبديل بريك': ['بريك', 'فرامل'],
-      'تبديل سير': ['سير'],
-      'تبديل مضخة ماء': ['مضخة ماء', 'طرمبة ماء'],
-    }
-    const kws = kwMap[serviceType]
+    const keywords = selectedService?.keywords
+    const kws = (typeof keywords === 'function' ? keywords(detailValue) : keywords)?.filter(Boolean)
     let found = null
     if (kws) {
       for (const kw of kws) {
@@ -423,15 +327,16 @@ export default function NewService() {
       setLineInventoryId('')
       setForm(prev => ({ ...prev, amount: '' }))
     }
-  }, [serviceType, oilGrade, inventoryItems, selectedCar, inventoryAutomationEnabled])
+  }, [selectedService, detailValue, inventoryItems, selectedCar, inventoryAutomationEnabled])
 
   // Auto-fill price from selected inventory item
   useEffect(() => {
     if (!lineInventoryId) return
     const item = inventoryItems.find(i => i.id === Number(lineInventoryId))
-    if (item?.unit_cost) {
+    const unitPrice = item?.sale_price || item?.unit_cost
+    if (unitPrice) {
       const qty = parseFloat(lineInventoryQty) || 1
-      setForm(prev => ({ ...prev, amount: String(Math.round(item.unit_cost * qty)) }))
+      setForm(prev => ({ ...prev, amount: String(Math.round(unitPrice * qty)) }))
     }
   }, [lineInventoryId, lineInventoryQty, inventoryItems])
 
@@ -492,7 +397,11 @@ export default function NewService() {
       : Math.min(Math.max(parseFloat(paidAmount) || 0, 0), normalizedNet)
   const remainingAmount = Math.max(normalizedNet - effectivePaidAmount, 0)
   const canSubmit = selectedCar && invoiceLines.length > 0 && !mutation.isPending
-  const serviceName = usesOilGrade ? `${serviceType} ${oilGrade}` : serviceType
+  const serviceName = detailValue ? `${serviceType} ${detailValue}` : serviceType
+  const addProductLine = (line) => {
+    setSubmitError('')
+    setInvoiceLines(prev => [...prev, { id: Date.now() + Math.random().toString(36).slice(2), ...line }])
+  }
   const addLineToInvoice = () => {
     if (!form.amount) return
     setSubmitError('')
@@ -570,7 +479,7 @@ export default function NewService() {
             className="flex items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-8 py-3 text-sm font-black text-cyan-700 hover:bg-cyan-100">
             تعديل أو حذف الفاتورة
           </button>
-          <button onClick={() => { setResult(null); clearCar(); setSearch(''); setServiceType(defaultServiceType); setOilGrade('15W40'); setInvoiceLines([]); setPaymentMode('paid'); setPaidAmount(''); setForm({ amount: '', discount: '0', mileage: '', notes: '' }) }}
+          <button onClick={() => { setResult(null); clearCar(); setSearch(''); setServiceType(defaultServiceType); setDetails({}); setInvoiceLines([]); setPaymentMode('paid'); setPaidAmount(''); setForm({ amount: '', discount: '0', mileage: '', notes: '' }) }}
             className="rounded-xl border border-slate-200 px-8 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
             خدمة جديدة
           </button>
@@ -596,11 +505,13 @@ export default function NewService() {
       <div className="mb-5 flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
         <div>
           <p className="text-sm font-semibold text-cyan-700">استقبال الخدمة</p>
-          <h2 className="mt-1 text-2xl font-black text-slate-950">خدمة سيارة - {getSpecialtyLabel(centerSpecialty)}</h2>
+          <h2 className="mt-1 text-2xl font-black text-slate-950">{terms.headline} - {getSpecialtyLabel(centerSpecialty)}</h2>
           <p className="mt-2 text-sm text-slate-500">
             {arrivalPlate
               ? `تم استقبال السيارة من كاميرا الباب: ${arrivalPlate}. أكمل بياناتها أو اخترها من النتائج ثم أضف الخدمات.`
-              : 'ابحث عن السيارة، أضف الخدمات إلى الفاتورة، ثم اعتمد الفاتورة النهائية. Ctrl+Enter للحفظ.'}
+              : isSale
+                ? 'بيع مباشر للزبون العابر، أو ابحث عن زبون مسجّل. اختر الأصناف من المخزون ثم اعتمد الفاتورة. Ctrl+Enter للحفظ.'
+                : 'ابحث عن السيارة، أضف الخدمات إلى الفاتورة، ثم اعتمد الفاتورة النهائية. Ctrl+Enter للحفظ.'}
           </p>
         </div>
         <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-600">
@@ -741,7 +652,7 @@ export default function NewService() {
       </section>
 
       {selectedCar && startedAt && (
-        <PitStopBar car={selectedCar} startedAt={startedAt} linesCount={invoiceLines.length} onChange={clearCar} />
+        <PitStopBar car={selectedCar} startedAt={startedAt} linesCount={invoiceLines.length} onChange={clearCar} terms={terms} />
       )}
 
       <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
@@ -749,14 +660,17 @@ export default function NewService() {
         <div className="space-y-4">
           {!selectedCar ? (
             <>
-              <ServiceTypePicker
-                serviceType={serviceType}
-                setServiceType={setServiceType}
-                oilGrade={oilGrade}
-                setOilGrade={setOilGrade}
-                serviceTypes={serviceTypes}
-                specialtyLabel={getSpecialtyLabel(centerSpecialty)}
-              />
+              {!isSale && (
+                <ServiceTypePicker
+                  serviceType={serviceType}
+                  setServiceType={setServiceType}
+                  detail={detail}
+                  detailValue={detailValue}
+                  setDetailValue={setDetailValue}
+                  serviceTypes={serviceTypes}
+                  specialtyLabel={getSpecialtyLabel(centerSpecialty)}
+                />
+              )}
               {DIRECT_SALE_SPECIALTIES.includes(centerSpecialty) && (
                 <button type="button" onClick={() => { selectCar(WALK_IN_CUSTOMER); setNewCarForm(null) }}
                   className="flex w-full items-center justify-between gap-3 rounded-3xl border-2 border-oil bg-oil-light/50 px-5 py-4 text-start transition hover:bg-oil-light">
@@ -814,55 +728,62 @@ export default function NewService() {
             </>
           ) : (
             <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
-              <div className="surface rounded-lg p-6 space-y-4">
-                <div>
-                  <ServiceTypePicker
-                    serviceType={serviceType}
-                    setServiceType={setServiceType}
-                    oilGrade={oilGrade}
-                    setOilGrade={setOilGrade}
-                    serviceTypes={serviceTypes}
-                    specialtyLabel={getSpecialtyLabel(centerSpecialty)}
-                  />
-                </div>
-                {[['amount', 'سعر هذه الخدمة (IQD) *', 'number'], ['notes', 'ملاحظات هذه الخدمة', 'text']].map(([k, p, t]) => (
-                  <input key={k} type={t} placeholder={p} value={form[k]}
-                    onChange={e => setForm({ ...form, [k]: e.target.value })}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
-                ))}
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
-                  <div className="flex items-center gap-2 text-xs font-black text-slate-500">
-                    <Package size={14} /> خصم من المخزون (اختياري)
+              {isSale ? (
+                <ProductSale items={inventoryItems} loading={!inventoryItems.length && !selectedCar} onAdd={addProductLine} />
+              ) : (
+                <div className="surface rounded-lg p-6 space-y-4">
+                  <div>
+                    {!isSale && (
+                      <ServiceTypePicker
+                        serviceType={serviceType}
+                        setServiceType={setServiceType}
+                        detail={detail}
+                        detailValue={detailValue}
+                        setDetailValue={setDetailValue}
+                        serviceTypes={serviceTypes}
+                        specialtyLabel={getSpecialtyLabel(centerSpecialty)}
+                      />
+                    )}
                   </div>
-                  {inventoryAutomationEnabled ? (
-                    <div className="grid grid-cols-[1fr_90px] gap-2">
-                      <select value={lineInventoryId} onChange={e => setLineInventoryId(e.target.value)}
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-cyan-400">
-                        <option value="">— اختر المادة —</option>
-                        {inventoryItems.map(item => (
-                          <option key={item.id} value={item.id}>
-                            {item.oil_type} ({Number(item.quantity).toLocaleString()} {item.category || 'وحدة'})
-                          </option>
-                        ))}
-                      </select>
-                      <input type="number" min="0.1" step="0.1" value={lineInventoryQty}
-                        onChange={e => setLineInventoryQty(e.target.value)}
-                        placeholder="الكمية"
-                        className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-cyan-400"
-                        disabled={!lineInventoryId} />
+                  {[['amount', 'سعر هذه الخدمة (IQD) *', 'number'], ['notes', 'ملاحظات هذه الخدمة', 'text']].map(([k, p, t]) => (
+                    <input key={k} type={t} placeholder={p} value={form[k]}
+                      onChange={e => setForm({ ...form, [k]: e.target.value })}
+                      className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100" />
+                  ))}
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-2">
+                    <div className="flex items-center gap-2 text-xs font-black text-slate-500">
+                      <Package size={14} /> خصم من المخزون (اختياري)
                     </div>
-                  ) : (
-                    <div className="rounded-lg border border-cyan-100 bg-cyan-50 px-3 py-2 text-xs font-bold leading-5 text-cyan-900">
-                      الخصم التلقائي من المخزون مفعل في خطتك عند توفر مواد مسجلة.
-                    </div>
-                  )}
+                    {inventoryAutomationEnabled ? (
+                      <div className="grid grid-cols-[1fr_90px] gap-2">
+                        <select value={lineInventoryId} onChange={e => setLineInventoryId(e.target.value)}
+                          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-cyan-400">
+                          <option value="">— اختر المادة —</option>
+                          {inventoryItems.map(item => (
+                            <option key={item.id} value={item.id}>
+                              {item.oil_type} ({Number(item.quantity).toLocaleString()} {item.category || 'وحدة'})
+                            </option>
+                          ))}
+                        </select>
+                        <input type="number" min="0.1" step="0.1" value={lineInventoryQty}
+                          onChange={e => setLineInventoryQty(e.target.value)}
+                          placeholder="الكمية"
+                          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-950 outline-none focus:border-cyan-400"
+                          disabled={!lineInventoryId} />
+                      </div>
+                    ) : (
+                      <div className="rounded-lg border border-cyan-100 bg-cyan-50 px-3 py-2 text-xs font-bold leading-5 text-cyan-900">
+                        الخصم التلقائي من المخزون مفعل في خطتك عند توفر مواد مسجلة.
+                      </div>
+                    )}
+                  </div>
+                  <button onClick={addLineToInvoice} disabled={!form.amount}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-400 px-6 py-4 text-base font-black text-slate-950 transition hover:bg-cyan-300 disabled:opacity-50">
+                    <PlusCircle size={18} />
+                    {terms.add}
+                  </button>
                 </div>
-                <button onClick={addLineToInvoice} disabled={!form.amount}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-400 px-6 py-4 text-base font-black text-slate-950 transition hover:bg-cyan-300 disabled:opacity-50">
-                  <PlusCircle size={18} />
-                  إضافة الخدمة إلى الفاتورة
-                </button>
-              </div>
+              )}
               <div className="sticky top-24 h-fit rounded-lg border border-slate-200 bg-slate-950 p-5 text-white shadow-2xl">
                 <div className="mb-4 flex items-center gap-2 text-cyan-300"><Zap size={18} /><span className="font-black">الفاتورة النهائية</span></div>
                 <div className="space-y-3 text-sm">
@@ -964,7 +885,7 @@ export default function NewService() {
   )
 }
 
-function ServiceTypePicker({ serviceType, setServiceType, oilGrade, setOilGrade, serviceTypes, specialtyLabel }) {
+function ServiceTypePicker({ serviceType, setServiceType, detail, detailValue, setDetailValue, serviceTypes, specialtyLabel }) {
   const selectedService = serviceTypes.find(item => item.label === serviceType) || serviceTypes[0]
   const selectedTone = SERVICE_TONES[selectedService.tone] || SERVICE_TONES.cyan
   const SelectedIcon = SERVICE_ICON_MAP[selectedService.icon] || SERVICE_ICON_MAP.service
@@ -988,9 +909,9 @@ function ServiceTypePicker({ serviceType, setServiceType, oilGrade, setOilGrade,
             <p className="mt-1 text-sm font-bold text-slate-500">{selectedService.label} · {selectedService.hint}</p>
           </div>
         </div>
-        <div className="flex h-10 items-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 shadow-sm">
-          {serviceType === 'تبديل زيت' ? oilGrade : 'خدمة مباشرة'}
-        </div>
+        {detailValue && (
+          <div className="flex h-10 items-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-black text-slate-700 shadow-sm">{detailValue}</div>
+        )}
       </div>
       <div className="p-4">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -1033,46 +954,40 @@ function ServiceTypePicker({ serviceType, setServiceType, oilGrade, setOilGrade,
           })}
         </div>
       </div>
-      {serviceType === 'تبديل زيت' && (
+      {detail && (
         <div className="border-t border-slate-100 bg-slate-50/70 p-4">
           <div className="mb-3 flex items-center justify-between gap-3">
             <p className="flex items-center gap-2 text-sm font-black text-slate-800">
               <Droplets size={19} className="text-blue-500" />
-              نوع الزيت
+              {detail.title}
             </p>
-            <p className="text-xs font-bold text-slate-500">درجة اللزوجة</p>
+            {detail.note && <p className="text-xs font-bold text-slate-500">{detail.note}</p>}
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
-            {OIL_GRADES.map((t, index) => {
-              const oilTone = [
-                SERVICE_TONES.cyan,
-                SERVICE_TONES.amber,
-                SERVICE_TONES.fuchsia,
-                SERVICE_TONES.emerald,
-                SERVICE_TONES.amber,
-              ][index]
-              return (
+          {detail.kind === 'choice' ? (
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {detail.options.map(option => (
                 <button
-                  key={t}
+                  key={option}
                   type="button"
-                  onClick={() => setOilGrade(t)}
-                  className={`relative flex min-h-[54px] items-center justify-between gap-2 rounded-lg border bg-gradient-to-l px-3 py-2 text-sm font-black transition focus:outline-none focus:ring-4 focus:ring-cyan-100 ${
-                    oilGrade === t
-                      ? `${oilTone.oil} shadow-lg`
-                      : 'border-slate-200 bg-white text-slate-700 shadow-sm hover:border-cyan-200 hover:bg-cyan-50'
+                  onClick={() => setDetailValue(option)}
+                  aria-pressed={detailValue === option}
+                  className={`flex min-h-[48px] items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm font-black transition focus:outline-none focus:ring-4 focus:ring-cyan-100 ${
+                    detailValue === option ? 'border-cyan-400 bg-cyan-50 text-slate-950 shadow-md' : 'border-slate-200 bg-white text-slate-700 hover:border-cyan-200'
                   }`}
                 >
-                  <span className={`flex h-8 w-8 items-center justify-center rounded-full ring-1 shadow-md ${oilTone.icon}`}>
-                    <img src="/service-icons-3d/auto-pack/oil-can.webp" alt="" className="h-7 w-7 object-contain" />
-                  </span>
-                  <span className="text-slate-950">{t}</span>
-                  {oilGrade === t && (
-                    <CheckCircle2 size={20} className="text-blue-500" strokeWidth={3} />
-                  )}
+                  {option}
+                  {detailValue === option && <CheckCircle2 size={18} className="text-cyan-600" strokeWidth={3} />}
                 </button>
-              )
-            })}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <input
+              value={detailValue}
+              onChange={e => setDetailValue(e.target.value)}
+              placeholder={detail.placeholder}
+              className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-950 outline-none focus:border-cyan-400 focus:ring-4 focus:ring-cyan-100"
+            />
+          )}
         </div>
       )}
     </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import QRCode from 'qrcode'
 import IraqiPlate from '../car/IraqiPlate'
+import { termsFor } from '../../constants/serviceTemplates'
 
 const STATUS = {
   paid: { label: 'مدفوعة', color: '#15803d' },
@@ -76,7 +77,7 @@ export default function ServiceTicket({ inv, innerRef }) {
 
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs text-[#3F5F5D]">تذكرة خدمة</p>
+          <p className="text-xs text-[#3F5F5D]">{termsFor(inv.center_specialty).ticket}</p>
           <p className="text-2xl font-bold tabular-nums">#{String(inv.id).padStart(5, '0')}</p>
           <p className="text-xs text-[#3F5F5D]">{inv.invoice_date}</p>
         </div>

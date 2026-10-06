@@ -159,6 +159,7 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db), user: User = Dep
         "plate_number": car.plate_number if car else None,
         "car_type": car.car_type if car else None,
         "center_name": tenant.name if tenant else "",
+        "center_specialty": tenant.specialty if tenant else None,
         "center_phone": tenant.contact_phone if tenant else "",
         "center_logo": _logo_url(tenant),
         "center_whatsapp": tenant.whatsapp_number if tenant else "",

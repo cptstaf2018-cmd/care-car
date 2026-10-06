@@ -2,14 +2,14 @@ export const CENTER_SPECIALTIES = [
   {
     value: 'quick_service',
     icon: '/service-icons-3d/auto-pack/oil-can.webp',
-    label: 'صيانة سريعة وزيوت',
-    description: 'زيوت، فلاتر، بواجي، رديتر، بطارية',
+    label: 'مركز تبديل زيت',
+    description: 'زيت المحرك، فلتر الزيت، زيت الجير والدفرنس والباور والفرامل',
   },
   {
     value: 'tires',
     icon: '/service-icons-3d/auto-pack/tire-change-exact.webp',
     label: 'مركز إطارات',
-    description: 'تبديل إطارات، رقعة، ترصيص، ميزان، نيتروجين',
+    description: 'تبديل وبيع إطارات، رقعة، ترصيص، ميزان، نيتروجين',
   },
   {
     value: 'wash',
@@ -27,19 +27,19 @@ export const CENTER_SPECIALTIES = [
     value: 'mechanic',
     icon: '/service-icons-3d/auto-pack/service-wrench-car.webp',
     label: 'ميكانيك',
-    description: 'بريك، مقصات، جامبين، سير، مضخة ماء',
+    description: 'بريك، مقصات، جامبين، سير، مضخة ماء، رديتر، بواجي',
   },
   {
     value: 'ac',
     icon: '/service-icons-3d/auto-pack/ac-snowflake.webp',
-    label: 'تكييف سيارات',
-    description: 'غاز، تهريب، كمبروسر، فلتر مكيف',
+    label: 'تكييف وتبريد السيارات',
+    description: 'غاز المكيف، تهريب، كمبروسر، فلتر، ثلاجة، مروحة',
   },
   {
     value: 'parts_store',
     icon: '/service-icons-3d/auto-pack/brake-pads.webp',
     label: 'محل قطع غيار',
-    description: 'بيع قطع السيارات: فلاتر، بطاريات، بواجي، فرامل، جامبين',
+    description: 'بيع قطع السيارات من مخزونك: فلاتر، بطاريات، بواجي، فرامل، جامبين',
   },
   {
     value: 'body_paint',

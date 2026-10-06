@@ -15,6 +15,7 @@ import { PLAN_RANK } from '../constants/plans'
 import { CCBadge } from './BrandMark'
 import StartKey from './shell/StartKey'
 import TankGauge from './shell/TankGauge'
+import { termsFor } from '../constants/serviceTemplates'
 import { tankFor } from './shell/tank'
 
 const OIL_WARNING_DAYS = 5
@@ -147,7 +148,7 @@ function SidebarContent({ collapsed, setCollapsed, onClose, showStart = true }) 
 
       {!isAdmin && showStart && (
         <div className="grid place-items-center border-b border-petrol-line/60 py-3">
-          <StartKey size={collapsed ? 'sm' : 'md'} onClick={onClose} />
+          <StartKey size={collapsed ? 'sm' : 'md'} onClick={onClose} label={termsFor(center?.specialty).newLabel} />
         </div>
       )}
 

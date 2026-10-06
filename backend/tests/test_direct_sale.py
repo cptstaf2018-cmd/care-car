@@ -88,3 +88,13 @@ def test_sale_with_a_real_car_still_works(client, db):
 def test_superadmin_cannot_sell_without_a_car(client, superadmin_token):
     r = client.post("/services/", json={"oil_type": "x", "amount": 1000}, headers={"Authorization": f"Bearer {superadmin_token}"})
     assert r.status_code == 400
+
+
+def test_invoice_detail_tells_the_ticket_what_kind_of_center_issued_it(client, db):
+    _shop(db)
+    headers = _login(client)
+    invoice_id = _sell(client, headers).json()["invoice_id"]
+
+    detail = client.get(f"/invoices/{invoice_id}/detail", headers=headers).json()
+
+    assert detail["center_specialty"] == "parts_store"

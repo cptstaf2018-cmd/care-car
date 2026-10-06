@@ -8,6 +8,7 @@ import MobileTabBar from './shell/MobileTabBar'
 import { useAuthStore } from '../store/auth'
 import { getCenterSettings } from '../api/settings'
 import { displayUserContact } from '../utils/displayIdentity'
+import { termsFor } from '../constants/serviceTemplates'
 
 const PAGE_TITLES = {
   '/center': 'الرئيسية',
@@ -35,7 +36,7 @@ export default function Layout({ children, hideHeader = false, compact = false }
     queryFn: () => getCenterSettings().then((r) => r.data),
     enabled: !isAdmin,
   })
-  const title = PAGE_TITLES[pathname] || ''
+  const title = pathname === '/center/services/new' ? termsFor(center?.specialty).newLabel : PAGE_TITLES[pathname] || ''
   const userContact = displayUserContact(user, center)
 
   return (

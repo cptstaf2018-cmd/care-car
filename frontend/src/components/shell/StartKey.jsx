@@ -8,13 +8,13 @@ const SIZES = {
 }
 
 /** Small push-to-start key that opens a new service; the same key as the dashboard, scaled for chrome. */
-export default function StartKey({ size = 'md', onClick, className = '' }) {
+export default function StartKey({ size = 'md', onClick, className = '', label: text = 'خدمة جديدة' }) {
   const { box, icon, label } = SIZES[size]
   return (
     <NavLink
       to="/center/services/new"
       onClick={onClick}
-      aria-label="خدمة جديدة"
+      aria-label={text}
       className={({ isActive }) =>
         `group flex flex-col items-center gap-1.5 focus-visible:outline-none ${className} ${isActive ? 'is-active' : ''}`
       }
@@ -27,7 +27,7 @@ export default function StartKey({ size = 'md', onClick, className = '' }) {
         <span aria-hidden="true" className="start-ring-idle absolute inset-[5px] rounded-full bg-[radial-gradient(circle_at_50%_30%,#134549,#061819)] shadow-[0_0_0_2px_#F0A33A] transition-transform group-active:scale-95" />
         <Power size={icon} className="relative text-oil" aria-hidden="true" />
       </span>
-      {label && <span className="text-xs font-bold text-mint">خدمة جديدة</span>}
+      {label && <span className="text-xs font-bold text-mint">{text}</span>}
     </NavLink>
   )
 }

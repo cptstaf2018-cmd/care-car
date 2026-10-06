@@ -2,13 +2,11 @@ import { Check } from 'lucide-react'
 import IraqiPlate from '../car/IraqiPlate'
 import useElapsed, { formatElapsed } from './useElapsed'
 
-const STEPS = ['دخلت المحطة', 'اختيار الخدمات', 'جاهزة للفاتورة', 'خرجت']
-
 /**
  * The pit-stop: the car's plate, the four stops it passes through, and a live timer that starts the
  * moment the car is picked. The start time travels with the invoice so the ticket can show the duration.
  */
-export default function PitStopBar({ car, startedAt, linesCount, onChange }) {
+export default function PitStopBar({ car, startedAt, linesCount, onChange, terms }) {
   const seconds = useElapsed(startedAt)
   const current = linesCount === 0 ? 1 : 2
 
@@ -28,7 +26,7 @@ export default function PitStopBar({ car, startedAt, linesCount, onChange }) {
       </div>
 
       <ol className="grid grid-cols-4 gap-1" aria-label="مراحل الخدمة">
-        {STEPS.map((label, i) => {
+        {terms.stops.map((label, i) => {
           const done = i < current
           const active = i === current
           return (
@@ -47,7 +45,7 @@ export default function PitStopBar({ car, startedAt, linesCount, onChange }) {
       </ol>
 
       <div className="text-center lg:text-end">
-        <p className="text-xs text-gauge-light">مدة السيارة بالمحطة</p>
+        <p className="text-xs text-gauge-light">{terms.timer}</p>
         <p role="timer" dir="ltr" className="mt-1 inline-block rounded-xl bg-petrol-deep px-4 py-1.5 text-3xl font-bold tabular-nums text-oil shadow-[inset_0_6px_8px_-6px_rgba(0,0,0,.8)]">
           {formatElapsed(seconds)}
         </p>

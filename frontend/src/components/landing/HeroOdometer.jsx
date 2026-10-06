@@ -19,7 +19,7 @@ export default function HeroOdometer() {
   return (
     <header id="top" ref={ref} style={still ? undefined : { height: '320vh' }} className="relative bg-petrol text-mint">
       <div className={`${still ? 'min-h-screen' : 'sticky top-0 h-screen'} flex flex-col items-center justify-center px-5 pt-20 text-center`}>
-        <p className="text-base text-gauge-light sm:text-lg">زبونك بدّل الزيت عندك اليوم. من وقتها مشى</p>
+        <p className="text-base text-gauge-light sm:text-lg">مثال: زبونك بدّل الزيت عندك اليوم. من وقتها مشى</p>
 
         <div className="mt-4 flex items-end gap-2" dir="ltr">
           <Odometer value={km} className="text-[clamp(52px,12vw,112px)] font-bold text-oil" />
@@ -49,7 +49,7 @@ export default function HeroOdometer() {
           {done ? 'كير كار ذكّره بوقته. هسه يرجع لمركزك.' : 'كير كار يراقب الموعد بدالك.'}
         </h1>
         <p className="mt-3 max-w-xl text-gauge-light sm:text-lg">
-          نظام واحد لمركز تبديل الزيت والصيانة: وصل، مخزون، ديون، وتذكير واتساب تلقائي لكل زبون بموعده.
+          نظام واحد لكل مركز يخدم السيارات في العراق: زيوت، إطارات، غسيل، كهرباء، ميكانيك، تكييف، سمكرة، أو قطع غيار. وصل، مخزون، ديون، وتذكير واتساب لكل زبون.
         </p>
 
         <div className="mt-7 flex flex-wrap items-center justify-center gap-3">

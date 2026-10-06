@@ -4,7 +4,7 @@ import {
   FaqSection, FinalCta, HowItWorks, InstrumentsSection, KindsSection, LandingFooter, LandingNav, PricingSection,
 } from '../components/landing/LandingSections'
 
-const PAGE_TITLE = 'كير كار | زبونك يرجع لمركزك بتذكير واتساب'
+const PAGE_TITLE = 'كير كار | نظام إدارة مراكز السيارات في العراق'
 
 export default function LandingPage() {
   useEffect(() => {
