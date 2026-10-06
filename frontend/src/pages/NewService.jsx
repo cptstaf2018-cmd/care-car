@@ -658,9 +658,9 @@ export default function NewService() {
         <PitStopBar car={selectedCar} startedAt={startedAt} linesCount={invoiceLines.length} onChange={clearCar} terms={terms} />
       )}
 
-      <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="grid gap-5">
         {/* Service form */}
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           {!selectedCar ? (
             <>
               {!isSale && (
@@ -730,7 +730,7 @@ export default function NewService() {
               </div>
             </>
           ) : (
-            <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
+            <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
               {isSale ? (
                 <ProductSale items={inventoryItems} loading={!inventoryItems.length && !selectedCar} onAdd={addProductLine} categories={PARTS_CATEGORIES} />
               ) : (
