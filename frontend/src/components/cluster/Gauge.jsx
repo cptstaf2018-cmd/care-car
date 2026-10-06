@@ -32,7 +32,7 @@ const NEEDLE_TIMING = {
  * Analog dial. `value`/`max` place the needle; `average` draws the center's usual mark;
  * `phase` comes from useIgnition so the needle can do the start-up sweep.
  */
-export default function Gauge({ value = 0, max, average, scaleLabel, unitLabel, readout, title, phase = 'ready' }) {
+export default function Gauge({ value = 0, max, average, scaleLabel, unitLabel, readout, title, phase = 'ready', compact = false }) {
   const t = phase === 'off' ? 0 : phase === 'sweep' ? 1 : clamp01(value / max)
   const avgT = average ? clamp01(average / max) : null
   const ticks = []
@@ -89,10 +89,12 @@ export default function Gauge({ value = 0, max, average, scaleLabel, unitLabel, 
         </g>
         <circle cx={CX} cy={CY} r="8" fill="#0D3B3E" stroke="#F0A33A" strokeWidth="2" />
       </svg>
-      <figcaption className="-mt-7 text-center">
-        <b className="block text-xl font-bold tabular-nums text-mint" dir="ltr">{readout}</b>
-        <span className="text-xs">{title}</span>
-      </figcaption>
+      {!compact && (
+        <figcaption className="-mt-7 text-center">
+          <b className="block text-xl font-bold tabular-nums text-mint" dir="ltr">{readout}</b>
+          <span className="text-xs">{title}</span>
+        </figcaption>
+      )}
     </figure>
   )
 }

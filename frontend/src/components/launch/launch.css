@@ -1,0 +1,232 @@
+/* Car launch scene: every motion is driven by the data-phase attribute on .launch-scene. */
+
+.launch-scene {
+  --car-w: 70%;
+  position: relative;
+  overflow: hidden;
+  border-radius: 28px;
+  height: 188px;
+  background:
+    radial-gradient(120% 90% at 50% 105%, rgba(240, 163, 58, 0.16), transparent 60%),
+    linear-gradient(180deg, #082628 0%, #0d3b3e 63%, #123f42 63%, #0a2e30 100%);
+  isolation: isolate;
+}
+
+/* faint gauge rings behind the car so the scene reads as an instrument cluster */
+.launch-rings {
+  position: absolute;
+  inset: -40% -10% auto -10%;
+  height: 160%;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.launch-road {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 37%;
+  background: linear-gradient(180deg, #0b2527, #061819);
+  border-top: 2px solid #1d5a5e;
+}
+.launch-road::after {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 52%;
+  height: 4px;
+  background: repeating-linear-gradient(90deg, rgba(232, 241, 239, 0.55) 0 36px, transparent 36px 84px);
+  background-size: 84px 100%;
+}
+.launch-scene[data-phase='driving'] .launch-road::after,
+.launch-scene[data-phase='returning'] .launch-road::after {
+  animation: road-flow 0.32s linear infinite;
+}
+@keyframes road-flow {
+  to { background-position-x: 84px; }
+}
+
+.launch-car {
+  position: absolute;
+  bottom: 21%;
+  left: 3%;
+  width: var(--car-w);
+  aspect-ratio: 1100 / 292;
+  transform-origin: 50% 90%;
+  will-change: transform;
+}
+.launch-car img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.launch-scene[data-phase='parked'] .launch-car { animation: car-idle 3.4s ease-in-out infinite; }
+.launch-scene[data-phase='igniting'] .launch-car { animation: car-rumble 0.085s linear infinite; }
+.launch-scene[data-phase='driving'] .launch-car { animation: car-launch 1.4s cubic-bezier(0.55, 0, 0.95, 0.45) forwards; }
+.launch-scene[data-phase='away'] .launch-car { transform: translateX(-150%); }
+.launch-scene[data-phase='returning'] .launch-car { animation: car-return 1.3s cubic-bezier(0.1, 0.75, 0.2, 1) forwards; }
+
+@keyframes car-idle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1px); }
+}
+@keyframes car-rumble {
+  0% { transform: translate(0.6px, 0.4px); }
+  25% { transform: translate(-0.9px, -0.3px); }
+  50% { transform: translate(0.4px, -0.6px); }
+  75% { transform: translate(-0.6px, 0.5px); }
+  100% { transform: translate(0.6px, 0.4px); }
+}
+@keyframes car-launch {
+  0% { transform: translateX(0) rotate(0); }
+  18% { transform: translateX(-2%) rotate(1.6deg); }
+  100% { transform: translateX(-150%) rotate(0.6deg); }
+}
+@keyframes car-return {
+  0% { transform: translateX(150%) rotate(0); }
+  80% { transform: translateX(0) rotate(-0.8deg); }
+  100% { transform: translateX(0) rotate(0); }
+}
+
+.launch-shadow {
+  position: absolute;
+  inset-inline: 4% 4%;
+  bottom: -5%;
+  height: 12%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.6), transparent);
+  filter: blur(3px);
+}
+
+/* lights */
+.launch-headlight,
+.launch-taillight {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.35s;
+  mix-blend-mode: screen;
+}
+.launch-headlight {
+  left: 10.1%;
+  top: 45.4%;
+  width: 12%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: radial-gradient(circle, rgba(255, 248, 214, 0.95), rgba(255, 238, 170, 0.35) 45%, transparent 70%);
+}
+.launch-beam {
+  position: absolute;
+  right: 89.9%;
+  top: 36%;
+  width: 70%;
+  height: 22%;
+  background: linear-gradient(270deg, rgba(255, 244, 190, 0.38), transparent 92%);
+  clip-path: polygon(100% 38%, 0 0, 0 100%, 100% 62%);
+  opacity: 0;
+  transition: opacity 0.35s;
+  filter: blur(2px);
+  mix-blend-mode: screen;
+}
+.launch-taillight {
+  left: 98.1%;
+  top: 34.4%;
+  width: 6%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  background: radial-gradient(circle, rgba(255, 70, 50, 0.95), rgba(255, 70, 50, 0.3) 50%, transparent 72%);
+}
+.launch-scene:not([data-phase='parked']):not([data-phase='away']) .launch-headlight,
+.launch-scene:not([data-phase='parked']):not([data-phase='away']) .launch-beam,
+.launch-scene:not([data-phase='parked']):not([data-phase='away']) .launch-taillight {
+  opacity: 1;
+}
+
+/* spinning wheels: a blurred spoke disc faded in while the car is moving */
+.launch-wheel {
+  position: absolute;
+  width: 15.6%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  opacity: 0;
+  background: repeating-conic-gradient(from 0deg, rgba(190, 200, 205, 0.7) 0 9deg, rgba(20, 24, 26, 0.55) 9deg 30deg);
+  filter: blur(1.4px);
+  mask-image: radial-gradient(circle, transparent 22%, #000 26%, #000 90%, transparent 100%);
+  -webkit-mask-image: radial-gradient(circle, transparent 22%, #000 26%, #000 90%, transparent 100%);
+  transition: opacity 0.3s;
+}
+.launch-wheel.front { left: 23.4%; top: 69.8%; }
+.launch-wheel.rear { left: 83.8%; top: 71%; }
+.launch-scene[data-phase='driving'] .launch-wheel,
+.launch-scene[data-phase='returning'] .launch-wheel {
+  opacity: 0.85;
+  animation: wheel-spin 0.16s linear infinite;
+}
+@keyframes wheel-spin {
+  to { rotate: 360deg; }
+}
+
+/* exhaust puffs */
+.launch-puff {
+  position: absolute;
+  left: 99%;
+  top: 80%;
+  width: 7%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(220, 230, 230, 0.5), transparent 70%);
+  opacity: 0;
+}
+.launch-scene[data-phase='igniting'] .launch-puff,
+.launch-scene[data-phase='driving'] .launch-puff {
+  animation: puff 0.8s ease-out infinite;
+}
+.launch-puff:nth-child(2) { animation-delay: 0.27s !important; }
+.launch-puff:nth-child(3) { animation-delay: 0.54s !important; }
+@keyframes puff {
+  0% { opacity: 0.75; transform: translate(0, 0) scale(0.5); }
+  100% { opacity: 0; transform: translate(70%, -50%) scale(2.4); }
+}
+
+/* speed streaks */
+.launch-streak {
+  position: absolute;
+  height: 2px;
+  width: 38%;
+  left: -40%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, rgba(232, 241, 239, 0.85));
+  opacity: 0;
+}
+.launch-scene[data-phase='driving'] .launch-streak,
+.launch-scene[data-phase='returning'] .launch-streak {
+  animation: streak 0.42s linear infinite;
+}
+@keyframes streak {
+  0% { opacity: 0; transform: translateX(0); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(380%); }
+}
+
+/* engine start button */
+.start-ring-idle { animation: start-pulse 2.4s ease-in-out infinite; }
+@keyframes start-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(240, 163, 58, 0.55), 0 0 18px rgba(240, 163, 58, 0.25); }
+  50% { box-shadow: 0 0 0 9px rgba(240, 163, 58, 0), 0 0 26px rgba(240, 163, 58, 0.45); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .launch-scene *,
+  .launch-scene[data-phase] .launch-car,
+  .start-ring-idle {
+    animation: none !important;
+    transition: none !important;
+  }
+  .launch-scene[data-phase='driving'] .launch-car,
+  .launch-scene[data-phase='away'] .launch-car { transform: translateX(-150%); }
+}

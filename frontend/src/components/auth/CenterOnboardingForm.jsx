@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { DEFAULT_CENTER_SPECIALTY } from '../../constants/centerSpecialties'
 import { normalizeIraqiMobile } from '../../utils/iraqiPhone'
 import { authInputClass as inputClass } from './PasswordForms'
 import SpecialtyPicker from './SpecialtyPicker'
 
 /** Second signup step after Google: the three things we need to run the center. */
-export default function CenterOnboardingForm({ onSubmit, loading }) {
+export default function CenterOnboardingForm({ onSubmit, onProgress, loading }) {
   const [centerName, setCenterName] = useState('')
   const [specialty, setSpecialty] = useState(DEFAULT_CENTER_SPECIALTY)
   const [whatsapp, setWhatsapp] = useState('')
@@ -13,6 +13,11 @@ export default function CenterOnboardingForm({ onSubmit, loading }) {
 
   const phone = normalizeIraqiMobile(whatsapp)
   const phoneInvalid = touched && whatsapp && !phone
+  const completed = (centerName.trim() ? 1 : 0) + (phone ? 1 : 0)
+
+  useEffect(() => {
+    onProgress?.(completed)
+  }, [completed, onProgress])
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -62,7 +67,7 @@ export default function CenterOnboardingForm({ onSubmit, loading }) {
         disabled={loading}
         className="rounded-full bg-oil px-6 py-4 text-lg font-bold text-petrol-deep transition hover:bg-oil-dark focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-oil/50 disabled:opacity-60"
       >
-        {loading ? 'جاري فتح الحساب…' : 'افتح حساب المركز'}
+        {loading ? 'جاري الانطلاق…' : 'افتح الحساب وانطلق'}
       </button>
     </form>
   )
