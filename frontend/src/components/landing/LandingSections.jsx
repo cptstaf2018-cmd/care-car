@@ -7,7 +7,7 @@ import StartButton from './StartButton'
 import InstrumentGrid from '../cluster/InstrumentGrid'
 import useScrollProgress from '../cluster/useScrollProgress'
 import { CENTER_SPECIALTIES } from '../../constants/centerSpecialties'
-import { PLAN_DETAILS, PLAN_ORDER } from '../../constants/plans'
+import { PLAN_DETAILS, PLAN_ORDER, foundingPrice, money } from '../../constants/plans'
 import { FAQ, FOUNDING_DISCOUNT, FOUNDING_SEATS_LEFT, OFFERS } from '../../constants/offers'
 import { SUPPORT_WHATSAPP_URL, TRIAL_DAYS, whatsappLink } from '../../constants/contact'
 
@@ -18,15 +18,12 @@ const NAV_LINKS = [
   { href: '#faq', label: 'أسئلة' },
 ]
 const DASHBOARD_RPM = 5.2
-const PRICE_ROUNDING = 1000
 const STEPS = [
   { title: 'سجّل الخدمة', text: 'ضغطة START، تكتب اللوحة، تختار الخدمة، وتطلع التذكرة جاهزة للزبون.' },
   { title: 'النظام يحسب', text: 'يخصم من المخزون، يسجّل الدين إذا ما دفع، ويحسب موعد الزيت القادم.' },
   { title: 'الزبون يرجع', text: 'قبل الموعد توصله رسالة واتساب باسم مركزك. فيرجع لك، مو لغيرك.' },
 ]
 
-const foundingPrice = (price) => Math.round((price * (1 - FOUNDING_DISCOUNT)) / PRICE_ROUNDING) * PRICE_ROUNDING
-const money = (n) => n.toLocaleString('en-US')
 
 export function LandingNav() {
   const [open, setOpen] = useState(false)

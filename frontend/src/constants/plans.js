@@ -1,3 +1,5 @@
+import { FOUNDING_DISCOUNT } from './offers'
+
 export const PLAN_ORDER = ['basic', 'pro', 'enterprise']
 export const PLAN_RANK = { basic: 1, pro: 2, enterprise: 3 }
 
@@ -27,6 +29,12 @@ export const PLAN_DETAILS = {
     noFeatures: [],
   },
 }
+
+const PRICE_ROUNDING = 1000
+
+/** Lifetime launch price: the list price minus the founding discount, rounded to the nearest 1,000. */
+export const foundingPrice = (price) => Math.round((price * (1 - FOUNDING_DISCOUNT)) / PRICE_ROUNDING) * PRICE_ROUNDING
+export const money = (amount) => amount.toLocaleString('en-US')
 
 export const IQD = (amount) => `${(amount / 1000).toFixed(0)}K د.ع`
 

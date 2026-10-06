@@ -6,7 +6,8 @@ import Layout from '../components/Layout'
 import { getCenterSettings, updateCenterSettings, requestSubscription, uploadLogo, getMobileCameraLink } from '../api/settings'
 import { getCenterUsers, createCenterUser, updateCenterUser } from '../api/users'
 import { CAMERA_ENABLED } from '../constants/features'
-import { PLAN_DETAILS, PLAN_ORDER, hasPlanFeature, isHigherPlan, nextPlan, planShortName, planUserLimit } from '../constants/plans'
+import { FOUNDING_DISCOUNT } from '../constants/offers'
+import { PLAN_DETAILS, PLAN_ORDER, foundingPrice, hasPlanFeature, money, isHigherPlan, nextPlan, planShortName, planUserLimit } from '../constants/plans'
 import TankGauge from '../components/shell/TankGauge'
 import { tankFor } from '../components/shell/tank'
 
@@ -71,7 +72,8 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
     if (forceUpgrade && targetUpgradePlan) setShowUpgradeForm(true)
   }, [forceUpgrade, targetUpgradePlan])
 
-  const planPrice = PLANS.find(p => p.id === selectedPlan)?.price || ''
+  const selectedPlanDetails = PLANS.find(p => p.id === selectedPlan)
+  const planPrice = selectedPlanDetails ? money(foundingPrice(selectedPlanDetails.adminPrice)) : ''
   const sectionTitle = subscriptionActive ? 'ترقية الاشتراك' : 'خطط الاشتراك'
   const sectionHint = subscriptionActive
     ? `خطتك الحالية ${planShortName(currentPlan)}. اختر خطة أعلى لتفعيل الميزات المقفلة.`
@@ -165,8 +167,12 @@ function SubscriptionSection({ center, forceUpgrade = false }) {
               <span className="absolute left-4 top-4 text-lg">✓</span>
             )}
             <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{plan.name}</p>
-            <p className="mt-1 text-2xl font-black text-slate-950">{plan.price}</p>
-            <p className="text-xs text-slate-500">دينار / شهر</p>
+            <p className="mt-2 text-xs text-slate-400 line-through tabular-nums">{plan.price} د.ع / شهر</p>
+            <p className="text-2xl font-black text-slate-950 tabular-nums">
+              {money(foundingPrice(plan.adminPrice))}
+              <span className="text-xs font-medium text-slate-500"> د.ع / شهر</span>
+            </p>
+            <p className="mt-1 text-xs font-bold text-amber-600">سعر المؤسسين: خصم {Math.round(FOUNDING_DISCOUNT * 100)}٪ مدى الحياة</p>
             <ul className="mt-4 space-y-1.5 text-right">
               {plan.features.map(f => (
                 <li key={f} className="flex items-center gap-2 text-xs text-slate-700">
