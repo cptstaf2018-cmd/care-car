@@ -1,21 +1,20 @@
 import { useCallback, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { Mail, Smartphone } from 'lucide-react'
 import { completeGoogleSignup, googleLogin, login } from '../api/auth'
 import { useAuthStore } from '../store/auth'
 import AuthShell from '../components/auth/AuthShell'
 import GoogleSignInButton from '../components/auth/GoogleSignInButton'
+import WhatsAppIcon from '../components/WhatsAppIcon'
 import ContactSignup from '../components/auth/ContactSignup'
 import CenterOnboardingForm from '../components/auth/CenterOnboardingForm'
 import { ErrorNote, ForgotPasswordForm, PasswordLoginForm } from '../components/auth/PasswordForms'
-import { SUPPORT_WHATSAPP_DISPLAY, TRIAL_DAYS, whatsappLink } from '../constants/contact'
+import { TRIAL_DAYS, whatsappLink } from '../constants/contact'
 
 const TRIAL_ENDED_MESSAGE = 'انتهت تجربتك المجانية. كلّمنا على الواتساب حتى نفعّل اشتراكك.'
 
 const SIGNUP_METHODS = [
-  { id: 'google', label: 'Google', hint: 'الأسرع', icon: <GoogleMark /> },
-  { id: 'phone', label: 'رقم الهاتف', hint: 'كود واتساب', icon: <Smartphone size={18} aria-hidden="true" /> },
-  { id: 'email', label: 'الإيميل', hint: 'كود بالإيميل', icon: <Mail size={18} aria-hidden="true" /> },
+  { id: 'google', label: 'Google', hint: 'ضغطة وحدة', icon: <GoogleMark /> },
+  { id: 'phone', label: 'رقم الواتساب', hint: 'كود على واتساب', icon: <WhatsAppIcon size={20} /> },
 ]
 
 function GoogleMark() {
@@ -39,7 +38,7 @@ function loginErrorMessage(err) {
 
 function AuthTabs({ isRegister, onChange }) {
   const tab = (active) =>
-    `flex-1 rounded-full px-4 py-2.5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oil ${
+    `flex-1 whitespace-nowrap rounded-full px-2 py-2.5 text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oil ${
       active ? 'bg-petrol text-mint' : 'text-petrol hover:bg-white'
     }`
   return (
@@ -56,7 +55,7 @@ function AuthTabs({ isRegister, onChange }) {
 
 function MethodPicker({ value, onChange }) {
   return (
-    <div role="radiogroup" aria-label="طريقة التسجيل" className="grid grid-cols-3 gap-2">
+    <div role="radiogroup" aria-label="طريقة التسجيل" className="grid grid-cols-2 gap-3">
       {SIGNUP_METHODS.map((m) => {
         const selected = value === m.id
         return (
@@ -227,7 +226,7 @@ export default function Login() {
                 <p className="text-center text-sm text-mint-ink">بعدها نسألك عن مركزك: اسمه، شنو يشتغل، ورقم واتسابه.</p>
               </div>
             ) : (
-              <ContactSignup key={method} method={method} onActivated={enterApp} />
+              <ContactSignup onActivated={enterApp} />
             )}
           </>
         ) : (
@@ -250,15 +249,16 @@ export default function Login() {
         )}
       </div>
 
-      <p className="mt-8 border-t border-mint-dim pt-5 text-sm text-mint-ink">
-        تحتاج مساعدة؟{' '}
+      <p className="mt-8 flex flex-wrap items-center gap-2 border-t border-mint-dim pt-5 text-sm text-mint-ink">
+        تحتاج مساعدة؟
         <a
-          className="font-bold text-petrol underline underline-offset-4"
+          className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 font-bold text-petrol-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oil"
           href={whatsappLink(isRegister ? 'مرحبا، أريد أسجّل مركزي بكير كار' : 'مرحبا، أحتاج مساعدة بالدخول لكير كار')}
           target="_blank"
           rel="noopener noreferrer"
         >
-          كلّمنا واتساب <span dir="ltr">{SUPPORT_WHATSAPP_DISPLAY}</span>
+          <WhatsAppIcon size={18} />
+          كلّمنا على واتساب
         </a>
       </p>
     </AuthShell>

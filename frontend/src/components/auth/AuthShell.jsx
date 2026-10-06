@@ -1,5 +1,6 @@
 import BrandMark from '../BrandMark'
-import { SUPPORT_WHATSAPP_DISPLAY, SUPPORT_WHATSAPP_URL, TRIAL_DAYS } from '../../constants/contact'
+import WhatsAppIcon from '../WhatsAppIcon'
+import { SUPPORT_WHATSAPP_URL, TRIAL_DAYS } from '../../constants/contact'
 
 const POINTS = [
   { title: 'تذكير بالموعد', body: 'كل زبون توصله رسالة واتساب باسم مركزك لما يقرب تبديل زيته.' },
@@ -17,9 +18,10 @@ export default function AuthShell({ children }) {
           href={SUPPORT_WHATSAPP_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="rounded-full px-3 py-2 text-sm font-bold text-oil hover:bg-petrol-deep focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oil"
+          className="inline-flex items-center gap-2 rounded-full bg-petrol-deep px-4 py-2 text-sm font-bold text-mint hover:bg-black/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-oil"
         >
-          واتساب <span dir="ltr">{SUPPORT_WHATSAPP_DISPLAY}</span>
+          <WhatsAppIcon size={18} />
+          مساعدة
         </a>
       </header>
 
