@@ -5,7 +5,7 @@ import { authInputClass as inputClass } from './PasswordForms'
 import SpecialtyPicker from './SpecialtyPicker'
 
 /** Second signup step after Google: the three things we need to run the center. */
-export default function CenterOnboardingForm({ onSubmit, onProgress, loading }) {
+export default function CenterOnboardingForm({ onSubmit, onProgress, loading, formId, hideSubmit = false }) {
   const [centerName, setCenterName] = useState('')
   const [specialty, setSpecialty] = useState(DEFAULT_CENTER_SPECIALTY)
   const [whatsapp, setWhatsapp] = useState('')
@@ -27,7 +27,7 @@ export default function CenterOnboardingForm({ onSubmit, onProgress, loading }) 
   }
 
   return (
-    <form onSubmit={handleSubmit} className="grid gap-5" noValidate>
+    <form id={formId} onSubmit={handleSubmit} className="grid gap-5" noValidate>
       <label className="grid gap-2">
         <span className="text-sm font-bold">اسم المركز</span>
         <input
@@ -62,13 +62,15 @@ export default function CenterOnboardingForm({ onSubmit, onProgress, loading }) 
         </span>
       </label>
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="rounded-full bg-oil px-6 py-4 text-lg font-bold text-petrol-deep transition hover:bg-oil-dark focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-oil/50 disabled:opacity-60"
-      >
-        {loading ? 'جاري الانطلاق…' : 'افتح الحساب وانطلق'}
-      </button>
+      {!hideSubmit && (
+        <button
+          type="submit"
+          disabled={loading}
+          className="rounded-full bg-oil px-6 py-4 text-lg font-bold text-petrol-deep transition hover:bg-oil-dark focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-oil/50 disabled:opacity-60"
+        >
+          {loading ? 'جاري الانطلاق…' : 'افتح الحساب وانطلق'}
+        </button>
+      )}
     </form>
   )
 }

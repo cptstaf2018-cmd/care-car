@@ -15,6 +15,7 @@ import { TRIAL_DAYS, whatsappLink } from '../constants/contact'
 const TRIAL_ENDED_MESSAGE = 'انتهت تجربتك المجانية. كلّمنا على الواتساب حتى نفعّل اشتراكك.'
 const CAR_GONE_PAUSE_MS = 250
 const RPM_PER_FORM_STEP = 1.4
+const STEP_RPM = { account: 1.5, details: 3, launch: 7.5 }
 
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -58,6 +59,12 @@ export default function Login() {
   const [formStep, setFormStep] = useState(0) // onboarding fields completed, raises the idle revs
 
   const mode = subMode || (location.pathname === '/register' ? 'register' : 'login')
+  const launching = phase === 'igniting' || phase === 'driving' || phase === 'away'
+  const shellProps = launching
+    ? { step: 3, rpm: STEP_RPM.launch }
+    : mode === 'onboarding'
+      ? { step: 2, rpm: STEP_RPM.details + formStep * RPM_PER_FORM_STEP }
+      : { step: 1, rpm: STEP_RPM.account }
 
   const go = (nextMode) => {
     setError('')
@@ -143,19 +150,22 @@ export default function Login() {
 
   if (mode === 'onboarding' && signup) {
     return (
-      <AuthShell>
-        <LaunchScene phase={phase} idleRpm={PHASE_RPM.parked + formStep * RPM_PER_FORM_STEP} />
-        <h1 className="mt-6 text-2xl font-bold">أهلاً {signup.name}، عرّفنا على مركزك</h1>
-        <p className="mb-6 mt-2 text-mint-ink">كل ما تكمّل معلومة يعلى دوران المحرك. وتجربتك {TRIAL_DAYS} يوم تبدأ لما تنطلق.</p>
+      <AuthShell {...shellProps}>
+        <h1 className="text-2xl font-bold">أهلاً {signup.name}، عرّفنا على مركزك</h1>
+        <p className="mb-6 mt-2 text-mint-ink">كل ما تكمّل معلومة يعلى دوران المحرك. وتجربتك {TRIAL_DAYS} يوم تبدأ لما تضغط START.</p>
         <div className="mb-4"><ErrorNote>{error}</ErrorNote></div>
-        <CenterOnboardingForm onSubmit={handleOnboarding} onProgress={setFormStep} loading={loading} />
+        <CenterOnboardingForm formId="onboarding-form" hideSubmit onSubmit={handleOnboarding} onProgress={setFormStep} loading={loading} />
+        <div className="mt-6">
+          <LaunchScene phase={phase} idleRpm={PHASE_RPM.parked + formStep * RPM_PER_FORM_STEP} />
+          <StartEngineButton mode="submit" formId="onboarding-form" phase={phase} disabled={loading} caption="اضغط وافتح حسابك وانطلق" />
+        </div>
       </AuthShell>
     )
   }
 
   if (mode === 'forgot') {
     return (
-      <AuthShell>
+      <AuthShell {...shellProps}>
         <ForgotPasswordForm
           initialId={lastId}
           onBack={() => go('login')}
@@ -189,7 +199,7 @@ export default function Login() {
   )
 
   return (
-    <AuthShell>
+    <AuthShell {...shellProps}>
       <AuthTabs isRegister={isRegister} onChange={go} />
 
       <h1 className="text-2xl font-bold">{isRegister ? 'افتح حساب مركزك' : 'أهلاً بيك من جديد'}</h1>

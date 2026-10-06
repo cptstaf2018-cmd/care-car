@@ -221,6 +221,9 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .feature-gauges * {
+    transition: none !important;
+  }
   .launch-scene *,
   .launch-scene[data-phase] .launch-car,
   .start-ring-idle {

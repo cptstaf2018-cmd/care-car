@@ -1,15 +1,10 @@
 import BrandMark from '../BrandMark'
 import WhatsAppIcon from '../WhatsAppIcon'
-import { SUPPORT_WHATSAPP_URL, TRIAL_DAYS } from '../../constants/contact'
-
-const POINTS = [
-  { title: 'تذكير بالموعد', body: 'كل زبون توصله رسالة واتساب باسم مركزك لما يقرب تبديل زيته.' },
-  { title: 'ديون بدون إحراج', body: 'تعرف منو مطلوب وكم، وتطالبه برسالة مرتبة.' },
-  { title: 'مخزون حي', body: 'كل خدمة تنقص القطع، وينبهك قبل ما تخلص.' },
-]
+import FeatureGauges from './FeatureGauges'
+import { SUPPORT_WHATSAPP_URL } from '../../constants/contact'
 
 /** Split layout for auth screens: form card on the start side, product promise on the other. */
-export default function AuthShell({ children }) {
+export default function AuthShell({ children, step = 1, rpm = 1.5 }) {
   return (
     <div dir="rtl" className="min-h-screen bg-petrol text-mint">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5 sm:px-8">
@@ -30,20 +25,8 @@ export default function AuthShell({ children }) {
           {children}
         </section>
 
-        <aside className="hidden lg:block lg:pt-6">
-          <p className="text-gauge-light">زبونك اللي يبدّل اليوم، يرجع بعد 5,000 كم.</p>
-          <h2 className="mt-2 max-w-[18ch] text-4xl font-bold leading-snug">كير كار يذكّره بوقته، فيرجع لمركزك.</h2>
-          <ul className="mt-10 grid max-w-md gap-6">
-            {POINTS.map((p) => (
-              <li key={p.title} className="border-s-2 border-oil ps-4">
-                <b className="block text-lg">{p.title}</b>
-                <span className="text-gauge-light">{p.body}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-10 inline-block rounded-full bg-petrol-deep px-4 py-2 text-sm text-gauge-light">
-            {TRIAL_DAYS} يوم مجاناً بكل الميزات، بدون دفع.
-          </p>
+        <aside className="lg:pt-6">
+          <FeatureGauges step={step} rpm={rpm} />
         </aside>
       </main>
     </div>
