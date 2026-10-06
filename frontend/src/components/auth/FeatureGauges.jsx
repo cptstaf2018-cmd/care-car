@@ -1,29 +1,22 @@
 import InstrumentGrid from '../cluster/InstrumentGrid'
 import useScrollProgress from '../cluster/useScrollProgress'
-import LaunchScene from '../launch/LaunchScene'
 import '../launch/launch.css'
 
 /**
- * The lower part of the signup pages: the headline, the car with the START button under it, and the four instruments sweeping in as it scrolls into
+ * The top of the signup pages: the headline and the four instruments sweeping in as it scrolls into
  * view while the RPM dial follows the registration step (`rpm`, `step`).
  */
-export default function FeatureGauges({ step = 1, rpm = 1.5, phase = 'parked', idleRpm, launch }) {
+export default function FeatureGauges({ step = 1, rpm = 1.5 }) {
   const [ref, progress] = useScrollProgress()
 
   return (
     <>
-      <aside className="lg:pt-4">
+      <div className="max-w-2xl">
         <p className="text-gauge-light">زبونك اللي يبدّل اليوم، يرجع بعد 5,000 كم.</p>
-        <h2 className="mt-2 max-w-[20ch] text-3xl font-bold leading-snug sm:text-4xl">كير كار يذكّره بوقته، فيرجع لمركزك.</h2>
-
-      </aside>
-
-      <div className="launch-stage lg:col-span-2">
-        <LaunchScene phase={phase} idleRpm={idleRpm} />
-        {launch && <div className="launch-stage-action">{launch}</div>}
+        <h2 className="mt-2 text-3xl font-bold leading-snug sm:text-4xl">كير كار يذكّره بوقته، فيرجع لمركزك.</h2>
       </div>
 
-      <div ref={ref} className="feature-gauges lg:col-span-2">
+      <div ref={ref} className="feature-gauges mt-8">
         <InstrumentGrid
           progress={progress}
           rpm={rpm}

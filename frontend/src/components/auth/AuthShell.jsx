@@ -1,6 +1,8 @@
 import BrandMark from '../BrandMark'
 import WhatsAppIcon from '../WhatsAppIcon'
 import FeatureGauges from './FeatureGauges'
+import LaunchScene from '../launch/LaunchScene'
+import '../launch/launch.css'
 import { SUPPORT_WHATSAPP_URL } from '../../constants/contact'
 
 /** Split layout for auth screens: form card on the start side, product promise on the other. */
@@ -20,12 +22,17 @@ export default function AuthShell({ children, step = 1, rpm = 1.5, phase = 'park
         </a>
       </header>
 
-      <main className="mx-auto grid max-w-6xl items-start gap-10 px-4 pb-16 pt-2 sm:px-8 lg:grid-cols-[minmax(0,480px)_1fr] lg:pt-10">
-        <section className="rounded-[28px] bg-mint p-6 text-petrol-deep shadow-[0_30px_60px_-30px_rgba(0,0,0,0.6)] sm:p-8">
+      <main className="mx-auto max-w-6xl px-4 pb-16 pt-2 sm:px-8 lg:pt-6">
+        <FeatureGauges step={step} rpm={rpm} />
+
+        <section className="mx-auto mt-10 w-full max-w-[520px] rounded-[28px] bg-mint p-6 text-petrol-deep shadow-[0_30px_60px_-30px_rgba(0,0,0,0.6)] sm:p-8">
           {children}
         </section>
 
-        <FeatureGauges step={step} rpm={rpm} phase={phase} idleRpm={idleRpm} launch={launch} />
+        <div className="launch-stage mt-10">
+          <LaunchScene phase={phase} idleRpm={idleRpm} />
+          {launch && <div className="launch-stage-action">{launch}</div>}
+        </div>
       </main>
     </div>
   )
