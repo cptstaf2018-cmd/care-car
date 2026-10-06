@@ -18,6 +18,7 @@ import Subscriptions from './pages/superadmin/Subscriptions'
 import PlatformAds from './pages/superadmin/PlatformAds'
 import Activate from './pages/Activate'
 import LandingPage from './pages/LandingPage'
+import { PrivacyPage, TermsPage } from './pages/LegalPages'
 import MobileCamera from './pages/MobileCamera'
 import { useAuthStore } from './store/auth'
 
@@ -26,7 +27,7 @@ const centerRoles = ['manager', 'employee']
 
 function HomeRedirect() {
   const { token, user } = useAuthStore()
-  if (!token) return <Navigate to="/login" replace />
+  if (!token) return <Navigate to="/about" replace />
   return <Navigate to={user?.role === 'superadmin' ? '/admin' : '/center'} replace />
 }
 
@@ -39,6 +40,8 @@ export default function App() {
           <Route path="/register" element={<Login />} />
           <Route path="/activate" element={<Activate />} />
           <Route path="/about" element={<LandingPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
           <Route path="/mobile-camera/:token" element={<MobileCamera />} />
           <Route path="/" element={<HomeRedirect />} />
           <Route path="/center" element={<ProtectedRoute allowedRoles={centerRoles}><Dashboard /></ProtectedRoute>} />
