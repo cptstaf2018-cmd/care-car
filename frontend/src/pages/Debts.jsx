@@ -1,12 +1,30 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bell, CheckCircle2, CreditCard, MessageCircle, Phone, Receipt, Search, ToggleLeft, ToggleRight, WalletCards } from 'lucide-react'
+import { Bell, CheckCircle2, CreditCard, Phone, Search, ToggleLeft, ToggleRight, WalletCards } from 'lucide-react'
 import Layout from '../components/Layout'
 import StatCard from '../components/StatCard'
+import IraqiPlate from '../components/car/IraqiPlate'
+import WhatsAppIcon from '../components/WhatsAppIcon'
 import { getDebts, sendDebtReminder, updateDebt } from '../api/debts'
 
 const money = value => `${Number(value || 0).toLocaleString()} IQD`
+
+const DAY_MS = 86400000
+const WARM_AFTER_DAYS = 7
+const HOT_AFTER_DAYS = 30
+
+function debtAgeDays(invoiceDate) {
+  if (!invoiceDate) return null
+  const days = Math.floor((Date.now() - new Date(`${invoiceDate}T00:00:00`).getTime()) / DAY_MS)
+  return Math.max(0, days)
+}
+
+/** The longer a debt stays open the hotter its lamp: amber, orange, then red and pulsing. */
+function lampFor(age) {
+  if (age != null && age >= HOT_AFTER_DAYS) return { cls: 'bg-alert/10 text-alert', dot: 'animate-pulse bg-alert' }
+  if (age != null && age >= WARM_AFTER_DAYS) return { cls: 'bg-oil-light text-oil-dark', dot: 'bg-oil-dark' }
+  return { cls: 'bg-mint text-petrol', dot: 'bg-oil' }
+}
 
 export default function Debts() {
   const qc = useQueryClient()
@@ -70,9 +88,6 @@ export default function Debts() {
           <h2 className="mt-1 text-2xl font-black text-slate-950">الديون</h2>
           <p className="mt-2 text-sm text-slate-500">كل الزبائن الذين لديهم مبالغ مفتوحة، مع تذكير تلقائي أو إرسال يدوي مباشر.</p>
         </div>
-        <Link to="/center/services/new" className="inline-flex items-center justify-center gap-2 rounded-lg bg-slate-950 px-5 py-3 text-sm font-black text-white hover:bg-slate-800">
-          <Receipt size={17} /> خدمة جديدة
-        </Link>
       </div>
 
       <section className="mb-5 grid gap-3 md:grid-cols-3">
@@ -96,72 +111,72 @@ export default function Debts() {
         </div>
       )}
 
-      <section className="surface overflow-hidden rounded-lg">
-        <div className="overflow-x-auto">
-          <table className="min-w-[1120px] w-full text-right text-sm">
-            <thead className="bg-slate-50 text-slate-500">
-              <tr>
-                {['الزبون', 'السيارة', 'مبلغ الدين', 'الفاتورة', 'آخر تذكير', 'التلقائي', 'إجراء'].map(h => (
-                  <th key={h} className="border-b border-slate-200 px-4 py-3 font-black">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredDebts.map(debt => (
-                <tr key={debt.id} className="border-b border-slate-100 bg-white last:border-0 hover:bg-slate-50">
-                  <td className="px-4 py-4">
-                    <p className="font-black text-slate-950">{debt.customer_name || 'زبون غير مسجل'}</p>
-                    <p className="mt-1 flex items-center gap-1 text-xs font-bold text-slate-400"><Phone size={12} /> {debt.phone || 'لا يوجد رقم'}</p>
-                  </td>
-                  <td className="px-4 py-4">
-                    <p className="font-mono font-black text-slate-950">{debt.plate_number || '-'}</p>
-                    <p className="mt-1 text-xs text-slate-500">{debt.car_type || 'نوع غير محدد'}</p>
-                  </td>
-                  <td className="px-4 py-4 font-black text-rose-700">{money(debt.amount)}</td>
-                  <td className="px-4 py-4">
-                    <p className="font-black text-slate-950">#{debt.invoice_id}</p>
-                    <p className="mt-1 text-xs text-slate-400">{debt.invoice_date || '-'}</p>
-                  </td>
-                  <td className="px-4 py-4">
-                    <p className="font-bold text-slate-700">{debt.last_message_at ? new Date(debt.last_message_at).toLocaleDateString('ar-IQ') : 'لم يرسل بعد'}</p>
-                    <p className={`mt-1 text-xs font-black ${debt.last_message_status === 'sent' ? 'text-emerald-700' : debt.last_message_status ? 'text-amber-700' : 'text-slate-400'}`}>
-                      {debt.last_message_status || 'بانتظار أول تذكير'}
-                    </p>
-                  </td>
-                  <td className="px-4 py-4">
-                    <button
-                      onClick={() => updateMutation.mutate({ id: debt.id, data: { auto_reminder_enabled: !debt.auto_reminder_enabled } })}
-                      className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-black ${debt.auto_reminder_enabled ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'}`}>
-                      {debt.auto_reminder_enabled ? <ToggleRight size={18} /> : <ToggleLeft size={18} />}
-                      {debt.auto_reminder_enabled ? 'مفعل' : 'متوقف'}
-                    </button>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        onClick={() => sendMutation.mutate(debt.id)}
-                        disabled={sendMutation.isPending || !debt.phone}
-                        className="inline-flex items-center gap-1 rounded-lg bg-cyan-600 px-3 py-2 text-xs font-black text-white hover:bg-cyan-700 disabled:opacity-50">
-                        <MessageCircle size={13} /> إرسال الآن
-                      </button>
-                      <button onClick={() => partialPay(debt)}
-                        className="inline-flex items-center gap-1 rounded-lg bg-amber-50 px-3 py-2 text-xs font-black text-amber-700 hover:bg-amber-100">
-                        <CreditCard size={13} /> دفع جزئي
-                      </button>
-                      <button onClick={() => markPaid(debt)}
-                        className="inline-flex items-center gap-1 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700 hover:bg-emerald-100">
-                        <CheckCircle2 size={13} /> تسديد كامل
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <section aria-label="الديون" className="grid gap-3 xl:grid-cols-2">
+        {filteredDebts.map(debt => {
+          const age = debtAgeDays(debt.invoice_date)
+          const lamp = lampFor(age)
+          return (
+            <article key={debt.id} className="rounded-3xl border border-mint-dim bg-white p-4">
+              <header className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate font-bold text-petrol-deep">{debt.customer_name || 'زبون غير مسجل'}</p>
+                  <p className="mt-0.5 flex items-center gap-1 text-xs text-mint-ink" dir="ltr"><Phone size={12} /> {debt.phone || 'لا يوجد رقم'}</p>
+                </div>
+                <IraqiPlate plate={debt.plate_number || '—'} />
+              </header>
+
+              <div className="mt-4 flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-xs text-mint-ink">مبلغ الدين</p>
+                  <p className="text-3xl font-bold tabular-nums text-alert">{money(debt.amount)}</p>
+                </div>
+                <div className="text-end">
+                  <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${lamp.cls}`}>
+                    <span aria-hidden="true" className={`h-2 w-2 rounded-full ${lamp.dot}`} />
+                    {age == null ? 'تاريخ غير معروف' : age === 0 ? 'دين اليوم' : `عمره ${age} يوم`}
+                  </span>
+                  <p className="mt-1 text-xs text-mint-ink">فاتورة #{debt.invoice_id} · {debt.invoice_date || '-'}</p>
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl bg-mint px-3 py-2 text-xs">
+                <div className="min-w-0">
+                  <p className="font-bold text-petrol">{debt.last_message_at ? `آخر تذكير ${new Date(debt.last_message_at).toLocaleDateString('ar-IQ')}` : 'لسا ما انرسل تذكير'}</p>
+                  <p className={`font-bold ${debt.last_message_status === 'sent' ? 'text-emerald-700' : debt.last_message_status ? 'text-oil-dark' : 'text-gauge'}`}>
+                    {debt.last_message_status || 'بانتظار أول تذكير'}
+                  </p>
+                </div>
+                <button
+                  onClick={() => updateMutation.mutate({ id: debt.id, data: { auto_reminder_enabled: !debt.auto_reminder_enabled } })}
+                  aria-pressed={!!debt.auto_reminder_enabled}
+                  className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 font-bold ${debt.auto_reminder_enabled ? 'bg-petrol text-mint' : 'bg-white text-gauge'}`}>
+                  {debt.auto_reminder_enabled ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
+                  تذكير تلقائي
+                </button>
+              </div>
+
+              <footer className="mt-3 flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => sendMutation.mutate(debt.id)}
+                  disabled={sendMutation.isPending || !debt.phone}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-[#25D366] px-4 py-2 text-xs font-bold text-[#063] hover:brightness-95 disabled:opacity-50">
+                  <WhatsAppIcon size={14} className="text-[#063]" /> ذكّره الآن
+                </button>
+                <button onClick={() => partialPay(debt)}
+                  className="inline-flex items-center gap-1 rounded-full bg-oil-light px-3.5 py-2 text-xs font-bold text-oil-dark hover:bg-oil/30">
+                  <CreditCard size={13} /> دفع جزئي
+                </button>
+                <button onClick={() => markPaid(debt)}
+                  className="inline-flex items-center gap-1 rounded-full bg-petrol px-3.5 py-2 text-xs font-bold text-mint hover:bg-petrol-deep">
+                  <CheckCircle2 size={13} /> تسديد كامل
+                </button>
+              </footer>
+            </article>
+          )
+        })}
         {!filteredDebts.length && (
-          <div className="py-10 text-center text-sm font-bold text-slate-400">
-            {isLoading ? 'جاري تحميل الديون...' : 'لا توجد ديون مفتوحة'}
+          <div className="rounded-3xl border border-dashed border-mint-dim bg-white/60 py-10 text-center text-sm text-mint-ink xl:col-span-2">
+            {isLoading ? 'جاري تحميل الديون...' : 'ما كو ديون مفتوحة. كل شي مقبوض.'}
           </div>
         )}
       </section>

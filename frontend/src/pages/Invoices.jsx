@@ -1,17 +1,18 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Download, Edit2, Filter, Printer, PlusCircle, Receipt, Search, Trash2, X, Zap } from 'lucide-react'
+import { Download, Edit2, Filter, Printer, Receipt, Search, Trash2, X } from 'lucide-react'
 import Layout from '../components/Layout'
 import StatCard from '../components/StatCard'
+import IraqiPlate from '../components/car/IraqiPlate'
 import { getInvoices, updateInvoice, deleteInvoice } from '../api/invoices'
 
-const statusLabel = { paid: 'مدفوعة', unpaid: 'غير مدفوعة', partial: 'جزئية' }
-const statusStyle = {
-  paid: 'bg-emerald-100 text-emerald-700',
-  unpaid: 'bg-rose-100 text-rose-700',
-  partial: 'bg-amber-100 text-amber-700',
+const STAMP = {
+  paid: { cls: 'border-emerald-600 text-emerald-700' },
+  unpaid: { cls: 'border-alert text-alert' },
+  partial: { cls: 'border-oil-dark text-oil-dark' },
 }
+const statusLabel = { paid: 'مدفوعة', unpaid: 'غير مدفوعة', partial: 'جزئية' }
 
 const money = value => `${Number(value || 0).toLocaleString()} IQD`
 
@@ -119,8 +120,6 @@ export default function Invoices() {
           <p className="mt-2 text-sm text-slate-500">كل فاتورة خدمة مع السيارة، المبلغ، المدفوع، المتبقي والحالة.</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <QuickAction to="/center/services/new" icon={PlusCircle} label="فاتورة جديدة" primary />
-          <QuickAction to="/center/services/new" icon={Zap} label="خدمة جديدة" />
           <QuickButton onClick={() => window.print()} icon={Printer} label="طباعة" />
           <QuickButton onClick={exportCsv} icon={Download} label="تصدير Excel" />
         </div>
@@ -154,78 +153,65 @@ export default function Invoices() {
         </div>
       </section>
 
-      <section className="surface overflow-hidden rounded-lg">
-        <div className="overflow-x-auto">
-          <table className="min-w-[1050px] w-full text-right text-sm">
-            <thead className="bg-slate-50 text-slate-500">
-              <tr>
-                {['رقم', 'العميل', 'السيارة', 'الخدمات', 'الإجمالي', 'المدفوع', 'المتبقي', 'الحالة', 'إجراء'].map(h => (
-                  <th key={h} className="border-b border-slate-200 px-4 py-3 font-black">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredInvoices.map(inv => {
-                const total = Number(inv.amount || 0) - Number(inv.discount || 0)
-                return (
-                  <tr key={inv.id} className="border-b border-slate-100 bg-white last:border-0 hover:bg-slate-50">
-                    <td className="px-4 py-4 font-mono font-black text-slate-950">#{inv.id}</td>
-                    <td className="px-4 py-4">
-                      <p className="font-black text-slate-950">{inv.customer_name || 'عميل غير مسجل'}</p>
-                      <p className="mt-1 text-xs text-slate-400">{inv.invoice_date}</p>
-                    </td>
-                    <td className="px-4 py-4">
-                      <p className="font-mono font-black text-slate-950">{inv.plate_number || '-'}</p>
-                      <p className="mt-1 text-xs text-slate-500">{inv.car_type || 'نوع غير محدد'}</p>
-                    </td>
-                    <td className="px-4 py-4 font-bold text-slate-700">{inv.service_name || '-'}</td>
-                    <td className="px-4 py-4 font-black text-slate-950">{money(total)}</td>
-                    <td className="px-4 py-4 font-black text-emerald-700">{money(inv.paid_amount)}</td>
-                    <td className="px-4 py-4 font-black text-rose-700">{money(inv.remaining_amount)}</td>
-                    <td className="px-4 py-4">
-                      <span className={`rounded-full px-2.5 py-1 text-xs font-black ${statusStyle[inv.status] || 'bg-slate-100 text-slate-700'}`}>
-                        {statusLabel[inv.status] || inv.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => openEdit(inv)}
-                          className="flex items-center gap-1 rounded-lg bg-cyan-50 px-3 py-2 text-xs font-black text-cyan-700 hover:bg-cyan-100">
-                          <Edit2 size={12} /> تعديل
-                        </button>
-                        <button
-                          onClick={() => navigate(`/center/invoices/${inv.id}/print`)}
-                          className="flex items-center gap-1 rounded-lg bg-slate-100 px-3 py-2 text-xs font-black text-slate-700 hover:bg-slate-200">
-                          <Printer size={12} /> طباعة
-                        </button>
-                        <button
-                          onClick={() => changeStatus.mutate({ id: inv.id, status: nextStatus[inv.status] || 'paid' })}
-                          disabled={changeStatus.isPending}
-                          className={`rounded-lg px-3 py-2 text-xs font-black transition disabled:opacity-50 ${
-                            inv.status === 'paid'
-                              ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                              : 'bg-emerald-600 text-white hover:bg-emerald-700'
-                          }`}>
-                          {nextStatusLabel[inv.status] || 'مدفوعة'}
-                        </button>
-                        <button
-                          onClick={() => confirmDelete(inv)}
-                          disabled={removeMutation.isPending}
-                          className="flex items-center gap-1 rounded-lg bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 hover:bg-rose-100 disabled:opacity-50">
-                          <Trash2 size={12} /> حذف
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
+      <section aria-label="الفواتير" className="grid gap-3 xl:grid-cols-2">
+        {filteredInvoices.map(inv => {
+          const total = Number(inv.amount || 0) - Number(inv.discount || 0)
+          const stamp = STAMP[inv.status] || STAMP.unpaid
+          return (
+            <article key={inv.id} className="grid grid-cols-[88px_1fr] overflow-hidden rounded-3xl border border-mint-dim bg-white">
+              <div className="relative flex flex-col items-center justify-center gap-1 border-e-2 border-dashed border-mint-dim bg-mint px-2 py-4 text-center">
+                <span aria-hidden="true" className="absolute -end-[9px] -top-[9px] h-4 w-4 rounded-full bg-[#EEF4F2]" />
+                <span aria-hidden="true" className="absolute -bottom-[9px] -end-[9px] h-4 w-4 rounded-full bg-[#EEF4F2]" />
+                <span className="text-[11px] text-mint-ink">تذكرة</span>
+                <span className="text-lg font-bold tabular-nums text-petrol-deep">#{inv.id}</span>
+                <span className="text-[11px] text-mint-ink">{inv.invoice_date}</span>
+              </div>
+
+              <div className="min-w-0 p-4">
+                <header className="flex items-start justify-between gap-3">
+                  <IraqiPlate plate={inv.plate_number || '—'} />
+                  <span className={`-rotate-6 rounded-lg border-2 px-2.5 py-0.5 text-sm font-bold ${stamp.cls}`}>{statusLabel[inv.status] || inv.status}</span>
+                </header>
+                <p className="mt-3 truncate font-bold text-petrol-deep">{inv.customer_name || 'عميل غير مسجل'}</p>
+                <p className="truncate text-xs text-mint-ink">{inv.car_type || 'نوع غير محدد'} · {inv.service_name || '-'}</p>
+
+                <dl className="mt-3 grid grid-cols-3 gap-2 text-center">
+                  <div className="rounded-xl bg-mint py-1.5"><dt className="text-[11px] text-mint-ink">الإجمالي</dt><dd className="text-sm font-bold tabular-nums text-petrol-deep">{money(total)}</dd></div>
+                  <div className="rounded-xl bg-mint py-1.5"><dt className="text-[11px] text-mint-ink">المدفوع</dt><dd className="text-sm font-bold tabular-nums text-emerald-700">{money(inv.paid_amount)}</dd></div>
+                  <div className="rounded-xl bg-mint py-1.5"><dt className="text-[11px] text-mint-ink">المتبقي</dt><dd className={`text-sm font-bold tabular-nums ${Number(inv.remaining_amount) > 0 ? 'text-alert' : 'text-petrol'}`}>{money(inv.remaining_amount)}</dd></div>
+                </dl>
+
+                <footer className="mt-3 flex flex-wrap items-center gap-2">
+                  <button onClick={() => navigate(`/center/invoices/${inv.id}/print`)}
+                    className="flex items-center gap-1 rounded-full bg-petrol px-3 py-1.5 text-xs font-bold text-mint hover:bg-petrol-deep">
+                    <Printer size={12} /> التذكرة
+                  </button>
+                  <button
+                    onClick={() => changeStatus.mutate({ id: inv.id, status: nextStatus[inv.status] || 'paid' })}
+                    disabled={changeStatus.isPending}
+                    className={`rounded-full px-3 py-1.5 text-xs font-bold transition disabled:opacity-50 ${
+                      inv.status === 'paid' ? 'bg-mint text-petrol hover:bg-mint-dim' : 'bg-oil text-petrol-deep hover:bg-oil-dark'
+                    }`}>
+                    {nextStatusLabel[inv.status] || 'مدفوعة'}
+                  </button>
+                  <div className="ms-auto flex gap-1.5">
+                    <button onClick={() => openEdit(inv)} aria-label="تعديل"
+                      className="grid h-8 w-8 place-items-center rounded-full bg-oil-light text-oil-dark hover:bg-oil/30">
+                      <Edit2 size={13} />
+                    </button>
+                    <button onClick={() => confirmDelete(inv)} disabled={removeMutation.isPending} aria-label="حذف"
+                      className="grid h-8 w-8 place-items-center rounded-full bg-alert/10 text-alert hover:bg-alert/20 disabled:opacity-50">
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </footer>
+              </div>
+            </article>
+          )
+        })}
         {!filteredInvoices.length && (
-          <div className="py-10 text-center text-sm font-bold text-slate-400">
-            {isLoading ? 'جاري تحميل الفواتير...' : 'لا توجد فواتير مطابقة'}
+          <div className="rounded-3xl border border-dashed border-mint-dim bg-white/60 py-10 text-center text-sm text-mint-ink xl:col-span-2">
+            {isLoading ? 'جاري تحميل الفواتير...' : 'ما كو فواتير تطابق التصفية.'}
           </div>
         )}
       </section>
@@ -274,20 +260,6 @@ export default function Invoices() {
         </div>
       )}
     </Layout>
-  )
-}
-
-function QuickAction({ to, icon: Icon, label, primary }) {
-  return (
-    <Link
-      to={to}
-      className={`flex items-center gap-2 rounded-lg px-4 py-3 text-sm font-black transition ${
-        primary ? 'bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-200 hover:bg-cyan-300' : 'border border-slate-200 bg-white text-slate-700 hover:border-cyan-300 hover:bg-cyan-50'
-      }`}
-    >
-      <Icon size={17} />
-      {label}
-    </Link>
   )
 }
 
