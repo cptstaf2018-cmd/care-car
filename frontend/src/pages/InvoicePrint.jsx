@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import html2canvas from 'html2canvas'
 import { getInvoice } from '../api/invoices'
+import ServiceTicket from '../components/service/ServiceTicket'
 
 const STATUS = { paid: 'مدفوعة', unpaid: 'غير مدفوعة', partial: 'جزئية' }
 const STATUS_COLOR = { paid: '#059669', unpaid: '#dc2626', partial: '#d97706' }
@@ -10,6 +11,8 @@ const STATUS_COLOR = { paid: '#059669', unpaid: '#dc2626', partial: '#d97706' }
 export default function InvoicePrint() {
   const { id } = useParams()
   const invoiceRef = useRef(null)
+  const ticketRef = useRef(null)
+  const [layout, setLayout] = useState('ticket')
   const [imageStatus, setImageStatus] = useState('')
   const { data: inv, isLoading, isError } = useQuery({
     queryKey: ['invoice', id],
@@ -23,12 +26,13 @@ export default function InvoicePrint() {
     : inv.service_lines.filter(Boolean).map(line => ({ name: line, amount: 0, notes: '', inventory_item_name: '', inventory_quantity: null }))
 
   const shareInvoiceImage = async () => {
-    if (!invoiceRef.current) return
+    const target = layout === 'ticket' ? ticketRef.current : invoiceRef.current
+    if (!target) return
     setImageStatus('جاري تجهيز صورة الفاتورة...')
     try {
-      const canvas = await html2canvas(invoiceRef.current, {
+      const canvas = await html2canvas(target, {
         scale: 2,
-        backgroundColor: '#ffffff',
+        backgroundColor: layout === 'ticket' ? '#EEF4F2' : '#ffffff',
         useCORS: true,
       })
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.98))
@@ -73,6 +77,10 @@ export default function InvoicePrint() {
             className="invoice-action-button invoice-action-whatsapp">
             📲 إرسال صورة واتساب
           </button>
+          <button onClick={() => setLayout(layout === 'ticket' ? 'a4' : 'ticket')}
+            className="invoice-action-button invoice-action-muted">
+            {layout === 'ticket' ? 'عرض A4' : 'عرض التذكرة'}
+          </button>
           <button onClick={() => window.history.back()}
             className="invoice-action-button invoice-action-muted">
             رجوع
@@ -81,8 +89,14 @@ export default function InvoicePrint() {
         {imageStatus && <p className="invoice-actions-status">{imageStatus}</p>}
       </div>
 
+      {layout === 'ticket' && (
+        <div className="ticket-stage" style={{ background: '#EEF4F2', padding: '28px 12px 40px' }}>
+          <ServiceTicket inv={inv} innerRef={ticketRef} />
+        </div>
+      )}
+
       {/* A4 Invoice */}
-      <div ref={invoiceRef} className="invoice-page" dir="rtl">
+      <div ref={invoiceRef} className="invoice-page" dir="rtl" style={layout === 'ticket' ? { display: 'none' } : undefined}>
         {/* Header */}
         <header className="invoice-header">
           <div className="invoice-title-box">
@@ -203,6 +217,8 @@ export default function InvoicePrint() {
           .no-print { display: none !important; }
           body { margin: 0; background: white !important; }
           .invoice-page { margin-top: 0 !important; box-shadow: none !important; }
+          .ticket-stage { padding: 0 !important; background: #fff !important; }
+          .service-ticket { box-shadow: none !important; }
         }
 
         body { background: #f1f5f9; font-family: 'Segoe UI', Tahoma, sans-serif; }

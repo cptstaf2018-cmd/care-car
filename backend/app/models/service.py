@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, ForeignKey, Date, Text
+from sqlalchemy import Column, Integer, String, ForeignKey, Date, Text, DateTime
 from app.models.base import Base, TimestampMixin
 
 class Service(Base, TimestampMixin):
@@ -10,4 +10,5 @@ class Service(Base, TimestampMixin):
     oil_type = Column(String(200), nullable=False)
     mileage = Column(Integer)
     notes = Column(Text)
+    started_at = Column(DateTime, nullable=True)  # when the pit-stop timer began (UTC); null if no timer was used
     employee_id = Column(Integer, ForeignKey("users.id"), index=True)

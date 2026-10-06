@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from sqlalchemy.orm import Session
 from app.models.service import Service
 from app.models.invoice import Invoice, InvoiceStatus
@@ -24,6 +24,15 @@ def _payment_amounts(data: dict) -> tuple[float, float, InvoiceStatus]:
         return net, 0, InvoiceStatus.unpaid
     return net, 0, InvoiceStatus.unpaid
 
+def _normalize_started_at(value: datetime | None) -> datetime | None:
+    """Store the timer start as naive UTC and never later than now (a fast client clock must not give negative time)."""
+    if value is None:
+        return None
+    if value.tzinfo is not None:
+        value = value.astimezone(timezone.utc).replace(tzinfo=None)
+    return min(value, datetime.now(timezone.utc).replace(tzinfo=None))
+
+
 def create_service_with_invoice(db: Session, tenant_id: int, data: dict) -> tuple[Service, Invoice]:
     svc_date = data.get("service_date") or date.today()
     service = Service(
@@ -33,6 +42,7 @@ def create_service_with_invoice(db: Session, tenant_id: int, data: dict) -> tupl
         mileage=data.get("mileage"),
         notes=data.get("notes"),
         service_date=svc_date,
+        started_at=_normalize_started_at(data.get("started_at")),
     )
     db.add(service)
     db.flush()

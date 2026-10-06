@@ -117,6 +117,20 @@ def list_invoices(status: str | None = None, db: Session = Depends(get_db), user
       })
     return result
 
+def _service_timing(service: Service | None) -> dict:
+    """Entry/exit times for the service ticket; duration only exists when the pit-stop timer was used."""
+    started = service.started_at if service else None
+    finished = service.created_at if service else None
+    duration = None
+    if started and finished:
+        duration = max(0, round((finished - started).total_seconds() / 60))
+    return {
+        "started_at": started.isoformat() if started else None,
+        "finished_at": finished.isoformat() if finished else None,
+        "duration_minutes": duration,
+    }
+
+
 @router.get("/{invoice_id}/detail")
 def get_invoice(invoice_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     inv = db.get(Invoice, invoice_id)
@@ -140,6 +154,7 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db), user: User = Dep
         "invoice_lines": invoice_lines,
         "notes": "" if service and (service.notes or "").startswith("INVOICE_LINES:") else (service.notes if service else None),
         "mileage": service.mileage if service else None,
+        **_service_timing(service),
         "customer_name": car.owner_name if car else None,
         "plate_number": car.plate_number if car else None,
         "car_type": car.car_type if car else None,

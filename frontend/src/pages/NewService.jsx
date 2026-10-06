@@ -13,6 +13,7 @@ import {
 import Layout from '../components/Layout'
 import { getCars, createCar } from '../api/cars'
 import { createService } from '../api/services'
+import PitStopBar from '../components/service/PitStopBar'
 import { getInventory } from '../api/inventory'
 import { getCenterSettings } from '../api/settings'
 import { DEFAULT_CENTER_SPECIALTY, getSpecialtyLabel } from '../constants/centerSpecialties'
@@ -262,6 +263,15 @@ export default function NewService() {
   const [receptionFrame, setReceptionFrame] = useState('')
   const [receptionPlates, setReceptionPlates] = useState([])
   const [receptionCount, setReceptionCount] = useState(0)
+  const [startedAt, setStartedAt] = useState(null) // pit-stop timer: starts when the car is picked
+  const selectCar = useCallback((car) => {
+    setSelectedCar(car)
+    setStartedAt((prev) => prev ?? new Date())
+  }, [])
+  const clearCar = useCallback(() => {
+    setSelectedCar(null)
+    setStartedAt(null)
+  }, [])
   const receptionWsRef = useRef(null)
 
   const { data: centerSettings, isLoading: centerSettingsLoading } = useQuery({
@@ -287,11 +297,11 @@ export default function NewService() {
     setSearch(item.plate)
     setSubmitError('')
     if (item.car) {
-      setSelectedCar(item.car)
+      selectCar(item.car)
       setNewCarForm(null)
       return
     }
-    setSelectedCar(null)
+    clearCar()
     setNewCarForm({
       plate_number: item.plate,
       car_type: item.car_type || '',
@@ -299,7 +309,7 @@ export default function NewService() {
       owner_name: '',
       phone: '',
     })
-  }, [])
+  }, [selectCar, clearCar])
 
   const startReception = useCallback(() => {
     if (!user?.tenant_id) return
@@ -444,10 +454,10 @@ export default function NewService() {
     if (!arrivalPlate || selectedCar || !cars.length) return
     const exact = cars.find(car => car.plate_number?.toLowerCase() === arrivalPlate.toLowerCase())
     if (exact) {
-      setSelectedCar(exact)
+      selectCar(exact)
       setNewCarForm(null)
     }
-  }, [arrivalPlate, cars, selectedCar])
+  }, [arrivalPlate, cars, selectedCar, selectCar])
 
   const mutation = useMutation({
     mutationFn: createService,
@@ -464,7 +474,7 @@ export default function NewService() {
     mutationFn: createCar,
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['cars'] })
-      setSelectedCar(res.data)
+      selectCar(res.data)
       setNewCarForm(null)
     },
   })
@@ -520,6 +530,7 @@ export default function NewService() {
       inventory_deductions: deductions,
       payment_status: paymentMode,
       paid_amount: effectivePaidAmount,
+      started_at: startedAt ? startedAt.toISOString() : null,
     })
   }
 
@@ -528,7 +539,7 @@ export default function NewService() {
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && canSubmit) {
         submitService()
       }
-      if (e.key === 'Escape') setSelectedCar(null)
+      if (e.key === 'Escape') clearCar()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -556,7 +567,7 @@ export default function NewService() {
             className="flex items-center justify-center gap-2 rounded-xl border border-cyan-200 bg-cyan-50 px-8 py-3 text-sm font-black text-cyan-700 hover:bg-cyan-100">
             تعديل أو حذف الفاتورة
           </button>
-          <button onClick={() => { setResult(null); setSelectedCar(null); setSearch(''); setServiceType(defaultServiceType); setOilGrade('15W40'); setInvoiceLines([]); setPaymentMode('paid'); setPaidAmount(''); setForm({ amount: '', discount: '0', mileage: '', notes: '' }) }}
+          <button onClick={() => { setResult(null); clearCar(); setSearch(''); setServiceType(defaultServiceType); setOilGrade('15W40'); setInvoiceLines([]); setPaymentMode('paid'); setPaidAmount(''); setForm({ amount: '', discount: '0', mileage: '', notes: '' }) }}
             className="rounded-xl border border-slate-200 px-8 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">
             خدمة جديدة
           </button>
@@ -726,6 +737,10 @@ export default function NewService() {
         </div>
       </section>
 
+      {selectedCar && startedAt && (
+        <PitStopBar car={selectedCar} startedAt={startedAt} linesCount={invoiceLines.length} onChange={clearCar} />
+      )}
+
       <div className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
         {/* Service form */}
         <div className="space-y-4">
@@ -747,7 +762,7 @@ export default function NewService() {
               </div>
               <div className="space-y-2">
                 {cars.map(c => (
-                  <div key={c.id} onClick={() => { setSelectedCar(c); setNewCarForm(null) }}
+                  <div key={c.id} onClick={() => { selectCar(c); setNewCarForm(null) }}
                     className="surface flex cursor-pointer items-center justify-between rounded-lg px-5 py-4 transition hover:border-cyan-300 hover:bg-cyan-50">
                     <span className="font-mono text-xl font-black text-slate-950">{c.plate_number}</span>
                     <span className="text-slate-500 text-sm">{c.owner_name} {c.car_type ? `— ${c.car_type}` : ''} {c.car_color ? `· ${c.car_color}` : ''}</span>
@@ -787,13 +802,6 @@ export default function NewService() {
           ) : (
             <div className="grid gap-4 xl:grid-cols-[1fr_320px]">
               <div className="surface rounded-lg p-6 space-y-4">
-                <div className="flex justify-between items-center pb-3 border-b border-slate-200">
-                  <div>
-                    <span className="font-mono font-black text-slate-950 text-lg">{selectedCar.plate_number}</span>
-                    <span className="text-slate-500 text-sm mr-2">{selectedCar.owner_name}</span>
-                  </div>
-                  <button onClick={() => setSelectedCar(null)} className="text-slate-500 hover:text-rose-600 text-sm">تغيير</button>
-                </div>
                 <div>
                   <ServiceTypePicker
                     serviceType={serviceType}

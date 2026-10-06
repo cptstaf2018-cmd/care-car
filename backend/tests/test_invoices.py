@@ -97,3 +97,50 @@ def test_list_invoices(client, db):
     assert r.status_code == 200
     ids = [inv["id"] for inv in r.json()]
     assert invoice_id in ids
+
+
+def _create_timed_service(client, car_id, token, started_at):
+    body = {"car_id": car_id, "oil_type": "15W40", "amount": 50000}
+    if started_at is not None:
+        body["started_at"] = started_at.isoformat()
+    r = client.post("/services/", json=body, headers={"Authorization": f"Bearer {token}"})
+    assert r.status_code == 201
+    return r.json()["invoice_id"]
+
+
+def test_invoice_detail_reports_how_long_the_service_took(client, db):
+    from datetime import datetime, timedelta, timezone
+
+    _, _, car = setup_tenant_with_car(db, email="timing@test.com", tenant_name="TimingCtr", plate="TIM001")
+    token = login(client, "timing@test.com", "pass")
+    started = datetime.now(timezone.utc) - timedelta(minutes=37)
+
+    invoice_id = _create_timed_service(client, car.id, token, started)
+    detail = client.get(f"/invoices/{invoice_id}/detail", headers={"Authorization": f"Bearer {token}"}).json()
+
+    assert detail["started_at"] is not None
+    assert detail["finished_at"] is not None
+    assert 36 <= detail["duration_minutes"] <= 38
+
+
+def test_invoice_detail_without_a_timer_has_no_duration(client, db):
+    _, _, car = setup_tenant_with_car(db, email="notimer@test.com", tenant_name="NoTimerCtr", plate="TIM002")
+    token = login(client, "notimer@test.com", "pass")
+
+    invoice_id = _create_timed_service(client, car.id, token, None)
+    detail = client.get(f"/invoices/{invoice_id}/detail", headers={"Authorization": f"Bearer {token}"}).json()
+
+    assert detail["started_at"] is None
+    assert detail["duration_minutes"] is None
+
+
+def test_start_time_in_the_future_is_clamped_to_zero_duration(client, db):
+    from datetime import datetime, timedelta, timezone
+
+    _, _, car = setup_tenant_with_car(db, email="future@test.com", tenant_name="FutureCtr", plate="TIM003")
+    token = login(client, "future@test.com", "pass")
+
+    invoice_id = _create_timed_service(client, car.id, token, datetime.now(timezone.utc) + timedelta(hours=3))
+    detail = client.get(f"/invoices/{invoice_id}/detail", headers={"Authorization": f"Bearer {token}"}).json()
+
+    assert detail["duration_minutes"] == 0

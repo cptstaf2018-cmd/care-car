@@ -1,9 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { Car, Check, MessageCircle, Pencil, PlusCircle, Search, Trash2, Wrench, X } from 'lucide-react'
 import Layout from '../components/Layout'
 import StatCard from '../components/StatCard'
+import IraqiPlate from '../components/car/IraqiPlate'
+import OilLife from '../components/car/OilLife'
+import WhatsAppIcon from '../components/WhatsAppIcon'
+import { getMaintenanceDue } from '../api/reports'
 import { getCars, createCar, updateCar, deleteCar } from '../api/cars'
 
 const emptyForm = { plate_number: '', owner_name: '', phone: '', car_type: '' }
@@ -26,6 +30,12 @@ export default function Cars() {
     queryKey: ['cars', ''],
     queryFn: () => getCars('').then(r => r.data),
   })
+  const due = useQuery({
+    queryKey: ['maintenance-due'],
+    queryFn: () => getMaintenanceDue(50).then(r => r.data),
+  })
+  const daysLeftByCar = new Map((due.data?.cars || []).map(c => [c.car_id, c.days_left]))
+  const intervalDays = due.data?.interval_days || 20
   const total = allCars.data?.length ?? cars.length
   const withPhone = allCars.data?.filter(c => c.phone)?.length ?? 0
 
@@ -123,88 +133,64 @@ export default function Cars() {
         </div>
       </section>
 
-      {/* Table */}
-      <section className="surface overflow-hidden rounded-xl">
-        <div className="overflow-x-auto">
-          <table className="min-w-[760px] w-full text-right text-sm">
-            <thead className="bg-slate-50 text-slate-500">
-              <tr>
-                {['رقم اللوحة', 'نوع السيارة', 'المالك', 'الهاتف / واتساب', 'إجراءات'].map(h => (
-                  <th key={h} className="border-b border-slate-200 px-4 py-3 font-black">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {cars.map(c => (
-                <tr key={c.id} className="border-b border-slate-100 bg-white last:border-0 hover:bg-slate-50 transition">
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-950 text-white">
-                        <Car size={16} />
-                      </div>
-                      <span className="font-mono text-base font-black text-slate-950">{c.plate_number}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className={`font-bold ${c.car_type ? 'text-slate-800' : 'text-slate-400'}`}>
-                      {c.car_type || '—'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4">
-                    <span className={`font-bold ${c.owner_name ? 'text-slate-950' : 'text-slate-400'}`}>
-                      {c.owner_name || '—'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-4">
-                    {c.phone ? (
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-slate-700 tabular-nums">{c.phone}</span>
-                        <a href={`https://wa.me/${c.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer"
-                          className="rounded-lg bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-700 hover:bg-emerald-100 transition">
-                          <MessageCircle size={12} className="inline mr-0.5" /> WA
-                        </a>
-                      </div>
-                    ) : (
-                      <span className="text-slate-400">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => navigate('/center/services/new')}
-                        className="flex items-center gap-1.5 rounded-lg bg-cyan-50 px-3 py-2 text-xs font-black text-cyan-800 transition hover:bg-cyan-100">
-                        <Wrench size={13} /> خدمة
-                      </button>
-                      <button onClick={() => openEdit(c)}
-                        className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-xs font-black text-amber-800 transition hover:bg-amber-100">
-                        <Pencil size={13} /> تعديل
-                      </button>
-                      <button onClick={() => confirmDelete(c)} disabled={deleteMutation.isPending}
-                        className="flex items-center gap-1.5 rounded-lg bg-rose-50 px-3 py-2 text-xs font-black text-rose-700 transition hover:bg-rose-100 disabled:opacity-50">
-                        <Trash2 size={13} /> حذف
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {!isLoading && cars.length === 0 && (
-          <div className="py-14 text-center">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100">
-              <Car size={28} className="text-slate-400" />
+      {/* Garage */}
+      <section aria-label="سيارات الزبائن" className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {cars.map(c => (
+          <article key={c.id} className="rounded-3xl border border-mint-dim bg-white p-4">
+            <header className="flex items-start justify-between gap-3">
+              <IraqiPlate plate={c.plate_number} />
+              <div className="min-w-0 text-end">
+                <p className={`truncate font-bold ${c.owner_name ? 'text-petrol-deep' : 'text-gauge'}`}>{c.owner_name || 'بدون اسم'}</p>
+                <p className="truncate text-xs text-mint-ink">{c.car_type || 'نوع السيارة غير محدد'}</p>
+              </div>
+            </header>
+
+            <div className="mt-4">
+              <OilLife daysLeft={daysLeftByCar.get(c.id) ?? null} intervalDays={intervalDays} />
             </div>
-            <p className="text-sm font-bold text-slate-500">{search ? 'لا توجد نتائج للبحث' : 'لا توجد سيارات مسجلة بعد'}</p>
+
+            <footer className="mt-4 flex flex-wrap items-center gap-2 border-t border-mint-dim pt-3">
+              <button onClick={() => navigate('/center/services/new')}
+                className="flex items-center gap-1.5 rounded-full bg-petrol px-3.5 py-2 text-xs font-bold text-mint transition hover:bg-petrol-deep">
+                <Wrench size={13} /> خدمة
+              </button>
+              {c.phone && (
+                <a href={`https://wa.me/${c.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer"
+                  aria-label={`واتساب ${c.phone}`}
+                  className="flex items-center gap-1.5 rounded-full bg-[#25D366]/15 px-3.5 py-2 text-xs font-bold text-[#0d5c2e] transition hover:bg-[#25D366]/25">
+                  <WhatsAppIcon size={14} className="text-[#25D366]" /> <span dir="ltr" className="tabular-nums">{c.phone}</span>
+                </a>
+              )}
+              <div className="ms-auto flex gap-1.5">
+                <button onClick={() => openEdit(c)} aria-label="تعديل"
+                  className="grid h-8 w-8 place-items-center rounded-full bg-oil-light text-oil-dark transition hover:bg-oil/30">
+                  <Pencil size={13} />
+                </button>
+                <button onClick={() => confirmDelete(c)} disabled={deleteMutation.isPending} aria-label="حذف"
+                  className="grid h-8 w-8 place-items-center rounded-full bg-alert/10 text-alert transition hover:bg-alert/20 disabled:opacity-50">
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            </footer>
+          </article>
+        ))}
+
+        {!isLoading && cars.length === 0 && (
+          <div className="rounded-3xl border border-dashed border-mint-dim bg-white/60 py-14 text-center md:col-span-2 xl:col-span-3">
+            <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-mint">
+              <Car size={28} className="text-petrol" />
+            </div>
+            <p className="text-sm font-bold text-mint-ink">{search ? 'ما كو نتائج للبحث' : 'الكراج فاضي. سجّل أول سيارة.'}</p>
             {!search && (
               <button onClick={() => setShowForm(true)}
-                className="mt-3 rounded-xl bg-slate-950 px-5 py-2.5 text-sm font-black text-white hover:bg-slate-800 transition">
+                className="mt-3 rounded-full bg-petrol px-5 py-2.5 text-sm font-bold text-mint transition hover:bg-petrol-deep">
                 سجّل أول سيارة
               </button>
             )}
           </div>
         )}
         {isLoading && (
-          <div className="py-10 text-center text-sm font-bold text-slate-400">جاري تحميل السيارات...</div>
+          <div className="py-10 text-center text-sm font-bold text-gauge md:col-span-2 xl:col-span-3">جاري تحميل السيارات...</div>
         )}
       </section>
 

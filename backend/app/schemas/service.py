@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict
-from datetime import date
+from datetime import date, datetime
 
 class InventoryDeduction(BaseModel):
     item_id: int
@@ -15,6 +15,7 @@ class ServiceCreate(BaseModel):
     mileage: int | None = None
     notes: str | None = None
     service_date: date | None = None
+    started_at: datetime | None = None
     inventory_deductions: list[InventoryDeduction] = []
 
 class ServiceOut(BaseModel):
