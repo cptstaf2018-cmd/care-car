@@ -25,13 +25,13 @@ function Instrument({ title, text, children, pulseKey }) {
  * The four instruments that explain Care Car: activity dial, km odometer, stock gauge, debt lamp.
  * `progress` (0–1) drives all of them; `step` + `showSteps` add the signup stops under the dial.
  */
-export default function InstrumentGrid({ progress, rpm, step = 1, showSteps = false, tachText }) {
+export default function InstrumentGrid({ progress, rpm, step = 1, showSteps = false, tachText, columnsClass = 'sm:grid-cols-2' }) {
   const fuel = FUEL_START - FUEL_DRAIN * progress
   const debtLit = progress >= DEBT_LAMP_AT
   const pulseKey = `${step}:${rpm}` // changes with every signup step, replaying the pulse
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className={`grid gap-4 ${columnsClass}`}>
       <Instrument pulseKey={pulseKey} title="نبض مركزك" text={tachText}>
         <div className="w-full max-w-[190px]">
           <Gauge

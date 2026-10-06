@@ -21,13 +21,11 @@ export default function AuthShell({ children, step = 1, rpm = 1.5, phase = 'park
       </header>
 
       <main className="mx-auto grid max-w-6xl items-start gap-10 px-4 pb-16 pt-2 sm:px-8 lg:grid-cols-[minmax(0,480px)_1fr] lg:pt-10">
-        <section className="rounded-[28px] bg-mint p-6 text-petrol-deep shadow-[0_30px_60px_-30px_rgba(0,0,0,0.6)] sm:p-8">
+        <section className="lg:sticky lg:top-6 rounded-[28px] bg-mint p-6 text-petrol-deep shadow-[0_30px_60px_-30px_rgba(0,0,0,0.6)] sm:p-8">
           {children}
         </section>
 
-        <aside className="lg:pt-6">
-          <FeatureGauges step={step} rpm={rpm} phase={phase} idleRpm={idleRpm} />
-        </aside>
+        <FeatureGauges step={step} rpm={rpm} phase={phase} idleRpm={idleRpm} />
       </main>
     </div>
   )
